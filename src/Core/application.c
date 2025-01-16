@@ -1,18 +1,9 @@
 #include "application.h"
 
+#include "Core/base.h"
+
 #include <stdio.h>
 #include <string.h>
-
-#if defined(_MSC_VER)
-#	define ANVIL_COMPILER_MSVC 1
-
-// Target OS (Windows, Linux, macOS)
-#	if defined(_WIN32) || defined(_WIN64)
-#		define ANVIL_PLATFORM_WINDOWS 1
-#	else
-#		error OS platform not supported!
-#	endif
-#endif
 
 #define nullptr ((void*)0)
 
