@@ -5,8 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define nullptr ((void*)0)
-
 #ifdef ANVIL_PLATFORM_WINDOWS
 #   include <Windows.h>
 #   include <windowsx.h>
@@ -25,7 +23,7 @@ static LRESULT CALLBACK _WindowProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM 
     return DefWindowProcA(hwnd, umsg, wparam, lparam);
 }
 
-bool anvlAppInit(const char* app_name, uint16_t window_width, uint16_t window_height) {
+bool anvlAppInit(const char* app_name, uint16 window_width, uint16 window_height) {
     char app_window_title[50];
     strncpy(app_window_title, app_name, sizeof(app_window_title));
 
@@ -37,7 +35,7 @@ bool anvlAppInit(const char* app_name, uint16_t window_width, uint16_t window_he
 #   ifdef ANVIL_PLATFORM_WINDOWS
 
     HWND window_handle;
-    HINSTANCE window_instance = GetModuleHandleA(nullptr);
+    HINSTANCE window_instance = GetModuleHandleA(null);
 
     WNDCLASSEXA window_class = { 0 };
     window_class.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
@@ -46,7 +44,7 @@ bool anvlAppInit(const char* app_name, uint16_t window_width, uint16_t window_he
     window_class.lpfnWndProc = _WindowProc;
     window_class.hInstance = window_instance;
     window_class.lpszClassName = "ANVL Main Window";
-    window_class.hIcon = nullptr;
+    window_class.hIcon = null;
 
     if (!RegisterClassExA(&window_class)) {
         return false;
@@ -59,10 +57,10 @@ bool anvlAppInit(const char* app_name, uint16_t window_width, uint16_t window_he
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT,
         window_width, window_height,
-        nullptr,
-        nullptr,
+        null,
+        null,
         window_instance,
-        (LPVOID) nullptr
+        (LPVOID) null
     );
 
     if (!window_handle) {
@@ -73,7 +71,7 @@ bool anvlAppInit(const char* app_name, uint16_t window_width, uint16_t window_he
     UpdateWindow(window_handle);
 
     MSG msg;
-    while (GetMessageA(&msg, nullptr, 0, 0)) {
+    while (GetMessageA(&msg, null, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessageA(&msg);
     }
