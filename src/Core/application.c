@@ -14,11 +14,17 @@ bool anvlAppInit(const char* app_name, uint16 window_width, uint16 window_height
     printf("-> Window title: %s\n", app_window_title);
     printf("-> Window width: %d\n", window_width);
     printf("-> Window height: %d\n", window_height);
-    //
 
-    if (!PlatformInit(app_window_title, window_width, window_height)) {
+    NativeWindow* window = anvlPlatformWindowCreate(app_window_title, window_width, window_height);
+    if (!window) {
         return false;
     }
+
+    while (true) {
+        anvlPlatformWindowUpdate(window);
+    }
+
+    anvlPlatformWindowDestroy(window);
 
     return true;
 }
