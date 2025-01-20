@@ -1,31 +1,53 @@
 #include "application.h"
 
 #include "Core/base.h"
-#include "Platform/platform.h"
 
 #include <stdio.h>
+#include <stdlib.h> 
 #include <string.h>
 
-bool anvlAppInit(const char* app_name, uint16 window_width, uint16 window_height) {
-    char app_window_title[50];
-    strncpy(app_window_title, app_name, sizeof(app_window_title));
+struct ApplicationInternalData {
+	NativeWindow* window;
+};
 
-    printf("-> Name: %s\n", app_name);
-    printf("-> Window title: %s\n", app_window_title);
-    printf("-> Window width: %d\n", window_width);
-    printf("-> Window height: %d\n", window_height);
+bool anvlAppInit(ApplicationData* app) {
+	app->internal = malloc(sizeof(ApplicationInternalData));
+	if (!app->internal) {
+		return false;
+	}
 
-    NativeWindow* window = anvlPlatformWindowCreate(app_window_title, window_width, window_height);
-    if (!window) {
-        return false;
-    }
+	char app_window_title[64];
+	strncpy(app_window_title, app->name, sizeof(app_window_title) - 1);
+	app_window_title[63] = '\0';
 
-    while (true) {
-        anvlPlatformWindowUpdate(window);
-    }
+	printf("-> Name: %s\n", app->name);
+	printf("-> Window title: %s\n", app_window_title);
+	printf("-> Window width: %d\n", app->hints.window_width);
+	printf("-> Window height: %d\n", app->hints.window_height);
 
-    anvlPlatformWindowDestroy(window);
+	app->internal->window = anvlPlatformWindowCreate(app_window_title, app->hints.window_width, app->hints.window_height);
+	if (!app->internal->window) {
+		return false;
+	}
 
-    return true;
+	return true;
+}
+
+void anvlAppRun(ApplicationData* app)
+{
+	while (true) {
+		anvlPlatformWindowUpdate(app->internal->window);
+	}
+}
+
+bool anvlAppShutdown(ApplicationData* app)
+{
+	anvlPlatformWindowDestroy(app->internal->window);
+
+	if (app->internal) {
+		free(app->internal);
+	}
+
+	return true;
 }
 
