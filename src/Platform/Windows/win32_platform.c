@@ -1,10 +1,9 @@
-#include "Platform/platform.h"
+#include "anvlpch.h"
 
-#include "Core/base.h"
+#include "Platform/platform.h"
 
 #include <windows.h>
 #include <windowsx.h>
-#include <stdlib.h>
 
 struct NativeWindow {
 	HWND        handle;

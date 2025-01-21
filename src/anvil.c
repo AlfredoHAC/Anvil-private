@@ -1,7 +1,6 @@
+#include "anvlpch.h"
+
 #include "Core/application.h"
-
-#include <stdio.h>
-
 
 int main() {
 

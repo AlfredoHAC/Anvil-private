@@ -2,9 +2,6 @@
 #define APPLICATION_HEADER
 
 #include "Core/typedefs.h"
-#include "Platform/platform.h"
-
-#include <stdbool.h>
 
 typedef struct ApplicationInternalData ApplicationInternalData;
 

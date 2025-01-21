@@ -3,8 +3,6 @@
 
 #include "Core/typedefs.h"
 
-#include <stdbool.h>
-
 // Platform native window
 typedef struct NativeWindow NativeWindow;
 

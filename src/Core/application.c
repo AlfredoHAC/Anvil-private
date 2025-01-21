@@ -1,10 +1,7 @@
-#include "application.h"
+#include "anvlpch.h"
 
-#include "Core/base.h"
-
-#include <stdio.h>
-#include <stdlib.h> 
-#include <string.h>
+#include "Core/application.h"
+#include "Platform/platform.h"
 
 struct ApplicationInternalData {
 	NativeWindow* window;
