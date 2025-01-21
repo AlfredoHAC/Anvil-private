@@ -13,6 +13,9 @@ project "Anvil"
     kind "ConsoleApp"
     language "C"
 
+    pchheader "anvlpch.h"
+    pchsource "./src/anvlpch.c"
+
     targetdir "./bin/%{cfg.buildcfg}/"
     objdir "./bin/obj/%{cfg.buildcfg}/"
 
