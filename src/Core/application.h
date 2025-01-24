@@ -2,6 +2,7 @@
 #define APPLICATION_HEADER
 
 #include "Core/typedefs.h"
+#include "Platform/graphics.h"
 
 typedef struct ApplicationInternalData ApplicationInternalData;
 
@@ -11,6 +12,7 @@ typedef struct ApplicationData {
 	struct {
 		uint16 window_width;
 		uint16 window_height;
+		GraphicsAPI graphics_api;
 	} hints;
 
 	ApplicationInternalData* internal;

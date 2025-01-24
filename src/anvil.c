@@ -8,7 +8,8 @@ int main() {
 		.name = "AnvilFramework",
 		.hints = {
 			.window_width = 1280,
-			.window_height = 720
+			.window_height = 720,
+			.graphics_api = OpenGL
 		}
 	};
 

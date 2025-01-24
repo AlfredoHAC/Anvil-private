@@ -5,6 +5,7 @@
 
 struct ApplicationInternalData {
 	NativeWindow* window;
+	GraphicsContext* graphics_context;
 };
 
 bool anvlAppInit(ApplicationData* app) {
@@ -27,6 +28,8 @@ bool anvlAppInit(ApplicationData* app) {
 		return false;
 	}
 
+	app->internal->graphics_context = anvlGraphicsContextCreate(app->hints.graphics_api, app->internal->window);
+
 	return true;
 }
 
@@ -39,10 +42,14 @@ void anvlAppRun(ApplicationData* app)
 
 bool anvlAppShutdown(ApplicationData* app)
 {
-	anvlPlatformWindowDestroy(app->internal->window);
+	if (app) {
+		anvlGraphicsContextDestroy(app->internal->graphics_context);
+		anvlPlatformWindowDestroy(app->internal->window);
 
-	if (app->internal) {
-		free(app->internal);
+		if (app->internal) {
+			free(app->internal);
+			app->internal = null;
+		}
 	}
 
 	return true;
