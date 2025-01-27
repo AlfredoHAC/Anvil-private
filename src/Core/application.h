@@ -4,8 +4,11 @@
 #include "Core/typedefs.h"
 #include "Platform/graphics.h"
 
+// TODO: rename ApplicationInternalData -> ApplicationData
 typedef struct ApplicationInternalData ApplicationInternalData;
+//
 
+// TODO: rename ApplicationData -> Application
 typedef struct ApplicationData {
 	char name[64];
 
@@ -17,6 +20,7 @@ typedef struct ApplicationData {
 
 	ApplicationInternalData* internal;
 } ApplicationData;
+//
 
 bool anvlAppInit(ApplicationData* app);
 void anvlAppRun(ApplicationData* app);

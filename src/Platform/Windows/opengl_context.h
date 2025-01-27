@@ -1,12 +1,13 @@
 #ifndef OPENGL_CONTEXT_HEADER
 #define OPENGL_CONTEXT_HEADER
 
-#include "platform.h"
+#include "platform_internals.h"
 
 #include <windows.h>
 
-void anvlOpenGLContextInit();
-ContextData* anvlOpenGLContextCreate(HDC device_context);
-void anvlOpenGLContextDestroy(ContextData* context_data);
+void anvlOpenGLContextInit(GraphicsContext* context);
+ContextData* anvlOpenGLContextCreate(NativeWindow* window);
+void anvlOpenGLContextMakeCurrent(GraphicsContext* context);
+void anvlOpenGLContextDestroy(GraphicsContext* context);
 
 #endif // !OPENGL_CONTEXT_HEADER

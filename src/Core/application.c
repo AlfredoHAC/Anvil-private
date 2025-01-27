@@ -3,10 +3,12 @@
 #include "Core/application.h"
 #include "Platform/platform.h"
 
+// TODO: rename ApplicationInternalData -> ApplicationData
 struct ApplicationInternalData {
 	NativeWindow* window;
 	GraphicsContext* graphics_context;
 };
+//
 
 bool anvlAppInit(ApplicationData* app) {
 	app->internal = malloc(sizeof(ApplicationInternalData));
@@ -29,6 +31,7 @@ bool anvlAppInit(ApplicationData* app) {
 	}
 
 	app->internal->graphics_context = anvlGraphicsContextCreate(app->hints.graphics_api, app->internal->window);
+	anvlGraphicsContextMakeCurrent(app->internal->graphics_context);
 
 	return true;
 }
@@ -44,7 +47,9 @@ bool anvlAppShutdown(ApplicationData* app)
 {
 	if (app) {
 		anvlGraphicsContextDestroy(app->internal->graphics_context);
+		app->internal->graphics_context = null;
 		anvlPlatformWindowDestroy(app->internal->window);
+		app->internal->window = null;
 
 		if (app->internal) {
 			free(app->internal);

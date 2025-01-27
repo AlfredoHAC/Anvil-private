@@ -1,16 +1,8 @@
 #include "anvlpch.h"
 
-#include "Platform/platform.h"
+#include "platform_internals.h"
 #include "Platform/Windows/opengl_context.h"
 
-#include <windows.h>
-#include <windowsx.h>
-
-struct NativeWindow {
-	HWND        handle;
-	HINSTANCE   instance;
-	HDC			device_context;
-};
 
 static LRESULT CALLBACK _NativeWindowProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 {
@@ -108,14 +100,13 @@ GraphicsContext* anvlGraphicsContextCreate(GraphicsAPI api, NativeWindow* native
 	}
 
 	context->api = api;
+	context->data = null;
 
 	switch (api) {
 	case OpenGL:
-		anvlOpenGLContextInit();
-		context->data = anvlOpenGLContextCreate(native_window->device_context);
-		context->GraphicsContextDataDestroyFunc = anvlOpenGLContextDestroy;
+		anvlOpenGLContextInit(context);
 		break;
-	case OpenGL_ES:
+	case OpenGL_ES: // TODO: Remove this
 		// TODO: call anvlOpenGLESContextInit()
 		break;
 	case Vulkan:
@@ -134,17 +125,20 @@ GraphicsContext* anvlGraphicsContextCreate(GraphicsAPI api, NativeWindow* native
 		break;
 	}
 
+	context->data = context->GraphicsContextCreate(native_window);
 	return context;
+}
+
+void anvlGraphicsContextMakeCurrent(GraphicsContext* context)
+{
+	context->GraphicsContextMakeCurrent(context);
 }
 
 void anvlGraphicsContextDestroy(GraphicsContext* context)
 {
-	if (context) {
-		if (context->data && context->GraphicsContextDataDestroyFunc) {
-			context->GraphicsContextDataDestroyFunc(context->data);
-			context->GraphicsContextDataDestroyFunc = null;
-		}
-		free(context);
+	if (context)
+	{
+		context->GraphicsContextDestroy(context);
 		context = null;
 	}
 }

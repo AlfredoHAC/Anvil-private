@@ -23,22 +23,14 @@ typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC) (HDC hDC, HGLRC hShareC
 
 struct ContextData {
 	HGLRC handle;
+	HDC   device_context;
 };
 
-static PFNWGLCHOOSEPIXELFORMATARBPROC	  wglChoosePixelFormatARB;
-static PFNWGLCREATECONTEXTATTRIBSARBPROC  wglCreateContextAttribsARB;
-static PIXELFORMATDESCRIPTOR			  pixel_format_descriptor;
+static PFNWGLCHOOSEPIXELFORMATARBPROC	  _wglChoosePixelFormatARB;
+static PFNWGLCREATECONTEXTATTRIBSARBPROC  _wglCreateContextAttribsARB;
+static PIXELFORMATDESCRIPTOR			  _pixel_format_descriptor;
 
-void anvlOpenGLContextInit() {
-	pixel_format_descriptor.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-	pixel_format_descriptor.nVersion = 1;
-	pixel_format_descriptor.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-	pixel_format_descriptor.iPixelType = PFD_TYPE_RGBA;
-	pixel_format_descriptor.cColorBits = 32;
-	pixel_format_descriptor.cAlphaBits = 8;
-	pixel_format_descriptor.cDepthBits = 24;
-	pixel_format_descriptor.cStencilBits = 8;
-
+void _GetOpenGLExtensionsProcs() {
 	WNDCLASSA dummy_window_class = { 0 };
 	dummy_window_class.style = CS_OWNDC;
 	dummy_window_class.lpfnWndProc = DefWindowProc;
@@ -62,11 +54,11 @@ void anvlOpenGLContextInit() {
 	}
 
 	HDC dummy_window_device_context = GetDC(dummy_window_handle);
-	int32 dummy_context_pixel_format = ChoosePixelFormat(dummy_window_device_context, &pixel_format_descriptor);
+	int32 dummy_context_pixel_format = ChoosePixelFormat(dummy_window_device_context, &_pixel_format_descriptor);
 	if (!dummy_context_pixel_format) {
 		return;
 	}
-	if (!SetPixelFormat(dummy_window_device_context, dummy_context_pixel_format, &pixel_format_descriptor)) {
+	if (!SetPixelFormat(dummy_window_device_context, dummy_context_pixel_format, &_pixel_format_descriptor)) {
 		return;
 	}
 
@@ -78,10 +70,10 @@ void anvlOpenGLContextInit() {
 		return;
 	}
 
-	wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
-	wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
+	_wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
+	_wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
 
-	if (!wglChoosePixelFormatARB || !wglCreateContextAttribsARB) {
+	if (!_wglChoosePixelFormatARB || !_wglCreateContextAttribsARB) {
 		return;
 	}
 
@@ -91,12 +83,31 @@ void anvlOpenGLContextInit() {
 	DestroyWindow(dummy_window_handle);
 }
 
-ContextData* anvlOpenGLContextCreate(HDC device_context)
+void anvlOpenGLContextInit(GraphicsContext* context) {
+	context->GraphicsContextCreate		= anvlOpenGLContextCreate;
+	context->GraphicsContextMakeCurrent = anvlOpenGLContextMakeCurrent;
+	context->GraphicsContextDestroy		= anvlOpenGLContextDestroy;
+
+	_pixel_format_descriptor.nSize			= sizeof(PIXELFORMATDESCRIPTOR);
+	_pixel_format_descriptor.nVersion		= 1;
+	_pixel_format_descriptor.dwFlags		= PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	_pixel_format_descriptor.iPixelType		= PFD_TYPE_RGBA;
+	_pixel_format_descriptor.cColorBits		= 32;
+	_pixel_format_descriptor.cAlphaBits		= 8;
+	_pixel_format_descriptor.cDepthBits		= 24;
+	_pixel_format_descriptor.cStencilBits	= 8;
+
+	_GetOpenGLExtensionsProcs();
+}
+
+ContextData* anvlOpenGLContextCreate(NativeWindow* window)
 {
 	ContextData* context_data = malloc(sizeof(ContextData));
 	if (!context_data) {
 		return null;
 	}
+
+	context_data->device_context = window->device_context;
 
 	int32 pixel_attributes[] = {
 		WGL_DRAW_TO_WINDOW_ARB, true,
@@ -111,11 +122,11 @@ ContextData* anvlOpenGLContextCreate(HDC device_context)
 
 	int32 pixel_format = 0;
 	uint32 pixel_format_count = 0;
-	wglChoosePixelFormatARB(device_context, pixel_attributes, null, 1, &pixel_format, &pixel_format_count);
+	_wglChoosePixelFormatARB(context_data->device_context, pixel_attributes, null, 1, &pixel_format, &pixel_format_count);
 	if (pixel_format_count == 0) {
 		return null;
 	}
-	SetPixelFormat(device_context, pixel_format, &pixel_format_descriptor);
+	SetPixelFormat(context_data->device_context, pixel_format, &_pixel_format_descriptor);
 
 	// TODO: Improve this code to have more important attributes
 	int32 graphics_context_attributes[] = {
@@ -126,26 +137,38 @@ ContextData* anvlOpenGLContextCreate(HDC device_context)
 	};
 	//
 
-	context_data->handle = wglCreateContextAttribsARB(device_context, null, graphics_context_attributes);
+	context_data->handle = _wglCreateContextAttribsARB(context_data->device_context, null, graphics_context_attributes);
 	if (!context_data->handle) {
 		return null;
 	}
 
-	wglMakeCurrent(device_context, context_data->handle);
-
 	return context_data;
 }
 
-void anvlOpenGLContextDestroy(ContextData* context_data)
+void anvlOpenGLContextMakeCurrent(GraphicsContext* context)
 {
-	if (context_data) {
+	wglMakeCurrent(context->data->device_context, context->data->handle);
+}
+
+void anvlOpenGLContextDestroy(GraphicsContext* context)
+{
+	if (context) {
 		wglMakeCurrent(null, null);
 
-		if (context_data->handle) {
-			wglDeleteContext(context_data->handle);
+		if (context->data->handle) {
+			wglDeleteContext(context->data->handle);
 		}
 
-		free(context_data);
-		context_data = null;
+		if (context->data) {
+			free(context->data);
+			context->data = null;
+		}
+
+		context->GraphicsContextCreate		= null;
+		context->GraphicsContextMakeCurrent = null;
+		context->GraphicsContextDestroy		= null;
+
+		free(context);
+		context = null;
 	}
 }
