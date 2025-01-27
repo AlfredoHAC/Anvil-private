@@ -2,39 +2,18 @@
 
 #include "opengl_context.h"
 
-// TODO: replace with the definitions in the 'wglext.h' file
-#define WGL_DRAW_TO_WINDOW_ARB            0x2001
-#define WGL_SUPPORT_OPENGL_ARB            0x2010
-#define WGL_DOUBLE_BUFFER_ARB             0x2011
-#define WGL_PIXEL_TYPE_ARB                0x2013
-#define WGL_TYPE_RGBA_ARB                 0x202B
-#define WGL_COLOR_BITS_ARB                0x2014
-#define WGL_DEPTH_BITS_ARB                0x2022
-#define WGL_STENCIL_BITS_ARB              0x2023
-
-#define WGL_CONTEXT_MAJOR_VERSION_ARB				0x2091
-#define WGL_CONTEXT_MINOR_VERSION_ARB				0x2092
-#define WGL_CONTEXT_PROFILE_MASK_ARB				0x9126
-#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB			0x00000001
-#define WGL_CONTEXT_FLAGS_ARB						0x2094
-#define WGL_CONTEXT_DEBUG_BIT_ARB					0x00000001
-#define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB		0x00000002
-#define WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB			0x00000004
-
-typedef BOOL(WINAPI* PFNWGLCHOOSEPIXELFORMATARBPROC) (HDC hdc, const int* piAttribIList, const FLOAT* pfAttribFList, UINT nMaxFormats, int* piFormats, UINT* nNumFormats);
-typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC) (HDC hDC, HGLRC hShareContext, const int* attribList);
-//
+#include <glad/gl.h>
+#include <glad/wgl.h>
 
 struct ContextData {
 	HGLRC handle;
 	HDC   device_context;
 };
 
-static PFNWGLCHOOSEPIXELFORMATARBPROC	  _wglChoosePixelFormatARB;
-static PFNWGLCREATECONTEXTATTRIBSARBPROC  _wglCreateContextAttribsARB;
-static PIXELFORMATDESCRIPTOR			  _pixel_format_descriptor;
+static PIXELFORMATDESCRIPTOR _pixel_format_descriptor;
 
 void _GetOpenGLExtensionsProcs() {
+	// TODO: check the need for this dummy window
 	WNDCLASSA dummy_window_class = { 0 };
 	dummy_window_class.style = CS_OWNDC;
 	dummy_window_class.lpfnWndProc = DefWindowProc;
@@ -56,6 +35,7 @@ void _GetOpenGLExtensionsProcs() {
 	if (!dummy_window_handle) {
 		return;
 	}
+	//
 
 	HDC dummy_window_device_context = GetDC(dummy_window_handle);
 	int32 dummy_context_pixel_format = ChoosePixelFormat(dummy_window_device_context, &_pixel_format_descriptor);
@@ -74,12 +54,7 @@ void _GetOpenGLExtensionsProcs() {
 		return;
 	}
 
-	_wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
-	_wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
-
-	if (!_wglChoosePixelFormatARB || !_wglCreateContextAttribsARB) {
-		return;
-	}
+	gladLoaderLoadWGL(dummy_window_device_context);
 
 	wglMakeCurrent(null, null);
 	wglDeleteContext(dummy_context);
@@ -126,13 +101,13 @@ ContextData* anvlOpenGLContextCreate(NativeWindow* window)
 
 	int32 pixel_format = 0;
 	uint32 pixel_format_count = 0;
-	_wglChoosePixelFormatARB(context_data->device_context, pixel_attributes, null, 1, &pixel_format, &pixel_format_count);
+	wglChoosePixelFormatARB(context_data->device_context, pixel_attributes, null, 1, &pixel_format, &pixel_format_count);
 	if (pixel_format_count == 0) {
 		return null;
 	}
 	SetPixelFormat(context_data->device_context, pixel_format, &_pixel_format_descriptor);
 
-	if (!_wglCreateContextAttribsARB) {
+	if (!wglCreateContextAttribsARB) {
 		context_data->handle = wglCreateContext(context_data->device_context);
 	}
 	else {
@@ -147,7 +122,7 @@ ContextData* anvlOpenGLContextCreate(NativeWindow* window)
 			, 0
 		};
 
-		context_data->handle = _wglCreateContextAttribsARB(context_data->device_context, null, graphics_context_attributes);
+		context_data->handle = wglCreateContextAttribsARB(context_data->device_context, null, graphics_context_attributes);
 	}
 
 	if (!context_data->handle) {
@@ -160,12 +135,18 @@ ContextData* anvlOpenGLContextCreate(NativeWindow* window)
 void anvlOpenGLContextMakeCurrent(GraphicsContext* context)
 {
 	wglMakeCurrent(context->data->device_context, context->data->handle);
+
+	int32 gl_loaded = gladLoaderLoadGL();
+	if (!gl_loaded) {
+		return;
+	}
 }
 
 void anvlOpenGLContextDestroy(GraphicsContext* context)
 {
 	if (context) {
 		wglMakeCurrent(null, null);
+		gladLoaderUnloadGL();
 
 		if (context->data->handle) {
 			wglDeleteContext(context->data->handle);

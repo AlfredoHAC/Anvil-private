@@ -26,7 +26,14 @@ project "Anvil"
 
     includedirs {
         "./src/",
-        "./src/**"
+        "./src/**",
+        "../Vendor/*/src/include",
+        "../Vendor/*/src/platform/*/include"
+    }
+
+    links
+    {
+        "Vendor"
     }
 
     defines {
@@ -75,3 +82,5 @@ project "Anvil"
         defines "ANVIL_CONFIG_RELEASE"
         runtime "Release"
         optimize "Full"
+
+include "../Vendor/"
