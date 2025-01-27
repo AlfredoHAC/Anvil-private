@@ -106,9 +106,6 @@ GraphicsContext* anvlGraphicsContextCreate(GraphicsAPI api, NativeWindow* native
 	case OpenGL:
 		anvlOpenGLContextInit(context);
 		break;
-	case OpenGL_ES: // TODO: Remove this
-		// TODO: call anvlOpenGLESContextInit()
-		break;
 	case Vulkan:
 		// TODO: call anvlVulkanContextInit()
 		break;

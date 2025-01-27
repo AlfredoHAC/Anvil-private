@@ -12,10 +12,14 @@
 #define WGL_DEPTH_BITS_ARB                0x2022
 #define WGL_STENCIL_BITS_ARB              0x2023
 
-#define WGL_CONTEXT_MAJOR_VERSION_ARB     0x2091
-#define WGL_CONTEXT_MINOR_VERSION_ARB     0x2092
-#define WGL_CONTEXT_PROFILE_MASK_ARB      0x9126
-#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB  0x00000001
+#define WGL_CONTEXT_MAJOR_VERSION_ARB				0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB				0x2092
+#define WGL_CONTEXT_PROFILE_MASK_ARB				0x9126
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB			0x00000001
+#define WGL_CONTEXT_FLAGS_ARB						0x2094
+#define WGL_CONTEXT_DEBUG_BIT_ARB					0x00000001
+#define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB		0x00000002
+#define WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB			0x00000004
 
 typedef BOOL(WINAPI* PFNWGLCHOOSEPIXELFORMATARBPROC) (HDC hdc, const int* piAttribIList, const FLOAT* pfAttribFList, UINT nMaxFormats, int* piFormats, UINT* nNumFormats);
 typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC) (HDC hDC, HGLRC hShareContext, const int* attribList);
@@ -110,13 +114,13 @@ ContextData* anvlOpenGLContextCreate(NativeWindow* window)
 	context_data->device_context = window->device_context;
 
 	int32 pixel_attributes[] = {
-		WGL_DRAW_TO_WINDOW_ARB, true,
-		WGL_SUPPORT_OPENGL_ARB, true,
-		WGL_DOUBLE_BUFFER_ARB,	true,
-		WGL_PIXEL_TYPE_ARB,		WGL_TYPE_RGBA_ARB,
-		WGL_COLOR_BITS_ARB,		32,
-		WGL_DEPTH_BITS_ARB,		24,
-		WGL_STENCIL_BITS_ARB,	8,
+		WGL_DRAW_TO_WINDOW_ARB, true,				 // Type of drawable (Window, Offscreen surface)
+		WGL_SUPPORT_OPENGL_ARB, true,				 // OpenGL support
+		WGL_DOUBLE_BUFFER_ARB,	true,				 // Double buffer (front & back buffers)
+		WGL_PIXEL_TYPE_ARB,		WGL_TYPE_RGBA_ARB,	 // Pixel coloring type
+		WGL_COLOR_BITS_ARB,		32,					 // Color buffers (Red, Green, Blue & Alpha) size
+		WGL_DEPTH_BITS_ARB,		24,					 // Depth buffer (z-buffer) size
+		WGL_STENCIL_BITS_ARB,	8,					 // Stencil buffer size
 		0
 	};
 
@@ -128,16 +132,24 @@ ContextData* anvlOpenGLContextCreate(NativeWindow* window)
 	}
 	SetPixelFormat(context_data->device_context, pixel_format, &_pixel_format_descriptor);
 
-	// TODO: Improve this code to have more important attributes
-	int32 graphics_context_attributes[] = {
-		WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
-		WGL_CONTEXT_MINOR_VERSION_ARB, 6,
-		WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-		0
-	};
-	//
+	if (!_wglCreateContextAttribsARB) {
+		context_data->handle = wglCreateContext(context_data->device_context);
+	}
+	else {
+		int32 graphics_context_attributes[] = {
+			WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
+			WGL_CONTEXT_MINOR_VERSION_ARB, 6,
+			WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+			WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB | WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB
+	#		ifdef ANVIL_CONFIG_DEBUG
+			| WGL_CONTEXT_DEBUG_BIT_ARB
+	#		endif
+			, 0
+		};
 
-	context_data->handle = _wglCreateContextAttribsARB(context_data->device_context, null, graphics_context_attributes);
+		context_data->handle = _wglCreateContextAttribsARB(context_data->device_context, null, graphics_context_attributes);
+	}
+
 	if (!context_data->handle) {
 		return null;
 	}

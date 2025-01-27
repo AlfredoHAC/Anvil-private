@@ -6,7 +6,6 @@
 typedef enum GraphicsAPI {
 	None = 0,
 	OpenGL,
-	OpenGL_ES, // TODO: Remove this
 	Vulkan,
 	DirectX11,
 	DirectX12
