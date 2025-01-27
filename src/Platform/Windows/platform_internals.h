@@ -11,6 +11,7 @@ typedef struct ContextData ContextData;
 typedef ContextData* (*PFNGRAPHICSCONTEXTCREATEFUNC)(NativeWindow*);
 typedef void (*PFNGRAPHICSCONTEXTMAKECURRENTFUNC)(GraphicsContext*);
 typedef void (*PFNGRAPHICSCONTEXTDESTROYFUNC)(GraphicsContext*);
+typedef void (*PFNGRAPHICSCONTEXTGETAPIINFOFUNC)(GraphicsContextAPIInfo*);
 
 struct NativeWindow {
 	HWND        handle;
@@ -25,6 +26,7 @@ struct GraphicsContext {
 	PFNGRAPHICSCONTEXTCREATEFUNC		GraphicsContextCreate;
 	PFNGRAPHICSCONTEXTMAKECURRENTFUNC	GraphicsContextMakeCurrent;
 	PFNGRAPHICSCONTEXTDESTROYFUNC		GraphicsContextDestroy;
+	PFNGRAPHICSCONTEXTGETAPIINFOFUNC	GraphicsContextGetAPIInfo;
 };
 
 #endif // PLATFORM_INTERNALS_HEADER

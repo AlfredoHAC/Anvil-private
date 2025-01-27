@@ -66,6 +66,7 @@ void anvlOpenGLContextInit(GraphicsContext* context) {
 	context->GraphicsContextCreate		= anvlOpenGLContextCreate;
 	context->GraphicsContextMakeCurrent = anvlOpenGLContextMakeCurrent;
 	context->GraphicsContextDestroy		= anvlOpenGLContextDestroy;
+	context->GraphicsContextGetAPIInfo	= anvlOpenGLContextGetInfo;
 
 	_pixel_format_descriptor.nSize			= sizeof(PIXELFORMATDESCRIPTOR);
 	_pixel_format_descriptor.nVersion		= 1;
@@ -160,8 +161,19 @@ void anvlOpenGLContextDestroy(GraphicsContext* context)
 		context->GraphicsContextCreate		= null;
 		context->GraphicsContextMakeCurrent = null;
 		context->GraphicsContextDestroy		= null;
+		context->GraphicsContextGetAPIInfo  = null;
 
 		free(context);
 		context = null;
+	}
+}
+
+void anvlOpenGLContextGetInfo(GraphicsContextAPIInfo* api_info)
+{
+	if (api_info) {
+		api_info->version			= (char*)glGetString(GL_VERSION);
+		api_info->vendor			= (char*)glGetString(GL_VENDOR);
+		api_info->renderer			= (char*)glGetString(GL_RENDERER);
+		api_info->shading_language	= (char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 	}
 }

@@ -139,3 +139,12 @@ void anvlGraphicsContextDestroy(GraphicsContext* context)
 		context = null;
 	}
 }
+
+GraphicsContextAPIInfo anvlGraphicsContextGetAPIInfo(GraphicsContext* context)
+{
+	GraphicsContextAPIInfo api_info = { 0 };
+
+	context->GraphicsContextGetAPIInfo(&api_info);
+
+	return api_info;
+}

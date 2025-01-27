@@ -33,6 +33,13 @@ bool anvlAppInit(ApplicationData* app) {
 	app->internal->graphics_context = anvlGraphicsContextCreate(app->hints.graphics_api, app->internal->window);
 	anvlGraphicsContextMakeCurrent(app->internal->graphics_context);
 
+	GraphicsContextAPIInfo api_info = anvlGraphicsContextGetAPIInfo(app->internal->graphics_context);
+	printf("\nGraphics Context\n");
+	printf("-> Version: %s\n", api_info.version);
+	printf("-> Vendor: %s\n", api_info.vendor);
+	printf("-> Renderer: %s\n", api_info.renderer);
+	printf("-> Shading Language version: %s\n", api_info.shading_language);
+
 	return true;
 }
 

@@ -10,4 +10,6 @@ ContextData* anvlOpenGLContextCreate(NativeWindow* window);
 void anvlOpenGLContextMakeCurrent(GraphicsContext* context);
 void anvlOpenGLContextDestroy(GraphicsContext* context);
 
+void anvlOpenGLContextGetInfo(GraphicsContextAPIInfo* api_info);
+
 #endif // !OPENGL_CONTEXT_HEADER
