@@ -4,7 +4,7 @@
 
 int main() {
 
-	ApplicationData app = {
+	Application app = {
 		.name = "AnvilFramework",
 		.hints = {
 			.window_width = 1280,

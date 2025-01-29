@@ -3,9 +3,8 @@
 
 #include "Core/typedefs.h"
 
-typedef struct ApplicationInternalData ApplicationInternalData;
-
-typedef struct ApplicationData {
+typedef struct ApplicationData ApplicationData;
+typedef struct Application {
 	char name[64];
 
 	struct {
@@ -13,11 +12,11 @@ typedef struct ApplicationData {
 		uint16 window_height;
 	} hints;
 
-	ApplicationInternalData* internal;
-} ApplicationData;
+	ApplicationData* internal;
+} Application;
 
-bool anvlAppInit(ApplicationData* app);
-void anvlAppRun(ApplicationData* app);
-bool anvlAppShutdown(ApplicationData* app);
+bool anvlAppInit(Application* app);
+void anvlAppRun(Application* app);
+bool anvlAppShutdown(Application* app);
 
 #endif // !APPLICATION_HEADER

@@ -3,12 +3,12 @@
 #include "Core/application.h"
 #include "Platform/platform.h"
 
-struct ApplicationInternalData {
+struct ApplicationData {
 	NativeWindow* window;
 };
 
-bool anvlAppInit(ApplicationData* app) {
-	app->internal = malloc(sizeof(ApplicationInternalData));
+bool anvlAppInit(Application* app) {
+	app->internal = malloc(sizeof(ApplicationData));
 	if (!app->internal) {
 		return false;
 	}
@@ -30,14 +30,14 @@ bool anvlAppInit(ApplicationData* app) {
 	return true;
 }
 
-void anvlAppRun(ApplicationData* app)
+void anvlAppRun(Application* app)
 {
 	while (true) {
 		anvlPlatformWindowUpdate(app->internal->window);
 	}
 }
 
-bool anvlAppShutdown(ApplicationData* app)
+bool anvlAppShutdown(Application* app)
 {
 	anvlPlatformWindowDestroy(app->internal->window);
 
