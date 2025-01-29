@@ -66,6 +66,18 @@ project "Anvil"
         runtime "Debug"
         symbols "On"
 
+        sanitize {
+            "Address",
+            "Fuzzer"
+        }
+
+        editandcontinue "Off"
+
+        flags {
+            "NoIncrementalLink",
+            "NoRuntimeChecks"
+        }
+
     filter "configurations:Optimized"
         defines "ANVIL_CONFIG_OPTIMIZED"
         runtime "Release"
