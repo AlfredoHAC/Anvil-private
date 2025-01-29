@@ -76,12 +76,12 @@ void anvlPlatformWindowUpdate(NativeWindow* window) {
 
 
 void anvlPlatformWindowDestroy(NativeWindow* window) {
-	if (window->handle) {
-		DestroyWindow(window->handle);
-		window->handle = null;
-	}
-
 	if (window) {
+		if (window->handle) {
+			DestroyWindow(window->handle);
+			window->handle = null;
+		}
+
 		free(window);
 		window = null;
 	}

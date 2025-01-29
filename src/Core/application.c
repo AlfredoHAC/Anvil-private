@@ -39,10 +39,13 @@ void anvlAppRun(Application* app)
 
 bool anvlAppShutdown(Application* app)
 {
-	anvlPlatformWindowDestroy(app->internal->window);
+	if (app) {
+		anvlPlatformWindowDestroy(app->internal->window);
 
-	if (app->internal) {
-		free(app->internal);
+		if (app->internal) {
+			free(app->internal);
+			app->internal = null;
+		}
 	}
 
 	return true;
