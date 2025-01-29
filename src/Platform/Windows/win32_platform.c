@@ -26,6 +26,9 @@ static LRESULT CALLBACK _NativeWindowProc(HWND hwnd, UINT umsg, WPARAM wparam, L
 
 NativeWindow* anvlPlatformWindowCreate(const char* window_title, uint16 window_width, uint16 window_height) {
 	NativeWindow* window = malloc(sizeof(NativeWindow));
+	if (!window) {
+		return null;
+	}
 
 	WNDCLASSEXA window_class = { 0 };
 	window_class.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
