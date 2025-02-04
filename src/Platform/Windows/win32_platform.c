@@ -20,6 +20,27 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
 	case WM_DESTROY:
 		return 0;
 		break;
+	case WM_KEYDOWN:
+	case WM_SYSKEYDOWN:
+		break;
+	case WM_KEYUP:
+	case WM_SYSKEYUP:
+		break;
+	case WM_MOUSEMOVE:
+		break;
+	case WM_LBUTTONDOWN:
+	case WM_MBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+	case WM_XBUTTONDOWN:
+		break;
+	case WM_LBUTTONUP:
+	case WM_MBUTTONUP:
+	case WM_RBUTTONUP:
+	case WM_XBUTTONUP:
+		break;
+	case WM_MOUSEWHEEL:
+	case WM_MOUSEHWHEEL:
+		break;
 	}
 
 	return DefWindowProcA(window->handle, umsg, wparam, lparam);
