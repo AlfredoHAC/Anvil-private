@@ -10,8 +10,8 @@ struct NativeWindow {
 	HINSTANCE   instance;
 };
 
-static LRESULT CALLBACK _NativeWindowProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
-{
+static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPARAM lparam) {
+
 	switch (umsg)
 	{
 	case WM_CLOSE:
@@ -21,6 +21,18 @@ static LRESULT CALLBACK _NativeWindowProc(HWND hwnd, UINT umsg, WPARAM wparam, L
 		return 0;
 		break;
 	}
+
+	return DefWindowProcA(window->handle, umsg, wparam, lparam);
+}
+
+static LRESULT CALLBACK _NativeWindowProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
+{
+	NativeWindow* window = (NativeWindow*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+
+	if (window && window->handle == hwnd) {
+		return _ProcessEvent(window, umsg, wparam, lparam);
+	}
+
 	return DefWindowProcA(hwnd, umsg, wparam, lparam);
 }
 
@@ -60,6 +72,7 @@ NativeWindow* anvlPlatformWindowCreate(const char* window_title, uint16 window_w
 		return null;
 	}
 
+	SetWindowLongPtrA(window->handle, GWLP_USERDATA, (LONG_PTR)window);
 	ShowWindow(window->handle, SW_SHOWNORMAL);
 
 	return window;
