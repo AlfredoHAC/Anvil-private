@@ -53,8 +53,34 @@ bool anvlAppShutdown(Application* app)
 	return true;
 }
 
-void anvlApplicationOnEvent()
+void anvlApplicationOnEvent(Event event)
 {
-	printf("Event captured, callback called!\n");
+	printf("Event captured!\n");
+
+	switch (event.type) {
+	case WindowClose:
+		printf("Window closing...\n");
+		break;
+	//case WindowResize:
+	//	break;
+	case KeyPress:
+		printf("Key press: %d\n", event.key_press.key_code);
+		break;
+	case KeyRelease:
+		printf("Key release: %d\n", event.key_release.key_code);
+		break;
+	case MouseMove:
+		printf("Mouse move: (%.1f,%.1f)\n", event.mouse_move.x, event.mouse_move.y);
+		break;
+	case MouseButtonClick:
+		printf("Mouse button click: %d (%.1f,%.1f)\n", event.mouse_button_click.button_code, event.mouse_button_click.x, event.mouse_button_click.y);
+		break;
+	case MouseButtonRelease:
+		printf("Mouse button release: %d (%.1f,%.1f)\n", event.mouse_button_release.button_code, event.mouse_button_release.x, event.mouse_button_release.y);
+		break;
+	case MouseScroll:
+		printf("Mouse scroll: (%.1f,%.1f)\n", event.mouse_scroll.x_offset, event.mouse_scroll.y_offset);
+		break;
+	}
 }
 

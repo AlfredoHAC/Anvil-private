@@ -4,6 +4,7 @@
 
 
 // TODO: Change block starting to a new line
+// TODO: Add prefix 'ANVL_' to header guard definitions
 int main() {
 
 	Application app = {

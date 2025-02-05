@@ -2,6 +2,7 @@
 #define APPLICATION_HEADER
 
 #include "Core/typedefs.h"
+#include "Core/event.h"
 
 typedef struct ApplicationData ApplicationData;
 typedef struct Application {
@@ -19,6 +20,6 @@ bool anvlAppInit(Application* app);
 void anvlAppRun(Application* app);
 bool anvlAppShutdown(Application* app);
 
-void anvlApplicationOnEvent();
+void anvlApplicationOnEvent(Event event);
 
 #endif // !APPLICATION_HEADER
