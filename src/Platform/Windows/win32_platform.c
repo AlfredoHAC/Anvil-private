@@ -8,6 +8,8 @@
 struct NativeWindow {
 	HWND        handle;
 	HINSTANCE   instance;
+
+	PFEVENTCALLBACKFUNC EventCallback;
 };
 
 static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPARAM lparam) {
@@ -15,31 +17,40 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
 	switch (umsg)
 	{
 	case WM_CLOSE:
+		window->EventCallback();
 		PostQuitMessage(0);
 		break;
-	case WM_DESTROY:
-		return 0;
-		break;
+	// TODO: Uncomment this after the ShowWindow function was defered
+	//case WM_SIZE:
+	//	window->EventCallback();
+	//	break;
+	//
 	case WM_KEYDOWN:
 	case WM_SYSKEYDOWN:
+		window->EventCallback();
 		break;
 	case WM_KEYUP:
 	case WM_SYSKEYUP:
+		window->EventCallback();
 		break;
 	case WM_MOUSEMOVE:
+		window->EventCallback();
 		break;
 	case WM_LBUTTONDOWN:
 	case WM_MBUTTONDOWN:
 	case WM_RBUTTONDOWN:
 	case WM_XBUTTONDOWN:
+		window->EventCallback();
 		break;
 	case WM_LBUTTONUP:
 	case WM_MBUTTONUP:
 	case WM_RBUTTONUP:
 	case WM_XBUTTONUP:
+		window->EventCallback();
 		break;
 	case WM_MOUSEWHEEL:
 	case WM_MOUSEHWHEEL:
+		window->EventCallback();
 		break;
 	}
 
@@ -94,7 +105,9 @@ NativeWindow* anvlPlatformWindowCreate(const char* window_title, uint16 window_w
 	}
 
 	SetWindowLongPtrA(window->handle, GWLP_USERDATA, (LONG_PTR)window);
+	// TODO: Defer this call until after the window is completely created.
 	ShowWindow(window->handle, SW_SHOWNORMAL);
+	//
 
 	return window;
 }
@@ -122,6 +135,15 @@ void anvlPlatformWindowDestroy(NativeWindow* window) {
 		free(window);
 		window = null;
 	}
+}
+
+void anvlPlatformSetWindowEventCallback(NativeWindow* window, PFEVENTCALLBACKFUNC event_callback)
+{
+	if (!event_callback) {
+		return;
+	}
+
+	window->EventCallback = event_callback;
 }
 
 

@@ -27,6 +27,8 @@ bool anvlAppInit(Application* app) {
 		return false;
 	}
 
+	anvlPlatformSetWindowEventCallback(app->internal->window, anvlApplicationOnEvent);
+
 	return true;
 }
 
@@ -49,5 +51,10 @@ bool anvlAppShutdown(Application* app)
 	}
 
 	return true;
+}
+
+void anvlApplicationOnEvent()
+{
+	printf("Event captured, callback called!\n");
 }
 

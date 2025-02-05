@@ -2,6 +2,8 @@
 
 #include "Core/application.h"
 
+
+// TODO: Change block starting to a new line
 int main() {
 
 	Application app = {

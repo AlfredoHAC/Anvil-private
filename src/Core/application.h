@@ -19,4 +19,6 @@ bool anvlAppInit(Application* app);
 void anvlAppRun(Application* app);
 bool anvlAppShutdown(Application* app);
 
+void anvlApplicationOnEvent();
+
 #endif // !APPLICATION_HEADER
