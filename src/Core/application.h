@@ -21,5 +21,6 @@ void anvlAppRun(Application* app);
 bool anvlAppShutdown(Application* app);
 
 void anvlApplicationOnEvent(Event event);
+void anvlApplicationOnWindowClose();
 
 #endif // !APPLICATION_HEADER

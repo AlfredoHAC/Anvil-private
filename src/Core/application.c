@@ -3,6 +3,8 @@
 #include "Core/application.h"
 #include "Platform/platform.h"
 
+static bool app_running;
+
 struct ApplicationData {
 	NativeWindow* window;
 };
@@ -29,12 +31,13 @@ bool anvlAppInit(Application* app) {
 
 	anvlPlatformSetWindowEventCallback(app->internal->window, anvlApplicationOnEvent);
 
+	app_running = true;
 	return true;
 }
 
 void anvlAppRun(Application* app)
 {
-	while (true) {
+	while (app_running) {
 		anvlPlatformWindowUpdate(app->internal->window);
 	}
 }
@@ -59,7 +62,7 @@ void anvlApplicationOnEvent(Event event)
 
 	switch (event.type) {
 	case WindowClose:
-		printf("Window closing...\n");
+		anvlApplicationOnWindowClose();
 		break;
 	//case WindowResize:
 	//	break;
@@ -82,5 +85,10 @@ void anvlApplicationOnEvent(Event event)
 		printf("Mouse scroll: (%.1f,%.1f)\n", event.mouse_scroll.x_offset, event.mouse_scroll.y_offset);
 		break;
 	}
+}
+
+void anvlApplicationOnWindowClose()
+{
+	app_running = false;
 }
 
