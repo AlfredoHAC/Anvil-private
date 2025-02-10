@@ -2,6 +2,11 @@
 
 #include "Core/application.h"
 
+
+// TODO: Change block starting to a new line
+// TODO: Add prefix 'ANVL_' to header guard definitions
+// TODO: Verify all failure returns on memory allocations
+// TODO: Remove unecessary 'null' redefinition
 int main() {
 
 	Application app = {

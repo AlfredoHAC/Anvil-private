@@ -8,19 +8,252 @@
 struct NativeWindow {
 	HWND        handle;
 	HINSTANCE   instance;
+
+	PFEVENTCALLBACKFUNC EventCallback;
 };
 
-static LRESULT CALLBACK _NativeWindowProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
-{
+static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPARAM lparam) {
+
 	switch (umsg)
 	{
 	case WM_CLOSE:
-		PostQuitMessage(0);
-		break;
-	case WM_DESTROY:
-		return 0;
+	{
+		Event event = {
+			.type = WindowClose,
+			.handled = false,
+			.window_close = {0}
+		};
+
+		window->EventCallback(event);
 		break;
 	}
+	case WM_SIZE:
+	{
+		Event event = {
+			.type = WindowResize,
+			.handled = false,
+			.window_resize = {
+				.width  = (uint16)LOWORD(lparam),
+				.height = (uint16)HIWORD(lparam)
+			}
+		};
+
+		window->EventCallback(event);
+		break;
+	}
+	case WM_KEYDOWN:
+	case WM_SYSKEYDOWN:
+	{
+		Event event = {
+			.type = KeyPress,
+			.handled = false,
+			.key_press = {
+				.key_code = (uint16)wparam,
+				.modifier_set = 0
+			}
+		};
+
+		window->EventCallback(event);
+		break;
+	}
+	case WM_KEYUP:
+	case WM_SYSKEYUP:
+	{
+		Event event = {
+			.type = KeyRelease,
+			.handled = false,
+			.key_release = {
+				.key_code = (uint16)wparam,
+				.modifier_set = 0
+			}
+		};
+
+		window->EventCallback(event);
+		break;
+	}
+	case WM_MOUSEMOVE:
+	{
+		Event event = {
+			.type = MouseMove,
+			.handled = false,
+			.mouse_move = {
+				.x = (float32)GET_X_LPARAM(lparam),
+				.y = (float32)GET_Y_LPARAM(lparam)
+			}
+		};
+
+		window->EventCallback(event);
+		break;
+	}
+	case WM_LBUTTONDOWN:
+	{
+		Event event = {
+			.type = MouseButtonClick,
+			.handled = false,
+			.mouse_button_click = {
+				.button_code = 1,
+				.x = (float32)GET_X_LPARAM(lparam),
+				.y = (float32)GET_Y_LPARAM(lparam),
+				.modifier_set = 0
+			}
+		};
+
+		window->EventCallback(event);
+		break;
+	}
+	case WM_MBUTTONDOWN:
+	{
+		Event event = {
+			.type = MouseButtonClick,
+			.handled = false,
+			.mouse_button_click = {
+				.button_code = 2,
+				.x = (float32)GET_X_LPARAM(lparam),
+				.y = (float32)GET_Y_LPARAM(lparam),
+				.modifier_set = 0
+			}
+		};
+
+		window->EventCallback(event);
+		break;
+	}
+	case WM_RBUTTONDOWN:
+	{
+		Event event = {
+			.type = MouseButtonClick,
+			.handled = false,
+			.mouse_button_click = {
+				.button_code = 3,
+				.x = (float32)GET_X_LPARAM(lparam),
+				.y = (float32)GET_Y_LPARAM(lparam),
+				.modifier_set = 0
+			}
+		};
+
+		window->EventCallback(event);
+		break;
+	}
+	case WM_XBUTTONDOWN:
+	{
+		Event event = {
+			.type = MouseButtonClick,
+			.handled = false,
+			.mouse_button_click = {
+				.button_code = (uint8)GET_XBUTTON_WPARAM(wparam),
+				.x = (float32)GET_X_LPARAM(lparam),
+				.y = (float32)GET_Y_LPARAM(lparam),
+				.modifier_set = 0
+			}
+		};
+
+		window->EventCallback(event);
+		break;
+	}
+	case WM_LBUTTONUP:
+	{
+		Event event = {
+			.type = MouseButtonRelease,
+			.handled = false,
+			.mouse_button_release = {
+				.button_code = 1,
+				.x = (float32)GET_X_LPARAM(lparam),
+				.y = (float32)GET_Y_LPARAM(lparam),
+				.modifier_set = 0
+			}
+		};
+
+		window->EventCallback(event);
+		break;
+	}
+	case WM_MBUTTONUP:
+	{
+		Event event = {
+			.type = MouseButtonRelease,
+			.handled = false,
+			.mouse_button_release = {
+				.button_code = 2,
+				.x = (float32)GET_X_LPARAM(lparam),
+				.y = (float32)GET_Y_LPARAM(lparam),
+				.modifier_set = 0
+			}
+		};
+
+		window->EventCallback(event);
+		break;
+	}
+	case WM_RBUTTONUP:
+	{
+		Event event = {
+			.type = MouseButtonRelease,
+			.handled = false,
+			.mouse_button_release = {
+				.button_code = 3,
+				.x = (float32)GET_X_LPARAM(lparam),
+				.y = (float32)GET_Y_LPARAM(lparam),
+				.modifier_set = 0
+			}
+		};
+
+		window->EventCallback(event);
+		break;
+	}
+	case WM_XBUTTONUP:
+	{
+		Event event = {
+			.type = MouseButtonRelease,
+			.handled = false,
+			.mouse_button_release = {
+				.button_code = (uint8)GET_XBUTTON_WPARAM(wparam),
+				.x = (float32)GET_X_LPARAM(lparam),
+				.y = (float32)GET_Y_LPARAM(lparam),
+				.modifier_set = 0
+			}
+		};
+
+		window->EventCallback(event);
+		break;
+	}
+	case WM_MOUSEWHEEL:
+	{
+		Event event = {
+			.type = MouseScroll,
+			.handled = false,
+			.mouse_scroll = {
+				.x_offset = 0,
+				.y_offset = (float32)GET_WHEEL_DELTA_WPARAM(wparam) > 0 ? 1.0f : -1.0f,
+			}
+		};
+
+		window->EventCallback(event);
+		break;
+	}
+	case WM_MOUSEHWHEEL:
+	{
+		Event event = {
+			.type = MouseScroll,
+			.handled = false,
+			.mouse_scroll = {
+				.x_offset = (float32)GET_WHEEL_DELTA_WPARAM(wparam) > 0 ? 1.0f : -1.0f,
+				.y_offset = 0,
+			}
+		};
+
+		window->EventCallback(event);
+		break;
+	}
+	}
+
+	return DefWindowProcA(window->handle, umsg, wparam, lparam);
+}
+
+static LRESULT CALLBACK _NativeWindowProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
+{
+	NativeWindow* window = (NativeWindow*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+
+	if (window && window->handle == hwnd) {
+		return _ProcessEvent(window, umsg, wparam, lparam);
+	}
+
 	return DefWindowProcA(hwnd, umsg, wparam, lparam);
 }
 
@@ -60,9 +293,14 @@ NativeWindow* anvlPlatformWindowCreate(const char* window_title, uint16 window_w
 		return null;
 	}
 
-	ShowWindow(window->handle, SW_SHOWNORMAL);
+	SetWindowLongPtrA(window->handle, GWLP_USERDATA, (LONG_PTR)window);
 
 	return window;
+}
+
+void anvlPlatformWindowShow(NativeWindow* window)
+{
+	ShowWindow(window->handle, SW_SHOWNORMAL);
 }
 
 static void _PollEvents(NativeWindow* window) {
@@ -88,6 +326,15 @@ void anvlPlatformWindowDestroy(NativeWindow* window) {
 		free(window);
 		window = null;
 	}
+}
+
+void anvlPlatformSetWindowEventCallback(NativeWindow* window, PFEVENTCALLBACKFUNC event_callback)
+{
+	if (!event_callback) {
+		return;
+	}
+
+	window->EventCallback = event_callback;
 }
 
 
