@@ -30,6 +30,7 @@ bool anvlAppInit(Application* app) {
 	}
 
 	anvlPlatformSetWindowEventCallback(app->internal->window, anvlApplicationOnEvent);
+	anvlPlatformWindowShow(app->internal->window);
 
 	app_running = true;
 	return true;
@@ -64,8 +65,9 @@ void anvlApplicationOnEvent(Event event)
 	case WindowClose:
 		anvlApplicationOnWindowClose();
 		break;
-	//case WindowResize:
-	//	break;
+	case WindowResize:
+		printf("Window resize: %dx%d\n", event.window_resize.width, event.window_resize.height);
+		break;
 	case KeyPress:
 		printf("Key press: %d\n", event.key_press.key_code);
 		break;

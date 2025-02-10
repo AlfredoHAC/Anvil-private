@@ -25,14 +25,22 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
 		};
 
 		window->EventCallback(event);
-		PostQuitMessage(0);
 		break;
 	}
-	// TODO: Uncomment this after the ShowWindow function was defered
-	//case WM_SIZE:
-	//	window->EventCallback();
-	//	break;
-	//
+	case WM_SIZE:
+	{
+		Event event = {
+			.type = WindowResize,
+			.handled = false,
+			.window_resize = {
+				.width  = (uint16)LOWORD(lparam),
+				.height = (uint16)HIWORD(lparam)
+			}
+		};
+
+		window->EventCallback(event);
+		break;
+	}
 	case WM_KEYDOWN:
 	case WM_SYSKEYDOWN:
 	{
@@ -286,11 +294,13 @@ NativeWindow* anvlPlatformWindowCreate(const char* window_title, uint16 window_w
 	}
 
 	SetWindowLongPtrA(window->handle, GWLP_USERDATA, (LONG_PTR)window);
-	// TODO: Defer this call until after the window is completely created.
-	ShowWindow(window->handle, SW_SHOWNORMAL);
-	//
 
 	return window;
+}
+
+void anvlPlatformWindowShow(NativeWindow* window)
+{
+	ShowWindow(window->handle, SW_SHOWNORMAL);
 }
 
 static void _PollEvents(NativeWindow* window) {
