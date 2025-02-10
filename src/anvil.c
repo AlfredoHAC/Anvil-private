@@ -2,7 +2,6 @@
 
 #include "Core/application.h"
 
-// TODO: Remove unecessary 'null' redefinition
 int main()
 {
 

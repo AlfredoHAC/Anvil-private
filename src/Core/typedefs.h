@@ -3,9 +3,6 @@
 
 #include <inttypes.h>
 
-// Redefining the null operator
-#define null ((void*)0)
-
 // Integer typedefs
 typedef uint8_t  uint8;
 typedef uint16_t uint16;

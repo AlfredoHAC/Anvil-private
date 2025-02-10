@@ -51,7 +51,7 @@ bool anvlAppShutdown(Application* app)
 
 		if (app->internal) {
 			free(app->internal);
-			app->internal = null;
+			app->internal = NULL;
 		}
 	}
 

@@ -294,7 +294,7 @@ NativeWindow* anvlPlatformWindowCreate(const char* window_title, uint16 window_w
 	if (!window)
 	{
 		free(window);
-		return null;
+		return NULL;
 	}
 
 	WNDCLASSEXA window_class = { 0 };
@@ -304,12 +304,12 @@ NativeWindow* anvlPlatformWindowCreate(const char* window_title, uint16 window_w
 	window_class.lpfnWndProc = _NativeWindowProc;
 	window_class.hInstance = window->instance;
 	window_class.lpszClassName = "ANVL Main Window";
-	window_class.hIcon = null;
+	window_class.hIcon = NULL;
 
 	if (!RegisterClassExA(&window_class))
 	{
 		free(window);
-		return null;
+		return NULL;
 	}
 
 	window->handle = CreateWindowExA
@@ -320,16 +320,16 @@ NativeWindow* anvlPlatformWindowCreate(const char* window_title, uint16 window_w
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		window_width, window_height,
-		null,
-		null,
+		NULL,
+		NULL,
 		window->instance,
-		(LPVOID)null
+		(LPVOID)NULL
 	);
 
 	if (!window->handle)
 	{
 		free(window);
-		return null;
+		return NULL;
 	}
 
 	SetWindowLongPtrA(window->handle, GWLP_USERDATA, (LONG_PTR)window);
@@ -365,11 +365,11 @@ void anvlPlatformWindowDestroy(NativeWindow* window)
 		if (window->handle)
 		{
 			DestroyWindow(window->handle);
-			window->handle = null;
+			window->handle = NULL;
 		}
 
 		free(window);
-		window = null;
+		window = NULL;
 	}
 }
 
