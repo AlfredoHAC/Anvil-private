@@ -5,7 +5,8 @@
 #include "Core/event.h"
 
 typedef struct ApplicationData ApplicationData;
-typedef struct Application {
+typedef struct Application
+{
 	char name[64];
 
 	struct {

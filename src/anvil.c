@@ -3,27 +3,31 @@
 #include "Core/application.h"
 
 
-// TODO: Change block starting to a new line
 // TODO: Add prefix 'ANVL_' to header guard definitions
 // TODO: Verify all failure returns on memory allocations
 // TODO: Remove unecessary 'null' redefinition
-int main() {
+int main()
+{
 
-	Application app = {
+	Application app =
+	{
 		.name = "AnvilFramework",
-		.hints = {
+		.hints = 
+		{
 			.window_width = 1280,
 			.window_height = 720
 		}
 	};
 
-	if (!anvlAppInit(&app)) {
+	if (!anvlAppInit(&app))
+	{
 		return 1;
 	}
 
 	anvlAppRun(&app);
 
-	if (!anvlAppShutdown(&app)) {
+	if (!anvlAppShutdown(&app))
+	{
 		return 1;
 	}
 
