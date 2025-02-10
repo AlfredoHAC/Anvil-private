@@ -2,7 +2,6 @@
 
 #include "Core/application.h"
 
-// TODO: Verify all failure returns on memory allocations
 // TODO: Remove unecessary 'null' redefinition
 int main()
 {

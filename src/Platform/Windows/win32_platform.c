@@ -293,6 +293,7 @@ NativeWindow* anvlPlatformWindowCreate(const char* window_title, uint16 window_w
 	NativeWindow* window = malloc(sizeof(NativeWindow));
 	if (!window)
 	{
+		free(window);
 		return null;
 	}
 
@@ -307,6 +308,7 @@ NativeWindow* anvlPlatformWindowCreate(const char* window_title, uint16 window_w
 
 	if (!RegisterClassExA(&window_class))
 	{
+		free(window);
 		return null;
 	}
 
@@ -326,6 +328,7 @@ NativeWindow* anvlPlatformWindowCreate(const char* window_title, uint16 window_w
 
 	if (!window->handle)
 	{
+		free(window);
 		return null;
 	}
 
