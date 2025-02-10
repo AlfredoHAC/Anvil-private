@@ -1,5 +1,5 @@
-#ifndef ANVIL_PRECOMPILED_HEADER
-#define ANVIL_PRECOMPILED_HEADER
+#ifndef ANVL_PRECOMPILED_HEADER
+#define ANVL_PRECOMPILED_HEADER
 
 #include "Core/typedefs.h"
 #include "Core/base.h"
@@ -9,4 +9,4 @@
 #include <stdbool.h>
 #include <string.h>
 
-#endif // !ANVIL_PRECOMPILED_HEADER
+#endif // !ANVL_PRECOMPILED_HEADER

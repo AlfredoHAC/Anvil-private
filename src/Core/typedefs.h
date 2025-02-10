@@ -1,5 +1,5 @@
-#ifndef TYPEDEFS_HEADER
-#define TYPEDEFS_HEADER
+#ifndef ANVL_TYPEDEFS_HEADER
+#define ANVL_TYPEDEFS_HEADER
 
 #include <inttypes.h>
 
@@ -21,4 +21,4 @@ typedef int64_t int64;
 typedef float  float32;
 typedef double float64;
 
-#endif // !TYPEDEFS_HEADER
+#endif // !ANVL_TYPEDEFS_HEADER

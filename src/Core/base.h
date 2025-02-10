@@ -1,5 +1,5 @@
-#ifndef BASE_HEADER
-#define BASE_HEADER
+#ifndef ANVL_BASE_HEADER
+#define ANVL_BASE_HEADER
 
 // Compiler/Platform detection
 // Compiler macros (MSVC, GCC, etc.)
@@ -59,4 +59,4 @@
 
 
 
-#endif // !BASE_HEADER
+#endif // !ANVL_BASE_HEADER

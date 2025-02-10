@@ -1,5 +1,5 @@
-#ifndef PLATFORM_HEADER
-#define PLATFORM_HEADER
+#ifndef ANVL_PLATFORM_HEADER
+#define ANVL_PLATFORM_HEADER
 
 #include "Core/typedefs.h"
 #include "Core/event.h"
@@ -17,4 +17,4 @@ void anvlPlatformWindowUpdate(NativeWindow* window);
 void anvlPlatformWindowDestroy(NativeWindow* window);
 void anvlPlatformSetWindowEventCallback(NativeWindow* window, PFEVENTCALLBACKFUNC event_callback);
 
-#endif // !PLATFORM_HEADER
+#endif // !ANVL_PLATFORM_HEADER

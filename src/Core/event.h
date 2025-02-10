@@ -1,5 +1,5 @@
-#ifndef EVENT_HEADER
-#define EVENT_HEADER
+#ifndef ANVL_EVENT_HEADER
+#define ANVL_EVENT_HEADER
 
 #include "typedefs.h"
 
@@ -80,4 +80,4 @@ typedef struct Event
 	};
 } Event;
 
-#endif // !EVENT_HEADER
+#endif // !ANVL_EVENT_HEADER

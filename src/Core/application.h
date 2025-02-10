@@ -1,5 +1,5 @@
-#ifndef APPLICATION_HEADER
-#define APPLICATION_HEADER
+#ifndef ANVL_APPLICATION_HEADER
+#define ANVL_APPLICATION_HEADER
 
 #include "Core/typedefs.h"
 #include "Core/event.h"
@@ -24,4 +24,4 @@ bool anvlAppShutdown(Application* app);
 void anvlApplicationOnEvent(Event event);
 void anvlApplicationOnWindowClose();
 
-#endif // !APPLICATION_HEADER
+#endif // !ANVL_APPLICATION_HEADER
