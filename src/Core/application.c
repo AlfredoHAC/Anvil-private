@@ -3,6 +3,8 @@
 #include "Core/application.h"
 #include "Platform/platform.h"
 
+#include "Tools/logger.h"
+
 static bool app_running;
 
 struct ApplicationData {
@@ -15,6 +17,8 @@ bool anvlAppInit(Application* app) {
 		free(app->internal);
 		return false;
 	}
+
+	anvlLoggerSetLevel(All);
 
 	char app_window_title[64];
 	strncpy(app_window_title, app->name, sizeof(app_window_title) - 1);
