@@ -49,6 +49,10 @@ static void _PrintLevelLabel(LogLevel level)
 		color = "\033[32m";
 		level_str = "INFO";
 		break;
+	case Debug:
+		color = "\033[36m";
+		level_str = "DEBUG";
+		break;
 	case Trace:
 		color = "\033[34m";
 		level_str = "TRACE";
@@ -109,6 +113,16 @@ void anvlLogInfo(const char* call_module, const char* msg_format, ...)
 	va_start(args, msg_format);
 
 	_LogMessage(Info, "ANVIL", msg_format, args);
+
+	va_end(args);
+}
+
+void anvlLogDebug(const char* call_module, const char* msg_format, ...)
+{
+	va_list args;
+	va_start(args, msg_format);
+
+	_LogMessage(Debug, "ANVIL", msg_format, args);
 
 	va_end(args);
 }
