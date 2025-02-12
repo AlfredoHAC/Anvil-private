@@ -12,7 +12,7 @@ void anvlLoggerSetLevel(LogLevel level)
 	current_level = level;
 }
 
-static void _AddTimestampLabel(char* msg_buffer, uint16* msg_length)
+static void _PrintTimestampLabel()
 {
 	time_t current_time_raw;
 	struct tm* current_localtime;
@@ -25,11 +25,11 @@ static void _AddTimestampLabel(char* msg_buffer, uint16* msg_length)
 	fprintf(stderr, timestamp_format, current_localtime->tm_hour, current_localtime->tm_min, current_localtime->tm_sec);
 }
 
-static void _AddLevelLabel(LogLevel level, char* msg_buffer, uint16* msg_length)
+static void _PrintLevelLabel(LogLevel level)
 {
 	char* level_label_format = "%s(%s)%s ";
-	char* level_str = "";
-	char* color = "";
+	const char* level_str = "";
+	const char* color = "";
 
 	switch (level)
 	{
@@ -65,11 +65,8 @@ static void _LogMessage(LogLevel level, const char* call_module, const char* msg
 		return;
 	}
 
-	char log_msg[MAX_LOG_MSG_LENGTH] = {0};
-	uint16 msg_length = 0;
-
-	_AddTimestampLabel(log_msg, &msg_length);
-	_AddLevelLabel(level, log_msg, &msg_length);
+	_PrintTimestampLabel();
+	_PrintLevelLabel(level);
 	fprintf(stderr, "%s: ", call_module);
 
 	vfprintf(stderr, msg_format, args);

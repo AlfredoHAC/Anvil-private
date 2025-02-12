@@ -24,10 +24,11 @@ bool anvlAppInit(Application* app) {
 	strncpy(app_window_title, app->name, sizeof(app_window_title) - 1);
 	app_window_title[63] = '\0';
 
-	printf("-> Name: %s\n", app->name);
-	printf("-> Window title: %s\n", app_window_title);
-	printf("-> Window width: %d\n", app->hints.window_width);
-	printf("-> Window height: %d\n", app->hints.window_height);
+	ANVIL_CORE_INFO("Starting application.");
+	ANVIL_CORE_INFO("Name: %s", app->name);
+	ANVIL_CORE_INFO("Window title: %s", app_window_title);
+	ANVIL_CORE_INFO("Window width: %d", app->hints.window_width);
+	ANVIL_CORE_INFO("Window height: %d", app->hints.window_height);
 
 	app->internal->window = anvlPlatformWindowCreate(app_window_title, app->hints.window_width, app->hints.window_height);
 	if (!app->internal->window) {
