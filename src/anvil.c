@@ -5,27 +5,19 @@
 int main()
 {
 
-	Application app =
-	{
-		.name = "AnvilFramework",
-		.hints = 
-		{
-			.window_width = 1280,
-			.window_height = 720
-		}
-	};
+    Application app = {.name = "AnvilFramework", .hints = {.window_width = 1280, .window_height = 720}};
 
-	if (!anvlAppInit(&app))
-	{
-		return 1;
-	}
+    if (!anvlAppInit(&app))
+    {
+        return 1;
+    }
 
-	anvlAppRun(&app);
+    anvlAppRun(&app);
 
-	if (!anvlAppShutdown(&app))
-	{
-		return 1;
-	}
+    if (!anvlAppShutdown(&app))
+    {
+        return 1;
+    }
 
-	return 0;
+    return 0;
 }
