@@ -1,6 +1,7 @@
 #ifndef ANVL_TYPEDEFS_HEADER
 #define ANVL_TYPEDEFS_HEADER
 
+#include <stdbool.h>
 #include <inttypes.h>
 
 // Integer typedefs
