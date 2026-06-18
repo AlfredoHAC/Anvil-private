@@ -44,7 +44,8 @@ compile_commands.json
 .DS_Store
 Thumbs.db
 
-# Temporary/Logs
+# Temporary/Logs/Cache
 *.log
 tmp/
 temp/
+scripts/*cache*
