@@ -5,7 +5,7 @@
 
 #include "Tools/logger.h"
 
-static bool app_running;
+static bool app_running = false;
 
 struct ApplicationData
 {
