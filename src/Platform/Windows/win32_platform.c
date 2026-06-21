@@ -4,6 +4,7 @@
 
 #include <windows.h>
 #include <windowsx.h>
+#include <winuser.h>
 
 struct NativeWindow
 {
@@ -266,6 +267,12 @@ void anvlPlatformWindowDestroy(NativeWindow* window)
 {
     if (window)
     {
+        if (window->instance)
+        {
+            UnregisterClassA("ANVL Main Window", window->instance);
+            window->instance = NULL;
+        }
+
         if (window->handle)
         {
             DestroyWindow(window->handle);
