@@ -17,7 +17,6 @@ bool anvlAppInit(Application* app)
     app->internal = malloc(sizeof(ApplicationData));
     if (!app->internal)
     {
-        free(app->internal);
         return false;
     }
 
