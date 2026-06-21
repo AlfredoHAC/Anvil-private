@@ -61,6 +61,9 @@ static void _PrintLevelLabel(LogLevel level)
         color = "\033[34m";
         level_str = "TRACE";
         break;
+    default:
+        color = "\033[0m";
+        level_str = "UNKNOWN";
     }
 
     fprintf(stderr, level_label_format, color, level_str, "\033[0m");
