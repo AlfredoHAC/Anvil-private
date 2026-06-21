@@ -315,7 +315,7 @@ void anvlPlatformWindowShow(NativeWindow* window)
 static void _PollEvents(NativeWindow* window)
 {
     MSG msg;
-    while (PeekMessageA(&msg, window->handle, 0, 0, PM_REMOVE))
+    while ((int32)PeekMessageA(&msg, window->handle, 0, 0, PM_REMOVE) != 0)
     {
         TranslateMessage(&msg);
         DispatchMessageA(&msg);
