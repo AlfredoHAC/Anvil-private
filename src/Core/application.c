@@ -104,6 +104,8 @@ void anvlApplicationOnEvent(Event event)
         ANVIL_CORE_DEBUG("Mouse scroll: (%.1f,%.1f)", event.mouse_scroll.x_offset, event.mouse_scroll.y_offset);
         break;
     }
+
+    event.handled = true;
 }
 
 void anvlApplicationOnWindowClose()

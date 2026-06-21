@@ -21,8 +21,13 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
     case WM_CLOSE:
     {
         Event event = {.type = WindowClose, .handled = false, .window_close = {0}};
-
         window->EventCallback(event);
+
+        if (event.handled)
+        {
+            return 0;
+        }
+
         break;
     }
     case WM_SIZE:
