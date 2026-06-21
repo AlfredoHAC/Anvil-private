@@ -86,7 +86,7 @@ void anvlLogFatal(const char* call_module, const char* msg_format, ...)
     va_list args;
     va_start(args, msg_format);
 
-    _LogMessage(Fatal, "ANVIL", msg_format, args);
+    _LogMessage(Fatal, call_module, msg_format, args);
 
     va_end(args);
 }
@@ -96,7 +96,7 @@ void anvlLogError(const char* call_module, const char* msg_format, ...)
     va_list args;
     va_start(args, msg_format);
 
-    _LogMessage(Error, "ANVIL", msg_format, args);
+    _LogMessage(Error, call_module, msg_format, args);
 
     va_end(args);
 }
@@ -106,7 +106,7 @@ void anvlLogWarn(const char* call_module, const char* msg_format, ...)
     va_list args;
     va_start(args, msg_format);
 
-    _LogMessage(Warning, "ANVIL", msg_format, args);
+    _LogMessage(Warning, call_module, msg_format, args);
 
     va_end(args);
 }
@@ -116,7 +116,7 @@ void anvlLogInfo(const char* call_module, const char* msg_format, ...)
     va_list args;
     va_start(args, msg_format);
 
-    _LogMessage(Info, "ANVIL", msg_format, args);
+    _LogMessage(Info, call_module, msg_format, args);
 
     va_end(args);
 }
@@ -126,7 +126,7 @@ void anvlLogDebug(const char* call_module, const char* msg_format, ...)
     va_list args;
     va_start(args, msg_format);
 
-    _LogMessage(Debug, "ANVIL", msg_format, args);
+    _LogMessage(Debug, call_module, msg_format, args);
 
     va_end(args);
 }
@@ -136,7 +136,7 @@ void anvlLogTrace(const char* call_module, const char* msg_format, ...)
     va_list args;
     va_start(args, msg_format);
 
-    _LogMessage(Trace, "ANVIL", msg_format, args);
+    _LogMessage(Trace, call_module, msg_format, args);
 
     va_end(args);
 }
