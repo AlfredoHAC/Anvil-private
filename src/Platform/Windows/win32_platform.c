@@ -201,9 +201,9 @@ static LRESULT CALLBACK _NativeWindowProc(HWND hwnd, UINT umsg, WPARAM wparam, L
 NativeWindow* anvlPlatformWindowCreate(const char* window_title, uint16 window_width, uint16 window_height)
 {
     NativeWindow* window = malloc(sizeof(NativeWindow));
+    memset(window, 0, sizeof(NativeWindow));
     if (!window)
     {
-        free(window);
         return NULL;
     }
 
