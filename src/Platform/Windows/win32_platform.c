@@ -196,7 +196,7 @@ static LRESULT CALLBACK _NativeWindowProc(HWND hwnd, UINT umsg, WPARAM wparam, L
 {
     NativeWindow* window = (NativeWindow*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
-    if (window && window->handle == hwnd)
+    if (window != 0 && window->handle == hwnd)
     {
         return _ProcessEvent(window, umsg, wparam, lparam);
     }
