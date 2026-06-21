@@ -15,14 +15,18 @@ void anvlLoggerSetLevel(LogLevel level)
 static void _PrintTimestampLabel()
 {
     time_t current_time_raw;
-    struct tm* current_localtime;
+    struct tm current_localtime;
 
     time(&current_time_raw);
-    current_localtime = localtime(&current_time_raw);
+    #if defined (ANVIL_PLATFORM_WINDOWS)
+    localtime_s(&current_localtime, &current_time_raw);
+    #elif defined(ANVIL_PLATFORM_LINUX)
+    localtime_r(&current_localtime, &current_time_raw);
+    #endif
 
     const char* timestamp_format = "[%02d:%02d:%02d] ";
 
-    fprintf(stderr, timestamp_format, current_localtime->tm_hour, current_localtime->tm_min, current_localtime->tm_sec);
+    fprintf(stderr, timestamp_format, current_localtime.tm_hour, current_localtime.tm_min, current_localtime.tm_sec);
 }
 
 static void _PrintLevelLabel(LogLevel level)
