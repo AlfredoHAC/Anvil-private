@@ -20,7 +20,7 @@ bool anvlAppInit(Application* app)
         return false;
     }
 
-    anvlLoggerSetLevel(All);
+    anvlLoggerSetLevel(Trace);
 
     char app_window_title[64];
     strncpy(app_window_title, app->name, sizeof(app_window_title) - 1);
@@ -101,6 +101,8 @@ void anvlApplicationOnEvent(Event event)
         break;
     case MouseScroll:
         ANVIL_CORE_DEBUG("Mouse scroll: (%.1f,%.1f)", event.mouse_scroll.x_offset, event.mouse_scroll.y_offset);
+        break;
+    default:
         break;
     }
 
