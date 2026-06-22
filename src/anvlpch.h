@@ -1,5 +1,6 @@
 #ifndef ANVL_PRECOMPILED_HEADER
 #define ANVL_PRECOMPILED_HEADER
+// IWYU pragma: begin_exports
 
 #include "Core/base.h"
 #include "Core/typedefs.h"
@@ -11,4 +12,5 @@
 #include <stdlib.h>
 #include <string.h>
 
+// IWYU pragma: end_exports
 #endif // !ANVL_PRECOMPILED_HEADER

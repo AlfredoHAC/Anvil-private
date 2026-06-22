@@ -1,4 +1,4 @@
-#include "anvlpch.h"
+#include "anvlpch.h" // IWYU pragma: keep
 
 #include "Core/application.h"
 
