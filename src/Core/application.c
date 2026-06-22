@@ -5,7 +5,7 @@
 
 #include "Tools/logger.h"
 
-static bool app_running;
+static bool app_running = false;
 
 struct ApplicationData
 {
@@ -17,11 +17,10 @@ bool anvlAppInit(Application* app)
     app->internal = malloc(sizeof(ApplicationData));
     if (!app->internal)
     {
-        free(app->internal);
         return false;
     }
 
-    anvlLoggerSetLevel(All);
+    anvlLoggerSetLevel(Trace);
 
     char app_window_title[64];
     strncpy(app_window_title, app->name, sizeof(app_window_title) - 1);
@@ -103,7 +102,11 @@ void anvlApplicationOnEvent(Event event)
     case MouseScroll:
         ANVIL_CORE_DEBUG("Mouse scroll: (%.1f,%.1f)", event.mouse_scroll.x_offset, event.mouse_scroll.y_offset);
         break;
+    default:
+        break;
     }
+
+    event.handled = true;
 }
 
 void anvlApplicationOnWindowClose()

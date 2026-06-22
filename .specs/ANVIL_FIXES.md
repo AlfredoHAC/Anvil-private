@@ -2,6 +2,8 @@
 
 > Analisado em: 2026-06-19
 
+> Finalizado em: 2026-06-21
+
 ---
 
 ## 🐛 Bugs Críticos / Comportamento Não Definido (UB)
@@ -263,22 +265,22 @@ A janela é criada com `WS_EX_APPWINDOW` mas não há verificação se o process
 
 |Feito?| No. | Arquivo | Linha | Severidade | Descrição |
 |---|---|---------|-------|-----------|-----------|
-|[ ]| 1 | `win32_platform.c` | 215 | 🔴 Crítico | Uso de `window->instance` não inicializado |
-|[ ]| 2 | `win32_platform.c` | 186 | 🔴 Crítico | `WM_CLOSE` sempre fecha a janela (ignora callback) |
-|[ ]| 3 | `win32_platform.c` | 260-271 | 🔴 Crítico | Falta `UnregisterClass`; loop de classe se recriado |
-|[ ]| 4 | `application.c` | 8 | 🟡 Médio | Global `app_running` não inicializada explicitamente |
-|[ ]| 5 | `anvil.c` | 8 | 🟡 Médio | Struct com `internal` não inicializado (UB no shutdown) |
-|[ ]| 6 | `win32_platform.c` | 191 | 🟡 Médio | `GetWindowLongPtr` sem validação de erro |
-|[ ]| 7 | `logger.c` | 21 | 🟡 Médio | `localtime()` não thread-safe |
-|[ ]| 8 | `application.c` | 20 | 🔵 Baixo | `free(NULL)` desnecessário após malloc falhar |
-|[ ]| 9 | `win32_platform.c` | 203 | 🔵 Baixo | Mesmo padrão de `free(NULL)` |
-|[ ]| 10 | `logger.c` | 85+ | 🔵 Baixo | Parâmetro `call_module` ignorado em todas as funções |
-|[ ]| 11 | `win32_platform.c` | 247 | 🟡 Médio | `PeekMessage` sem verificação de retorno `-1` |
+|[x]| 1 | `win32_platform.c` | 215 | 🔴 Crítico | Uso de `window->instance` não inicializado |
+|[x]| 2 | `win32_platform.c` | 186 | 🔴 Crítico | `WM_CLOSE` sempre fecha a janela (ignora callback) |
+|[x]| 3 | `win32_platform.c` | 260-271 | 🔴 Crítico | Falta `UnregisterClass`; loop de classe se recriado |
+|[x]| 4 | `application.c` | 8 | 🟡 Médio | Global `app_running` não inicializada explicitamente |
+|[x]| 5 | `anvil.c` | 8 | 🟡 Médio | Struct com `internal` não inicializado (UB no shutdown) |
+|[x]| 6 | `win32_platform.c` | 191 | 🟡 Médio | `GetWindowLongPtr` sem validação de erro |
+|[x]| 7 | `logger.c` | 21 | 🟡 Médio | `localtime()` não thread-safe |
+|[x]| 8 | `application.c` | 20 | 🔵 Baixo | `free(NULL)` desnecessário após malloc falhar |
+|[x]| 9 | `win32_platform.c` | 203 | 🔵 Baixo | Mesmo padrão de `free(NULL)` |
+|[x]| 10 | `logger.c` | 85+ | 🔵 Baixo | Parâmetro `call_module` ignorado em todas as funções |
+|[x]| 11 | `win32_platform.c` | 247 | 🟡 Médio | `PeekMessage` sem verificação de retorno `-1` |
 |[ ]| 12 | `application.c` | 50-56 | 🟡 Médio | CPU spin no loop principal (sem yield) |
 |[ ]| 13 | `win32_platform.c` | 40-53 | 🔵 Baixo | Modificadores de teclado não capturados |
 |[ ]| 14 | `win32_platform.c` | 166 | 🔵 Baixo | Scroll wheel perde precisão (truncado para ±1) |
-|[ ]| 15 | `win32_platform.c` | 28-35 | 🟡 Médio | `WM_SIZE` com `SIZE_MINIMIZED` gera dimensões 0x0 |
-|[ ]| 16 | `logger.c` | 34-60 | 🟡 Médio | Switch sem default case (valores inválidos de LogLevel) |
+|[x]| 15 | `win32_platform.c` | 28-35 | 🟡 Médio | `WM_SIZE` com `SIZE_MINIMIZED` gera dimensões 0x0 |
+|[x]| 16 | `logger.c` | 34-60 | 🟡 Médio | Switch sem default case (valores inválidos de LogLevel) |
 
 ---
 

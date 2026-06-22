@@ -3,7 +3,7 @@
 
 #include "Core/typedefs.h"
 
-typedef enum LogLevel
+typedef enum LogLevel : uint16
 {
     NoLog = 0,
     Fatal,
@@ -12,7 +12,6 @@ typedef enum LogLevel
     Info,
     Debug,
     Trace,
-    All
 } LogLevel;
 
 void anvlLoggerSetLevel(LogLevel level);

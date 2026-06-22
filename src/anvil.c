@@ -4,8 +4,11 @@
 
 int main()
 {
-
-    Application app = {.name = "AnvilFramework", .hints = {.window_width = 1280, .window_height = 720}};
+    Application app = {
+        .name = "AnvilFramework",
+        .hints = {.window_width = 1280, .window_height = 720},
+        .internal = NULL,
+    };
 
     if (!anvlAppInit(&app))
     {
