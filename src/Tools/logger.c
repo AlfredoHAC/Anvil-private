@@ -71,7 +71,7 @@ static void _PrintLevelLabel(LogLevel level)
 
 static void _LogMessage(LogLevel level, const char* call_module, const char* msg_format, va_list args)
 {
-    if (level > current_level)
+    if ((uint16)level > (uint16)current_level)
     {
         return;
     }

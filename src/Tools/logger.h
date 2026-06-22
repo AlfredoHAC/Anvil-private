@@ -1,9 +1,8 @@
 #ifndef ANVL_LOGGER_HEADER
 #define ANVL_LOGGER_HEADER
 
-#include "Core/typedefs.h"
 
-typedef enum LogLevel : uint16
+typedef enum LogLevel
 {
     NoLog = 0,
     Fatal,
