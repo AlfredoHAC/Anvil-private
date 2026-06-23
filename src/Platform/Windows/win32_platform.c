@@ -344,7 +344,6 @@ void anvlPlatformWindowDestroy(NativeWindow* window)
         }
 
         free(window);
-        window = NULL;
     }
 }
 

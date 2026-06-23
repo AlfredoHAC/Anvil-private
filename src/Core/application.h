@@ -4,23 +4,17 @@
 #include "Core/event.h"
 #include "Core/typedefs.h"
 
-typedef struct ApplicationData ApplicationData;
-typedef struct Application
+typedef struct Application Application;
+typedef struct
 {
-    char name[64];
+    const char* name;
+    uint16 width;
+    uint16 height;
+} ApplicationHints;
 
-    struct
-    {
-        uint16 window_width;
-        uint16 window_height;
-    } hints;
-
-    ApplicationData* internal;
-} Application;
-
-bool anvlAppInit(Application* app);
+Application* anvlAppInit(const ApplicationHints hints);
 void anvlAppRun(Application* app);
-bool anvlAppShutdown(Application* app);
+void anvlAppShutdown(Application* app);
 
 void anvlApplicationOnEvent(Event event);
 void anvlApplicationOnWindowClose();

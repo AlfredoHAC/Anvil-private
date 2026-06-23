@@ -7,67 +7,54 @@
 
 static bool app_running = false;
 
-struct ApplicationData
+typedef struct Application
 {
     NativeWindow* window;
-};
+} Application;
 
-bool anvlAppInit(Application* app)
+Application* anvlAppInit(const ApplicationHints hints)
 {
-    app->internal = malloc(sizeof(ApplicationData));
-    if (!app->internal)
-    {
-        return false;
-    }
-
+    Application* app = malloc(sizeof(Application));
+    if (!app) return NULL;
     anvlLoggerSetLevel(Trace);
 
-    char app_window_title[64];
-    strncpy(app_window_title, app->name, sizeof(app_window_title) - 1);
-    app_window_title[63] = '\0';
-
     ANVIL_CORE_INFO("Starting application.");
-    ANVIL_CORE_INFO("-> Name: %s", app->name);
-    ANVIL_CORE_INFO("-> Window title: %s", app_window_title);
-    ANVIL_CORE_INFO("-> Window width: %d", app->hints.window_width);
-    ANVIL_CORE_INFO("-> Window height: %d", app->hints.window_height);
+    ANVIL_CORE_INFO("-> Name: %s", hints.name);
+    ANVIL_CORE_INFO("-> Window title: %s", hints.name);
+    ANVIL_CORE_INFO("-> Window width: %d", hints.width);
+    ANVIL_CORE_INFO("-> Window height: %d", hints.height);
 
-    app->internal->window =
-        anvlPlatformWindowCreate(app_window_title, app->hints.window_width, app->hints.window_height);
-    if (!app->internal->window)
+    app->window = anvlPlatformWindowCreate(hints.name, hints.width, hints.height);
+    if (!app->window)
     {
-        return false;
+        free(app);
+        return NULL;
     }
 
-    anvlPlatformSetWindowEventCallback(app->internal->window, anvlApplicationOnEvent);
-    anvlPlatformWindowShow(app->internal->window);
+    anvlPlatformSetWindowEventCallback(app->window, anvlApplicationOnEvent);
+    anvlPlatformWindowShow(app->window);
 
     app_running = true;
-    return true;
+    return app;
 }
 
 void anvlAppRun(Application* app)
 {
+    if(!app) return;
+
     while (app_running)
     {
-        anvlPlatformWindowUpdate(app->internal->window);
+        anvlPlatformWindowUpdate(app->window);
     }
 }
 
-bool anvlAppShutdown(Application* app)
+void anvlAppShutdown(Application* app)
 {
-    if (app)
-    {
-        anvlPlatformWindowDestroy(app->internal->window);
+    if (!app) return;
 
-        if (app->internal)
-        {
-            free(app->internal);
-            app->internal = NULL;
-        }
-    }
+    anvlPlatformWindowDestroy(app->window);
 
-    return true;
+    free(app);
 }
 
 void anvlApplicationOnEvent(Event event)
