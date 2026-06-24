@@ -1,8 +1,8 @@
 #ifndef ANVL_PLATFORM_HEADER
 #define ANVL_PLATFORM_HEADER
 
-#include "Core/event.h"
-#include "Core/typedefs.h"
+#include "Platform/event.h"
+#include "Platform/typedefs.h"
 
 // Platform native window
 typedef struct NativeWindow NativeWindow;

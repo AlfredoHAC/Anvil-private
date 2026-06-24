@@ -122,13 +122,13 @@ typedef void (*PFEVENTCALLBACKFUNC)(PlatformEvent event);
 ## 🏗️ Tarefas de Implementação (Baseado na Codebase Real)
 
 ### P1 — Quebrar acoplamento Platform → Core no callback
-**Estado atual:** `platform.h` inclui `Core/event.h` e usa `Event event` diretamente no callback.  
-**Arquivos afetados:** `src/Platform/platform.h`, `src/Platform/Windows/win32_platform.c`
+**Estado atual:** ✅ Concluído — `event.h` movido para `Platform/event.h`, `platform.h` inclui apenas módulos internos.  
+**Arquivos afetados:** `src/Platform/platform.h`, `src/Platform/event.h`, `src/Platform/typedefs.h`, `src/Core/application.h`, `src/Platform/Windows/win32_platform.c`
 
-- [ ] Definir `PlatformEvent` em `platform.h` (struct genérico com `void* payload`)
-- [ ] Alterar `PFEVENTCALLBACKFUNC` para usar `PlatformEvent` ao invés de `Event`
-- [ ] Em `win32_platform.c`: construir `PlatformEvent`, armazenar `Event` concreto no `payload`
-- [ ] Atualizar `application.c` para cast do payload de volta para `Event`
+- [x] Definir tipos de evento em `Platform/event.h` (EventType, Event structs, union)
+- [x] Alterar `PFEVENTCALLBACKFUNC` para usar `Event` definido por Platform
+- [x] `win32_platform.c` constrói `Event` sem incluir Core diretamente
+- [x] `application.c` inclui `Platform/event.h` e usa `Event` diretamente
 
 ### P2 — Isolar detecção de platform do PCH
 **Estado atual:** `anvlpch.h` inclui `logger.h` que usa macros de platform.  

@@ -1,8 +1,8 @@
 #ifndef ANVL_APPLICATION_HEADER
 #define ANVL_APPLICATION_HEADER
 
-#include "Core/event.h"
-#include "Core/typedefs.h"
+#include "Platform/event.h"
+#include "Platform/typedefs.h"
 
 typedef struct Application Application;
 typedef struct
