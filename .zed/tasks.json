@@ -1,0 +1,38 @@
+// Project tasks configuration. See https://zed.dev/docs/tasks for documentation.
+//
+[
+  {
+    "label": "🔨 Build (Windows)",
+    "command": "cmd",
+    "args": [
+      "/c",
+      "scripts\\build.bat",
+      "debug"
+    ],
+    "save":"all",
+    "tags": ["build", "windows"],
+  },
+  {
+    "label": "🔨 Build (Linux)",
+    "command": "bash",
+    "args": ["scripts/build.sh", "debug"],
+    "save":"all",
+    "tags": ["build", "linux"],
+  },
+  {
+    "label": "🧹 Clean (Windows)",
+    "command": "cmd",
+    "args": [
+      "/c",
+      "scripts\\build.bat",
+      "clean"
+    ],
+    "tags": ["cleanþ", "windows"],
+  },
+  {
+    "label": "🧹 Clean (Linux)",
+    "command": "bash",
+    "args": ["scripts/build.sh", "clean"],
+    "tags": ["clean", "linux"],
+  },
+]
