@@ -19,7 +19,7 @@ static void _print_timestamp_label()
     struct tm current_localtime;
 
     time(&current_time_raw);
-    #if defined (ANVIL_PLATFORM_WINDOWS)
+    #if defined(ANVIL_PLATFORM_WINDOWS)
     localtime_s(&current_localtime, &current_time_raw);
     #elif defined(ANVIL_PLATFORM_LINUX)
     localtime_r(&current_localtime, &current_time_raw);

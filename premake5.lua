@@ -29,10 +29,6 @@ project "Anvil"
         "./src/**"
     }
 
-    defines {
-        "_CRT_SECURE_NO_WARNINGS"
-    }
-
     filter "system:windows"
         systemversion "latest"
         cdialect "C11"
@@ -41,6 +37,10 @@ project "Anvil"
             "user32",
             "gdi32",
             "opengl32",
+        }
+
+        defines {
+            "_CRT_SECURE_NO_WARNINGS"
         }
 
         removefiles {
@@ -66,11 +66,8 @@ project "Anvil"
         }
 
         editandcontinue "Off"
-
-        flags {
-            "NoIncrementalLink",
-            "NoRuntimeChecks"
-        }
+        incrementallink "Off"
+        runtimechecks "Off"
 
     filter "configurations:Optimized"
         defines "ANVIL_CONFIG_OPTIMIZED"
