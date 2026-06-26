@@ -8,12 +8,12 @@
 typedef struct NativeWindow NativeWindow;
 
 // Event callback function pointer type
-typedef void (*PFEVENTCALLBACKFUNC)(Event event);
+typedef void (*EventCallbackFn)(Event event);
 
-NativeWindow* anvlPlatformWindowCreate(const char* window_title, uint16 window_width, uint16 window_height);
-void anvlPlatformWindowShow(NativeWindow* window);
-void anvlPlatformWindowUpdate(NativeWindow* window);
-void anvlPlatformWindowDestroy(NativeWindow* window);
-void anvlPlatformSetWindowEventCallback(NativeWindow* window, PFEVENTCALLBACKFUNC event_callback);
+NativeWindow* anvl_platform_window_create(const char* window_title, uint16 window_width, uint16 window_height);
+void anvl_platform_window_show(NativeWindow* window);
+void anvl_platform_window_update(NativeWindow* window);
+void anvl_platform_window_destroy(NativeWindow* window);
+void anvl_platform_set_window_event_callback(NativeWindow* window, EventCallbackFn event_callback);
 
 #endif // !ANVL_PLATFORM_HEADER

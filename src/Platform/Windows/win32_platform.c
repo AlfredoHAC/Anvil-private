@@ -11,10 +11,10 @@ struct NativeWindow
     HWND handle;
     HINSTANCE instance;
 
-    PFEVENTCALLBACKFUNC EventCallback;
+    EventCallbackFn event_callback;
 };
 
-static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPARAM lparam)
+static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wparam, LPARAM lparam)
 {
 
     switch (umsg)
@@ -26,7 +26,7 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
             .handled = false,
             .window_close = {0},
         };
-        window->EventCallback(event);
+        window->event_callback(event);
 
         if (event.handled)
         {
@@ -45,7 +45,7 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
                 .handled = false,
                 .window_resize = {.width = (uint16)LOWORD(lparam), .height = (uint16)HIWORD(lparam)},
             };
-            window->EventCallback(event);
+            window->event_callback(event);
         }
 
         break;
@@ -58,7 +58,7 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
             .handled = false,
             .key_press = {.key_code = (uint16)wparam, .modifier_set = 0},
         };
-        window->EventCallback(event);
+        window->event_callback(event);
 
         break;
     }
@@ -70,7 +70,7 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
             .handled = false,
             .key_release = {.key_code = (uint16)wparam, .modifier_set = 0},
         };
-        window->EventCallback(event);
+        window->event_callback(event);
 
         break;
     }
@@ -81,7 +81,7 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
             .handled = false,
             .mouse_move = {.x = (float32)GET_X_LPARAM(lparam), .y = (float32)GET_Y_LPARAM(lparam)},
         };
-        window->EventCallback(event);
+        window->event_callback(event);
 
         break;
     }
@@ -98,7 +98,7 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
                     .modifier_set = 0,
                 },
         };
-        window->EventCallback(event);
+        window->event_callback(event);
 
         break;
     }
@@ -115,7 +115,7 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
                     .modifier_set = 0,
                 },
         };
-        window->EventCallback(event);
+        window->event_callback(event);
 
         break;
     }
@@ -132,7 +132,7 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
                     .modifier_set = 0,
                 },
         };
-        window->EventCallback(event);
+        window->event_callback(event);
 
         break;
     }
@@ -149,7 +149,7 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
                     .modifier_set = 0,
                 },
         };
-        window->EventCallback(event);
+        window->event_callback(event);
 
         break;
     }
@@ -166,7 +166,7 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
                     .modifier_set = 0,
                 },
         };
-        window->EventCallback(event);
+        window->event_callback(event);
 
         break;
     }
@@ -183,7 +183,7 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
                     .modifier_set = 0,
                 },
         };
-        window->EventCallback(event);
+        window->event_callback(event);
 
         break;
     }
@@ -200,7 +200,7 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
                     .modifier_set = 0,
                 },
         };
-        window->EventCallback(event);
+        window->event_callback(event);
 
         break;
     }
@@ -217,7 +217,7 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
                     .modifier_set = 0,
                 },
         };
-        window->EventCallback(event);
+        window->event_callback(event);
 
         break;
     }
@@ -232,7 +232,7 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
                     .y_offset = (float32)GET_WHEEL_DELTA_WPARAM(wparam) > 0 ? 1.0f : -1.0f,
                 },
         };
-        window->EventCallback(event);
+        window->event_callback(event);
 
         break;
     }
@@ -247,7 +247,7 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
                     .y_offset = 0,
                 },
         };
-        window->EventCallback(event);
+        window->event_callback(event);
 
         break;
     }
@@ -256,19 +256,19 @@ static LRESULT _ProcessEvent(NativeWindow* window, UINT umsg, WPARAM wparam, LPA
     return DefWindowProcA(window->handle, umsg, wparam, lparam);
 }
 
-static LRESULT CALLBACK _NativeWindowProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
+static LRESULT CALLBACK _native_window_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 {
     NativeWindow* window = (NativeWindow*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
     if (window != 0 && window->handle == hwnd)
     {
-        return _ProcessEvent(window, umsg, wparam, lparam);
+        return _dispatch_win32_event(window, umsg, wparam, lparam);
     }
 
     return DefWindowProcA(hwnd, umsg, wparam, lparam);
 }
 
-NativeWindow* anvlPlatformWindowCreate(const char* window_title, uint16 window_width, uint16 window_height)
+NativeWindow* anvl_platform_window_create(const char* window_title, uint16 window_width, uint16 window_height)
 {
     NativeWindow* window = malloc(sizeof(NativeWindow));
     memset(window, 0, sizeof(NativeWindow));
@@ -281,7 +281,7 @@ NativeWindow* anvlPlatformWindowCreate(const char* window_title, uint16 window_w
     window_class.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
     window_class.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     window_class.cbSize = sizeof(WNDCLASSEXA);
-    window_class.lpfnWndProc = _NativeWindowProc;
+    window_class.lpfnWndProc = _native_window_proc;
     window_class.hInstance = window->instance;
     window_class.lpszClassName = "ANVL Main Window";
     window_class.hIcon = NULL;
@@ -307,12 +307,12 @@ NativeWindow* anvlPlatformWindowCreate(const char* window_title, uint16 window_w
     return window;
 }
 
-void anvlPlatformWindowShow(NativeWindow* window)
+void anvl_platform_window_show(NativeWindow* window)
 {
     ShowWindow(window->handle, SW_SHOWNORMAL);
 }
 
-static void _PollEvents(NativeWindow* window)
+static void _peek_and_dispatch_win32_messages(NativeWindow* window)
 {
     MSG msg;
     while ((int32)PeekMessageA(&msg, window->handle, 0, 0, PM_REMOVE) != 0)
@@ -322,12 +322,12 @@ static void _PollEvents(NativeWindow* window)
     }
 }
 
-void anvlPlatformWindowUpdate(NativeWindow* window)
+void anvl_platform_window_update(NativeWindow* window)
 {
-    _PollEvents(window);
+    _peek_and_dispatch_win32_messages(window);
 }
 
-void anvlPlatformWindowDestroy(NativeWindow* window)
+void anvl_platform_window_destroy(NativeWindow* window)
 {
     if (window)
     {
@@ -347,12 +347,12 @@ void anvlPlatformWindowDestroy(NativeWindow* window)
     }
 }
 
-void anvlPlatformSetWindowEventCallback(NativeWindow* window, PFEVENTCALLBACKFUNC event_callback)
+void anvl_platform_set_window_event_callback(NativeWindow* window, EventCallbackFn event_callback)
 {
     if (!event_callback)
     {
         return;
     }
 
-    window->EventCallback = event_callback;
+    window->event_callback = event_callback;
 }

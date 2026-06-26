@@ -12,59 +12,59 @@ typedef struct Application
     NativeWindow* window;
 } Application;
 
-Application* anvlAppInit(const ApplicationHints hints)
+Application* anvl_application_init(const ApplicationOptions opts)
 {
     Application* app = malloc(sizeof(Application));
     if (!app) return NULL;
-    anvlLoggerSetLevel(Trace);
+    anvl_logger_set_level(Trace);
 
     ANVIL_CORE_INFO("Starting application.");
-    ANVIL_CORE_INFO("-> Name: %s", hints.name);
-    ANVIL_CORE_INFO("-> Window title: %s", hints.name);
-    ANVIL_CORE_INFO("-> Window width: %d", hints.width);
-    ANVIL_CORE_INFO("-> Window height: %d", hints.height);
+    ANVIL_CORE_INFO("-> Name: %s", opts.name);
+    ANVIL_CORE_INFO("-> Window title: %s", opts.name);
+    ANVIL_CORE_INFO("-> Window width: %d", opts.width);
+    ANVIL_CORE_INFO("-> Window height: %d", opts.height);
 
-    app->window = anvlPlatformWindowCreate(hints.name, hints.width, hints.height);
+    app->window = anvl_platform_window_create(opts.name, opts.width, opts.height);
     if (!app->window)
     {
         free(app);
         return NULL;
     }
 
-    anvlPlatformSetWindowEventCallback(app->window, anvlApplicationOnEvent);
-    anvlPlatformWindowShow(app->window);
+    anvl_platform_set_window_event_callback(app->window, anvl_application_on_event);
+    anvl_platform_window_show(app->window);
 
     app_running = true;
     return app;
 }
 
-void anvlAppRun(Application* app)
+void anvl_application_run(Application* app)
 {
     if(!app) return;
 
     while (app_running)
     {
-        anvlPlatformWindowUpdate(app->window);
+        anvl_platform_window_update(app->window);
     }
 }
 
-void anvlAppShutdown(Application* app)
+void anvl_application_shutdown(Application* app)
 {
     if (!app) return;
 
-    anvlPlatformWindowDestroy(app->window);
+    anvl_platform_window_destroy(app->window);
 
     free(app);
 }
 
-void anvlApplicationOnEvent(Event event)
+void anvl_application_on_event(Event event)
 {
     ANVIL_CORE_DEBUG("Event captured!");
 
     switch (event.type)
     {
     case WindowClose:
-        anvlApplicationOnWindowClose();
+        anvl_application_on_window_close();
         break;
     case WindowResize:
         ANVIL_CORE_DEBUG("Window resize: %dx%d", event.window_resize.width, event.window_resize.height);
@@ -96,7 +96,7 @@ void anvlApplicationOnEvent(Event event)
     event.handled = true;
 }
 
-void anvlApplicationOnWindowClose()
+void anvl_application_on_window_close()
 {
     app_running = false;
 }

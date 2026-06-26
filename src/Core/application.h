@@ -10,13 +10,13 @@ typedef struct
     const char* name;
     uint16 width;
     uint16 height;
-} ApplicationHints;
+} ApplicationOptions;
 
-Application* anvlAppInit(const ApplicationHints hints);
-void anvlAppRun(Application* app);
-void anvlAppShutdown(Application* app);
+Application* anvl_application_init(const ApplicationOptions opts);
+void anvl_application_run(Application* app);
+void anvl_application_shutdown(Application* app);
 
-void anvlApplicationOnEvent(Event event);
-void anvlApplicationOnWindowClose();
+void anvl_application_on_event(Event event);
+void anvl_application_on_window_close();
 
 #endif // !ANVL_APPLICATION_HEADER
