@@ -64,19 +64,17 @@ typedef void (*PFEVENTCALLBACKFUNC)(Event event);  // ← callback usa type do C
 
 **Impacto:** Adicionar um novo evento exige recompilar a plataforma; a plataforma vicia consumers ao layout de `Event`; circularidade potencial se o Core precisar de algo da Platform.
 
-#### 2. Macros de platform vazam via PCH para módulos que não precisam
-**Arquivo:** `src/anvlpch.h` → inclui `Tools/logger.h`  
-**Arquivo:** `src/Tools/logger.c`, linhas 21-25:
+#### 2. Detecção de platform via PCH
+**Arquivo:** `src/anvlpch.h`, linha 4:
 ```c
-#if defined (ANVIL_PLATFORM_WINDOWS)
-    localtime_s(&current_localtime, &current_time_raw);
-#elif defined(ANVIL_PLATFORM_LINUX)
-    localtime_r(&current_localtime, &current_time_raw);
-#endif
+#include "Platform/platform_detection.h"  // ← inclusion direta, não indireta via logger
 ```
-**Problema:** `anvlpch.h` inclui `logger.h`, que contém `#include "Core/typedefs.h"`. O logger já usa macros de platform (`ANVIL_PLATFORM_WINDOWS`). Isso significa que **qualquer módulo que inclua o PCH herda dependências de platform detection**, mesmo módulos que são puramente cross-platform (como `typedefs.h` em si).
+**Problema:** O PCH inclui `platform_detection.h` **diretamente**. Qualquer módulo que inclua o PCH recebe todas as macros de platform (`ANVIL_PLATFORM_WINDOWS`, `ANVIL_PLATFORM_LINUX`, `ANVIL_COMPILER_MSVC`, etc.) e todo o conditional compilation de `platform_detection.h` — mesmo módulos puramente cross-platform como `typedefs.h` ou `event.h`.
 
-**Impacto:** Mudar a detecção de platform em `base.h` recompila tudo; módulos cross-platform ficam acoplados à detecção de OS.
+**Impacto:** 
+- Mudar a detecção de platform recompila **todo o projeto** (o PCH muda)
+- Módulos cross-platform ficam acoplados à lógica de OS/compilador sem necessidade
+- Viola o princípio de que headers de infraestrutura baixa não devem vazar para consumers genéricos
 
 #### 3. Callback passa `Event` por valor (copia da union inteira)
 **Arquivo:** `src/Platform/platform.c`, linha 24-28:
@@ -109,9 +107,9 @@ typedef void (*PFEVENTCALLBACKFUNC)(PlatformEvent event);
 3. Consumer faz cast: `(const Event*)platform_event.payload`.
 
 #### Passo B: Isolar detecção de platform do PCH
-1. Mover macros de compiler/OS (`base.h`) **fora** do PCH — cada módulo que precisa inclui `base.h` explicitamente.
-2. `anvlpch.h` deve incluir apenas tipos cross-platform (`typedefs.h`).
-3. `logger.c` deve incluir `base.h` internamente, não via PCH.
+1. Em `anvlpch.h`: **remover** `#include "Platform/platform_detection.h"`
+2. Em `logger.c`: adicionar `#include "Platform/platform_detection.h"` no topo do arquivo
+3. Qualquer outro módulo que precise de macros de platform deve incluir `platform_detection.h` explicitamente — nunca depender do PCH para isso
 
 #### Passo C: Criar `src/Platform/Linux/` com stub
 1. `linux_window.c` — stub com `#error "Not implemented"` ou implementação mínima com XCB/Xlib.
@@ -130,13 +128,13 @@ typedef void (*PFEVENTCALLBACKFUNC)(PlatformEvent event);
 - [x] `win32_platform.c` constrói `Event` sem incluir Core diretamente
 - [x] `application.c` inclui `Platform/event.h` e usa `Event` diretamente
 
-### P2 — Isolar detecção de platform do PCH
-**Estado atual:** `anvlpch.h` inclui `logger.h` que usa macros de platform.  
-**Arquivos afetados:** `src/anvlpch.h`, `src/Tools/logger.c`, `src/Core/base.h`
+### P2 — Remover platform_detection do PCH
+**Estado atual:** ✅ Concluído — `platform_detection.h` removido do PCH e movido para `logger.c` onde é consumido.  
+**Arquivos afetados:** `src/anvlpch.h`, `src/Tools/logger.c`
 
-- [ ] Remover `#include "Tools/logger.h"` de `anvlpch.h`
-- [ ] Mover `#include "Core/base.h"` para fora do PCH ou tornar opcional
-- [ ] Garantir que `logger.c` inclua `base.h` diretamente se precisar de macros de platform
+- [x] Remover `#include "Platform/platform_detection.h"` do PCH
+- [x] Adicionar `#include "Platform/platform_detection.h"` dentro de `logger.c` (onde as macros são realmente usadas para `localtime_s` vs `localtime_r`)
+- [x] Nenhum outro arquivo precisa das macros — o PCH agora é 100% cross-platform
 
 ### P3 — Backend Linux (stub ou mínimo)
 **Estado atual:** Zero implementação.  

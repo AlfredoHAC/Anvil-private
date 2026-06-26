@@ -1,6 +1,7 @@
 #include "anvlpch.h"
 
 #include "logger.h"
+#include "Platform/platform_detection.h"
 
 #include <time.h>
 
