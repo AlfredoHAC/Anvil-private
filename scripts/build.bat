@@ -57,6 +57,10 @@ if /i "%ARG1%"=="release" (
     if "%SKIPPED_CHECKS%"=="1" (goto :run_premake) else (goto :check_msvc)
 )
 
+if /i "%ARG1%"=="clean" (
+    goto :clean_build
+)
+
 :: -----------------------------------------------------------------------------
 :: Menu Interativo Principal
 :: -----------------------------------------------------------------------------
@@ -263,8 +267,7 @@ if "%DELETED_PROJECTS%"=="1" (
 
 echo.
 echo %C_GREEN%✨ Todos os artefatos de compilação foram limpos!%C_RESET%
-pause
-goto :menu
+exit /b 0
 
 :: -----------------------------------------------------------------------------
 :: Seção: Cancelar e Sair
