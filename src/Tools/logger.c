@@ -19,10 +19,10 @@ static void _print_timestamp_label()
     struct tm current_localtime;
 
     time(&current_time_raw);
-    #if defined(ANVIL_PLATFORM_WINDOWS)
+    #if ANVIL_PLATFORM_WINDOWS
     localtime_s(&current_localtime, &current_time_raw);
-    #elif defined(ANVIL_PLATFORM_LINUX)
-    localtime_r(&current_localtime, &current_time_raw);
+    #elif ANVIL_PLATFORM_LINUX
+    localtime_r(&current_time_raw, &current_localtime);
     #endif
 
     const char* timestamp_format = "[%02d:%02d:%02d] ";

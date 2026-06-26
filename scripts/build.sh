@@ -268,7 +268,7 @@ if [ ! -f "premake5.lua" ]; then
     exit 1
 fi
 
-premake gmake
+premake gmake --os=linux --cc=gcc
 success "Makefiles gerados com sucesso!"
 
 # ─────────────────────────────────────────────
