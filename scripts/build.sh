@@ -24,7 +24,7 @@ step()    { echo -e "\n${BOLD}${CYAN}══ $* ${RESET}"; }
 divider() { echo -e "${DIM}────────────────────────────────────────${RESET}"; }
 
 # ─────────────────────────────────────────────
-#  [AJUSTE 1] Função: Apagar Build Existente
+#  Apagar Build Existente
 # ─────────────────────────────────────────────
 _clean_build() {
     echo ""
@@ -82,7 +82,6 @@ _install_premake_manual() {
     else
         warn "Necessário permissão de Administrador (sudo) para instalar em ${PREMAKE_INSTALL_DIR}"
 
-        # [AJUSTE 2] Se o utilizador rejeitar a senha do sudo, o script encerra imediatamente
         if ! sudo cp "${TMP_DIR}/premake5" "${PREMAKE_BIN}"; then
             echo ""
             error "Permissão de Administrador recusada pelo utilizador. Encerrando..."
@@ -119,7 +118,7 @@ CACHE_FILE="scripts/.build_cache"
 cd "$(dirname "$0")/.." 2>/dev/null || cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 # ─────────────────────────────────────────────
-#  [AJUSTE 2] Otimização: Pular etapas via Cache
+#  Pular etapas via Cache
 # ─────────────────────────────────────────────
 SKIPPED_CHECKS=0
 if [ -f "$CACHE_FILE" ]; then
@@ -205,26 +204,41 @@ else
 fi
 
 # ─────────────────────────────────────────────
-#  [AJUSTE 1] Menu Interativo Atualizado
+#  Menu Interativo
 # ─────────────────────────────────────────────
 step "Configuração de build"
 
 if [[ $# -gt 0 ]]; then
-    CONFIG="${1,,}"
+    ARG="${1,,}"
+    case "$ARG" in
+        clean)
+            _clean_build
+            ;;
+        debug|optimized|release)
+            CONFIG="$ARG"
+            ;;
+        *)
+            error "Argumento inválido: '${1}'. Use: debug, optimized, release, clean"
+            echo ""
+            echo "Uso: $0 {debug|optimized|release|clean}"
+            exit 1
+            ;;
+    esac
 else
     echo ""
     echo -e "  Escolha uma opção:"
-    echo -e "  ${BOLD}[1]${RESET} debug     ${DIM}(símbolos, sem otimização)${RESET}"
-    echo -e "  ${BOLD}[2]${RESET} optimized ${DIM}(otimizado, runtime Release)${RESET}"
-    echo -e "  ${BOLD}[3]${RESET} release   ${DIM}(otimização completa)${RESET}"
-    echo -e "  ${BOLD}[4]${RESET} Apagar build"
+    echo -e "  ${BOLD}[1]${RESET} debug         ${DIM}(símbolos, sem otimização)${RESET}"
+    echo -e "  ${BOLD}[2]${RESET} optimized     ${DIM}(otimizado, runtime Release)${RESET}"
+    echo -e "  ${BOLD}[3]${RESET} release       ${DIM}(otimização completa)${RESET}"
+    echo -e "  ${BOLD}[4]${RESET} Apagar build  ${DIM}(apagar arquivos de build)${RESET}"
     echo -e "  ${BOLD}[5]${RESET} Sair"
     echo ""
     read -rp "  Opção [1]: " CHOICE
 
     case "${CHOICE}" in
-        3|release)   CONFIG="release" ;;
+        1|debug)     CONFIG="debug" ;;
         2|optimized) CONFIG="optimized" ;;
+        3|release)   CONFIG="release" ;;
         4|apagar)    _clean_build ;;
         5|sair)      info "Saindo do script de build. Até mais!"; exit 0 ;;
         *)           CONFIG="debug" ;;
@@ -268,7 +282,6 @@ divider
 
 # Executa o make
 if make config="${CONFIG}" -j"${NPROC}"; then
-    # [AJUSTE 3] Sucesso absoluto: exibe logs e encerra imediatamente (exit 0)
     echo ""
     divider
     success "${BOLD}Build concluído com sucesso!${RESET}"
