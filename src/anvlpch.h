@@ -2,8 +2,7 @@
 #define ANVL_PRECOMPILED_HEADER
 // IWYU pragma: begin_exports
 
-#include "Core/base.h"
-#include "Core/typedefs.h"
+#include "Platform/typedefs.h"
 
 #include "Tools/logger.h"
 

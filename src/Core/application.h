@@ -1,28 +1,22 @@
 #ifndef ANVL_APPLICATION_HEADER
 #define ANVL_APPLICATION_HEADER
 
-#include "Core/event.h"
-#include "Core/typedefs.h"
+#include "Platform/event.h"
+#include "Platform/typedefs.h"
 
-typedef struct ApplicationData ApplicationData;
-typedef struct Application
+typedef struct Application Application;
+typedef struct
 {
-    char name[64];
+    const char* name;
+    uint16 width;
+    uint16 height;
+} ApplicationOptions;
 
-    struct
-    {
-        uint16 window_width;
-        uint16 window_height;
-    } hints;
+Application* anvl_application_init(const ApplicationOptions opts);
+void anvl_application_run(Application* app);
+void anvl_application_shutdown(Application* app);
 
-    ApplicationData* internal;
-} Application;
-
-bool anvlAppInit(Application* app);
-void anvlAppRun(Application* app);
-bool anvlAppShutdown(Application* app);
-
-void anvlApplicationOnEvent(Event event);
-void anvlApplicationOnWindowClose();
+void anvl_application_on_event(Event event);
+void anvl_application_on_window_close();
 
 #endif // !ANVL_APPLICATION_HEADER

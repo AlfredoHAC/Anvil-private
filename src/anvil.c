@@ -4,23 +4,19 @@
 
 int main()
 {
-    Application app = {
-        .name = "AnvilFramework",
-        .hints = {.window_width = 1280, .window_height = 720},
-        .internal = NULL,
+    const ApplicationOptions opts = {
+        .name   = "AnvilFramework",
+        .width  = 1280,
+        .height = 720,
     };
 
-    if (!anvlAppInit(&app))
-    {
-        return 1;
-    }
+    Application* app = anvl_application_init(opts);
+    if (!app) return 1;
 
-    anvlAppRun(&app);
+    anvl_application_run(app);
 
-    if (!anvlAppShutdown(&app))
-    {
-        return 1;
-    }
+    anvl_application_shutdown(app);
+    app = NULL;
 
     return 0;
 }
