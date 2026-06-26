@@ -18,7 +18,7 @@ typedef enum EventType
 
 typedef struct WindowCloseEvent
 {
-    char _noop;
+    char _pad[1];
 } WindowCloseEvent;
 
 typedef struct WindowResizeEvent
