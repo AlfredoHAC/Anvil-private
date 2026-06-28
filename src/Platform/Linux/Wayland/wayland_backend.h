@@ -1,0 +1,6 @@
+#ifndef ANVL_WINDOW_BACKEND_WAYLAND_HEADER
+#define ANVL_WINDOW_BACKEND_WAYLAND_HEADER
+
+typedef struct WaylandBackend WaylandBackend;
+
+#endif // !ANVL_WINDOW_BACKEND_WAYLAND_HEADER

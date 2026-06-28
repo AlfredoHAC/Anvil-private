@@ -1,0 +1,6 @@
+#ifndef ANVL_WINDOW_BACKEND_X11_HEADER
+#define ANVL_WINDOW_BACKEND_X11_HEADER
+
+typedef struct X11Backend X11Backend;
+
+#endif // !ANVL_WINDOW_BACKEND_X11_HEADER
