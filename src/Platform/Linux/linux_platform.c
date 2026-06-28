@@ -1,9 +1,11 @@
 #include "anvlpch.h"
 
 #include "Platform/platform.h"
+#include "Platform/Linux/window_backend.h"
 
 typedef struct NativeWindow
 {
+    WindowBackend* backend;
     EventCallbackFn event_callback;
 } NativeWindow;
 
