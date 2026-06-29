@@ -6,6 +6,7 @@
 typedef struct
 {
     void* (*backend_init)(void);
+    void  (*backend_shutdown)(void*);
     void  (*window_create)(void*, const char*, uint16, uint16);
     void  (*window_show)(void *);
     void  (*window_destroy)(void *);

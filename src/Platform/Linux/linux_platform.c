@@ -51,6 +51,7 @@ void anvl_platform_set_window_event_callback(NativeWindow* window, EventCallback
 {
     if (!event_callback) { return; }
 
+    window->backend->backend_shutdown(window->backend_data);
     window->event_callback = event_callback;
 }
 

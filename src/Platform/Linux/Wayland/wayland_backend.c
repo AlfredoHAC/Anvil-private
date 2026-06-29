@@ -11,6 +11,7 @@ typedef struct WaylandBackend
 } WaylandBackend;
 
 static void* wayland_backend_init();
+static void  wayland_backend_shutdown(void* backend);
 static void  wayland_window_create(void* backend, const char* window_title, uint16 width, uint16 height);
 static void  wayland_window_show(void* backend);
 static void  wayland_window_destroy(void* backend);
@@ -35,6 +36,15 @@ void* wayland_backend_init()
     ANVIL_CORE_TRACE("Wayland Backend initialized.");
 
     return backend_data;
+}
+
+void wayland_backend_shutdown(void* backend)
+{
+    if(!backend) { return; };
+
+    ANVIL_CORE_TRACE("Wayland Backend initialized.");
+
+    free((WaylandBackend*)backend);
 }
 
 void wayland_window_create(void* backend, const char* window_title, uint16 width, uint16 height)

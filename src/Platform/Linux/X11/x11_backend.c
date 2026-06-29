@@ -10,6 +10,7 @@ typedef struct X11Backend
 } X11Backend;
 
 static void* x11_backend_init();
+static void  x11_backend_shutdown(void* backend);
 static void  x11_window_create(void* backend, const char* window_title, uint16 width, uint16 height);
 static void  x11_window_show(void* backend);
 static void  x11_window_destroy(void* backend);
@@ -34,6 +35,15 @@ void* x11_backend_init()
     ANVIL_CORE_TRACE("X11 Backend initialized.");
 
     return backend_data;
+}
+
+void x11_backend_shutdown(void* backend)
+{
+    if (!backend) { return; }
+
+    ANVIL_CORE_TRACE("X11 Backend terminated.");
+
+    free((X11Backend*)backend);
 }
 
 void x11_window_create(void* backend, const char* window_title, uint16 width, uint16 height)
