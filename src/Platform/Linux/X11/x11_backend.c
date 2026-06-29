@@ -23,10 +23,11 @@ static void  x11_window_show(void* backend);
 static void  x11_window_destroy(void* backend);
 
 static const WindowBackend X11_BACKEND = {
-    .backend_init   = x11_backend_init,
-    .window_create  = x11_window_create,
-    .window_show    = x11_window_show,
-    .window_destroy = x11_window_destroy,
+    .backend_init     = x11_backend_init,
+    .backend_shutdown = x11_backend_shutdown,
+    .window_create    = x11_window_create,
+    .window_show      = x11_window_show,
+    .window_destroy   = x11_window_destroy,
 };
 
 const WindowBackend* x11_backend()

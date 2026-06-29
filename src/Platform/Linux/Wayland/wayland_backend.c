@@ -17,10 +17,11 @@ static void  wayland_window_show(void* backend);
 static void  wayland_window_destroy(void* backend);
 
 static const WindowBackend WAYLAND_BACKEND = {
-    .backend_init   = wayland_backend_init,
-    .window_create  = wayland_window_create,
-    .window_show    = wayland_window_show,
-    .window_destroy = wayland_window_destroy,
+    .backend_init     = wayland_backend_init,
+    .backend_shutdown = wayland_backend_shutdown,
+    .window_create    = wayland_window_create,
+    .window_show      = wayland_window_show,
+    .window_destroy   = wayland_window_destroy,
 };
 
 const WindowBackend* wayland_backend()
@@ -40,7 +41,7 @@ void* wayland_backend_init()
 
 void wayland_backend_shutdown(void* backend)
 {
-    if(!backend) { return; };
+    if (!backend) { return; };
 
     ANVIL_CORE_TRACE("Wayland Backend initialized.");
 
