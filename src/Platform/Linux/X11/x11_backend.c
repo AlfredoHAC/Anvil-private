@@ -3,10 +3,17 @@
 #include "Platform/Linux/X11/x11_backend.h"
 
 #include <xcb/xcb.h>
+#include <xcb/xproto.h>
 
 typedef struct X11Backend
 {
+    // XCB Connection
     struct xcb_connection_t* display;
+
+    // XCB Screen
+    const xcb_setup_t* setup;
+    xcb_screen_t*      screen;
+
 } X11Backend;
 
 static void* x11_backend_init();
@@ -32,7 +39,24 @@ void* x11_backend_init()
 {
     X11Backend* backend_data = malloc(sizeof(X11Backend));
 
-    ANVIL_CORE_TRACE("X11 Backend initialized.");
+    // XCB Connection start
+    backend_data->display = xcb_connect(NULL, NULL);
+    if (xcb_connection_has_error(backend_data->display))
+    {
+        free(backend_data);
+        return NULL;
+    }
+
+    backend_data->setup                   = xcb_get_setup(backend_data->display);
+    xcb_screen_iterator_t screen_iterator = xcb_setup_roots_iterator(backend_data->setup);
+    backend_data->screen                  = screen_iterator.data;
+    if (!backend_data->screen)
+    {
+        xcb_disconnect(backend_data->display);
+        free(backend_data);
+
+        return NULL;
+    }
 
     return backend_data;
 }
@@ -41,9 +65,10 @@ void x11_backend_shutdown(void* backend)
 {
     if (!backend) { return; }
 
-    ANVIL_CORE_TRACE("X11 Backend terminated.");
+    X11Backend* b_end = (X11Backend*)backend;
+    xcb_disconnect(b_end->display);
 
-    free((X11Backend*)backend);
+    free(b_end);
 }
 
 void x11_window_create(void* backend, const char* window_title, uint16 width, uint16 height)
