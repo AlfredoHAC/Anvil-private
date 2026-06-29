@@ -51,6 +51,12 @@ project "Anvil"
         systemversion "latest"
         cdialect "gnu11"
 
+
+        links {
+            "X11",
+            "xcb",
+        }
+
         removefiles {
             "./**/Windows/**"
         }
