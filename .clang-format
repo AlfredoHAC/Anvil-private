@@ -1,13 +1,29 @@
+---
+Language: C
+BasedOnStyle: LLVM
+
+# Spacing and Indentation
 IndentWidth: 4
 PPIndentWidth: 4
 ColumnLimit: 120
 PointerAlignment: Left
-BreakBeforeBraces: Allman
 SpaceBeforeParens: ControlStatements
-AllowShortFunctionsOnASingleLine: None
-BreakAfterReturnType: Automatic
-PenaltyReturnTypeOnItsOwnLine: 9001 # It's over nine thousand!!!
-AlignAfterOpenBracket: true
+SpaceAfterCStyleCast: false
+
+# Braces and Breaks
+BreakBeforeBraces: Allman
 InsertBraces: true
 InsertNewlineAtEOF: true
-SpaceAfterCStyleCast: false
+
+# Short Blocks
+AllowShortBlocksOnASingleLine: Always
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortFunctionsOnASingleLine: None
+
+# Return and Alignment
+BreakAfterReturnType: Automatic
+PenaltyReturnTypeOnItsOwnLine: 9001 # It's over nine thousand!!!
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveDeclarations: Consecutive
+AlignConsecutiveMacros: Consecutive
