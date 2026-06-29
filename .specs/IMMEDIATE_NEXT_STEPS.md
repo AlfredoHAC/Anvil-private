@@ -144,11 +144,54 @@ typedef void (*PFEVENTCALLBACKFUNC)(PlatformEvent event);
 - [ ] Ou implementar mínimo com XCB/Xlib: `xcb_connect`, `XCreateWindow`, `XMapWindow`, `XNextEvent`
 - [ ] Configurar `premake5.lua` para condicionar arquivos compilados por plataforma
 
-### P4 — I/O de Arquivos abstrato (Novo)
-**Estado:** Zero implementação.  
-**Dependência:** Barreiras de abstração (Passos A e B acima) devem estar estáveis antes de começar.
+### P4 — Refatoração de Arquitetura: Separação por Responsabilidades
+**Estado atual:** Estrutura plana `Core/Platform/Tools` com backends X11/Wayland espalhados em `Platform/Linux/`. Vtable de windowing implementada mas com problemas de segurança (ver análise anterior).
+**Decisão estratégica:** Manter a estrutura atual **temporariamente** para focar na implementação correta das APIs X11/XCB e Wayland sem distrações. Após os backends estarem funcionais, refatorar para separação por responsabilidades.
 
-- [ ] Criar `src/Core/filesystem.h`:
+#### Fase 1 — Implementação dos Backends (estrutura atual)
+- [ ] Corrigir `getenv` sem check de `NULL` em `_window_backend_detect()`
+- [ ] Implementar `free(backend)` nos `destroy` do X11 e Wayland backends
+- [ ] Completar implementação real do backend Wayland (atualmente stubs com apenas trace)
+- [ ] Completar implementação real do backend X11/XCB (criação de janela, surface, event loop)
+- [ ] Garantir que a vtable `WindowBackend` funcione corretamente em runtime
+
+#### Fase 2 — Refatoração para Separação por Responsabilidades
+**Nova estrutura planejada:**
+```
+src/
+├── Core/              ← math, containers, utilities (cross-platform)
+├── Platform/          ← SOMENTE primitivas OS puras: memory, threading, time, CPU info
+├── Windowing/         ← janela + event loop (nova pasta)
+│   ├── api/
+│   │   └── window_backend.h  ← vtable interface (move de Platform/Linux/)
+│   └── backends/
+│       ├── win32/
+│       ├── x11/
+│       └── wayland/
+├── FileSystem/        ← file I/O abstraction (nova pasta)
+├── Audio/             ← audio abstraction (futuro)
+├── Input/             ← keyboard/mouse/gamepad (futuro)
+└── Tools/
+    ├── logger.h
+    └── logger.c
+```
+
+**Critério de decisão:** "Se eu posso descrever o que ele faz sem mencionar 'sistema operacional', não pertence a Platform/."
+
+- [ ] Mover `window_backend.h` para `src/Windowing/api/`
+- [ ] Mover backends X11/Wayland para `src/Windowing/backends/`
+- [ ] Criar stub para `src/Windowing/backends/win32/`
+- [ ] Reduzir `Platform/` ao mínimo (primitivas OS puras)
+- [ ] Atualizar includes e paths de todos os consumers
+- [ ] Configurar `premake5.lua` para a nova estrutura
+
+**Motivo:** Cada subsystem tem suas próprias abstrações, APIs públicas e backends. Manter tudo em `Platform/` cria acoplamento, dificulta testabilidade isolada e torna o refatoramento futuro mais doloroso. Mas fazer agora enquanto se aprende XCB/Wayland seria contraproducente — a refatoração será mais acertiva após entender as dores reais das APIs.
+
+### P5 — I/O de Arquivos abstrato (Novo)
+**Estado:** Zero implementação.  
+**Dependência:** Refatoração (P4) deve estar estável antes de começar, para que o FileSystem nasça na estrutura correta.
+
+- [ ] Criar `src/FileSystem/filesystem.h`:
 ```c
 typedef struct FileHandle FileHandle;
 FileHandle* anvlFileSystemOpen(const char* path, const char* mode);
@@ -159,7 +202,7 @@ bool anvlFileSystemExists(const char* path);
 ```
 - [ ] Criar `src/Platform/Windows/windows_filesystem.c` + `src/Platform/Linux/linux_filesystem.c`
 
-### P5 — Layer System / Event Dispatcher (Novo)
+### P6 — Layer System / Event Dispatcher (Novo)
 
 **Estado atual:** Callback direto em `application.c` (linha 42):
 ```c
@@ -191,6 +234,7 @@ void anvlEventDispatcherDispatch(Event event);  // chama layers em ordem inversa
 | **P0** | Quebrar acoplamento Platform → Core no callback | `src/Platform/platform.h`, `src/Platform/Windows/win32_platform.c` | Refatoração |
 | **P1** | Isolar detecção de platform do PCH | `src/anvlpch.h`, `src/Tools/logger.c`, `src/Core/base.h` | Refatoração |
 | **P2** | Backend Linux (stub ou mínimo) | Novo: `src/Platform/Linux/linux_window.c` | Implementação |
-| **P3** | I/O de Arquivos abstrato | Novo: `src/Core/filesystem.h` + backends por plataforma | Implementação |
-| **P4** | Layer System / Event Dispatcher | Novo: `src/Core/event_layer.h`, `src/Core/event_layer.c` | Implementação |
-| **P5** | Compilação cross-platform (`premake5.lua`) | `premake5.lua` | Configuração |
+| **P3** | Backend X11/Wayland completos | `src/Platform/Linux/X11/*`, `src/Platform/Linux/Wayland/*` | Implementação |
+| **P4** | Refatoração de Arquitetura (separação por responsabilidades) | Move: `window_backend.h`, backends → `Windowing/` | Refatoração |
+| **P5** | I/O de Arquivos abstrato | Novo: `src/FileSystem/filesystem.h` + backends por plataforma | Implementação |
+| **P6** | Layer System / Event Dispatcher | Novo: `src/Core/event_layer.h`, `src/Core/event_layer.c` | Implementação |
