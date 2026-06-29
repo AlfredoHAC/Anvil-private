@@ -75,8 +75,8 @@ static uint32 _window_backend_detect()
     char* x11_display      = getenv("DISPLAY");
     char* wayland_display  = getenv("WAYLAND_DISPLAY");
 
-    if (xdg_session_type && strcmp(xdg_session_type, "x11") == 0 && x11_display != NULL) { return wbX11; }
-    else if (xdg_session_type && strcmp(xdg_session_type, "wayland") == 0 && wayland_display != NULL)
+    if (xdg_session_type != NULL && x11_display != NULL && strcmp(xdg_session_type, "x11") == 0) { return wbX11; }
+    else if (xdg_session_type != NULL && wayland_display != NULL && strcmp(xdg_session_type, "wayland") == 0)
     {
         return wbWayland;
     }
