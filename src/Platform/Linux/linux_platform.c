@@ -45,13 +45,16 @@ void anvl_platform_window_update(NativeWindow* window)
 }
 
 void anvl_platform_window_destroy(NativeWindow* window)
-{ window->backend->window_destroy(window->backend_data); }
+{
+
+    window->backend->window_destroy(window->backend_data);
+    window->backend->backend_shutdown(window->backend_data);
+}
 
 void anvl_platform_set_window_event_callback(NativeWindow* window, EventCallbackFn event_callback)
 {
     if (!event_callback) { return; }
 
-    window->backend->backend_shutdown(window->backend_data);
     window->event_callback = event_callback;
 }
 
