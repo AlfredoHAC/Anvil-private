@@ -17,6 +17,8 @@ typedef struct X11Backend
     // XCB Window
     xcb_window_t window_id;
 
+    // Event callback
+    EventCallbackFn event_callback;
 } X11Backend;
 
 static void* x11_backend_init();
@@ -24,13 +26,15 @@ static void  x11_backend_shutdown(void* backend);
 static void  x11_window_create(void* backend, const char* window_title, uint16 width, uint16 height);
 static void  x11_window_show(void* backend);
 static void  x11_window_destroy(void* backend);
+static void  x11_window_set_event_callback(void* backend, EventCallbackFn event_callback);
 
 static const WindowBackend X11_BACKEND = {
-    .backend_init     = x11_backend_init,
-    .backend_shutdown = x11_backend_shutdown,
-    .window_create    = x11_window_create,
-    .window_show      = x11_window_show,
-    .window_destroy   = x11_window_destroy,
+    .backend_init              = x11_backend_init,
+    .backend_shutdown          = x11_backend_shutdown,
+    .window_create             = x11_window_create,
+    .window_show               = x11_window_show,
+    .window_destroy            = x11_window_destroy,
+    .window_set_event_callback = x11_window_set_event_callback,
 };
 
 const WindowBackend* x11_backend()
@@ -133,4 +137,11 @@ void x11_window_destroy(void* backend)
     xcb_destroy_window(b_end->display, b_end->window_id);
     xcb_flush(b_end->display);
     b_end->window_id = 0;
+}
+
+void x11_window_set_event_callback(void* backend, EventCallbackFn event_callback)
+{
+    X11Backend* b_end = (X11Backend*)backend;
+
+    b_end->event_callback = event_callback;
 }

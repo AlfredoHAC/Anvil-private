@@ -9,8 +9,6 @@ typedef struct NativeWindow
 {
     const WindowBackend* backend;
     void*                backend_data;
-
-    EventCallbackFn event_callback;
 } NativeWindow;
 
 typedef enum
@@ -55,7 +53,7 @@ void anvl_platform_set_window_event_callback(NativeWindow* window, EventCallback
 {
     if (!event_callback) { return; }
 
-    window->event_callback = event_callback;
+    window->backend->window_set_event_callback(window->backend_data, event_callback);
 }
 
 static const WindowBackend* _window_backend_create(NativeWindow* window)
