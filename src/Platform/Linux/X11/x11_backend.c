@@ -14,6 +14,9 @@ typedef struct X11Backend
     const xcb_setup_t* setup;
     xcb_screen_t*      screen;
 
+    // XCB Window
+    xcb_window_t window_id;
+
 } X11Backend;
 
 static void* x11_backend_init();
@@ -73,7 +76,35 @@ void x11_backend_shutdown(void* backend)
 }
 
 void x11_window_create(void* backend, const char* window_title, uint16 width, uint16 height)
-{ ANVIL_CORE_TRACE("X11 Window Created."); }
+{
+    X11Backend* b_end = (X11Backend*)backend;
+
+    b_end->window_id = xcb_generate_id(b_end->display);
+
+    xcb_create_window(b_end->display,                // XCB connection
+                      XCB_COPY_FROM_PARENT,          // Window depth
+                      b_end->window_id,              // Window id
+                      b_end->screen->root,           // Window parent
+                      0,                             // X
+                      0,                             // Y
+                      width,                         // Width
+                      height,                        // Height
+                      1,                             // Border width
+                      XCB_WINDOW_CLASS_INPUT_OUTPUT, // Window class
+                      b_end->screen->root_visual,    // Window Visual
+                      0,                             // Bitmask list
+                      NULL);                         //
+
+    // Changes window title
+    xcb_change_property(b_end->display,
+                        XCB_PROP_MODE_REPLACE,
+                        b_end->window_id,
+                        XCB_ATOM_WM_NAME,
+                        XCB_ATOM_STRING,
+                        8,
+                        strlen(window_title),
+                        window_title);
+}
 
 void x11_window_show(void* backend)
 { ANVIL_CORE_TRACE("X11 Window Showed."); }
