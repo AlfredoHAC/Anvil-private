@@ -125,4 +125,12 @@ void x11_window_show(void* backend)
 }
 
 void x11_window_destroy(void* backend)
-{ ANVIL_CORE_TRACE("X11 Window Destroyed."); }
+{
+    X11Backend* b_end = (X11Backend*)backend;
+
+    if (b_end->window_id == 0) { return; }
+
+    xcb_destroy_window(b_end->display, b_end->window_id);
+    xcb_flush(b_end->display);
+    b_end->window_id = 0;
+}
