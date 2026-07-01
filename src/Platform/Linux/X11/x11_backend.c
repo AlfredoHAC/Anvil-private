@@ -81,6 +81,15 @@ void x11_window_create(void* backend, const char* window_title, uint16 width, ui
 
     b_end->window_id = xcb_generate_id(b_end->display);
 
+    uint32 mask          = XCB_CW_BACK_PIXEL | XCB_CW_BORDER_PIXEL | XCB_CW_EVENT_MASK;
+    uint32 mask_values[] = {
+        b_end->screen->black_pixel,
+        b_end->screen->white_pixel,
+        XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE |
+            XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
+            XCB_EVENT_MASK_BUTTON_MOTION,
+    };
+
     xcb_create_window(b_end->display,                // XCB connection
                       XCB_COPY_FROM_PARENT,          // Window depth
                       b_end->window_id,              // Window id
@@ -89,11 +98,11 @@ void x11_window_create(void* backend, const char* window_title, uint16 width, ui
                       0,                             // Y
                       width,                         // Width
                       height,                        // Height
-                      1,                             // Border width
+                      0,                             // Border width
                       XCB_WINDOW_CLASS_INPUT_OUTPUT, // Window class
                       b_end->screen->root_visual,    // Window Visual
-                      0,                             // Bitmask list
-                      NULL);                         //
+                      mask,                          // Bitmask list
+                      mask_values);                  // Mask values (array)
 
     // Changes window title
     xcb_change_property(b_end->display,
@@ -107,7 +116,13 @@ void x11_window_create(void* backend, const char* window_title, uint16 width, ui
 }
 
 void x11_window_show(void* backend)
-{ ANVIL_CORE_TRACE("X11 Window Showed."); }
+{
+    X11Backend* b_end = (X11Backend*)backend;
+
+    xcb_map_window(b_end->display, b_end->window_id);
+
+    xcb_flush(b_end->display);
+}
 
 void x11_window_destroy(void* backend)
 { ANVIL_CORE_TRACE("X11 Window Destroyed."); }
