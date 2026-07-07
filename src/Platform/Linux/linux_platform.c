@@ -41,17 +41,21 @@ NativeWindow* anvl_platform_window_create(const char* window_title, uint16 windo
     }
 
     window->backend->window_create(window->backend_data, window_title, window_width, window_height);
-    // ...
+
     return window;
 }
 
+// clang-format off
 void anvl_platform_window_show(NativeWindow* window)
-{ window->backend->window_show(window->backend_data); }
+{
+    window->backend->window_show(window->backend_data);
+}
 
 void anvl_platform_window_update(NativeWindow* window)
 {
     window->backend->window_events_poll_and_dispatch(window->backend_data);
 }
+// clang-format on
 
 void anvl_platform_window_destroy(NativeWindow* window)
 {
