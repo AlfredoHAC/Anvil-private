@@ -40,6 +40,7 @@ void anvl_platform_window_show(NativeWindow* window)
 
 void anvl_platform_window_update(NativeWindow* window)
 {
+    window->backend->window_events_poll_and_dispatch(window->backend_data);
 }
 
 void anvl_platform_window_destroy(NativeWindow* window)

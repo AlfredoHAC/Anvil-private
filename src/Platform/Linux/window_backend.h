@@ -12,6 +12,7 @@ typedef struct
     void  (*window_show)(void *);
     void  (*window_destroy)(void *);
     void  (*window_set_event_callback)(void*, EventCallbackFn);
+    void  (*window_events_poll_and_dispatch)(void *);
 } WindowBackend;
 
 #endif // !ANVL_WINDOW_BACKEND_HEADER
