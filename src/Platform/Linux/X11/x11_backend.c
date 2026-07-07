@@ -13,8 +13,7 @@ typedef struct X11Backend
     struct xcb_connection_t* display;
 
     // XCB Screen
-    const xcb_setup_t* setup;
-    xcb_screen_t*      screen;
+    xcb_screen_t* screen;
 
     // XCB Window
     xcb_window_t window_id;
@@ -63,8 +62,8 @@ void* x11_backend_init()
         return NULL;
     }
 
-    backend_data->setup                   = xcb_get_setup(backend_data->display);
-    xcb_screen_iterator_t screen_iterator = xcb_setup_roots_iterator(backend_data->setup);
+    const xcb_setup_t*    setup           = xcb_get_setup(backend_data->display);
+    xcb_screen_iterator_t screen_iterator = xcb_setup_roots_iterator(setup);
     backend_data->screen                  = screen_iterator.data;
     if (!backend_data->screen)
     {
