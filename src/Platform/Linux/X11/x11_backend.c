@@ -149,7 +149,7 @@ void x11_window_create(void* backend, const char* window_title, uint16 width, ui
                       0,                             // Y
                       width,                         // Width
                       height,                        // Height
-                      0,                             // Border width
+                      1,                             // Border width
                       XCB_WINDOW_CLASS_INPUT_OUTPUT, // Window class
                       b_end->screen->root_visual,    // Window Visual
                       mask,                          // Bitmask list
