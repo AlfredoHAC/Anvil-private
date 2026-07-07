@@ -20,13 +20,16 @@ static void  wayland_window_show(void* backend);
 static void  wayland_window_destroy(void* backend);
 static void  wayland_window_set_event_callback(void* backend, EventCallbackFn event_callback);
 
+static void wayland_events_poll_and_dispatch(void* backend);
+
 static const WindowBackend WAYLAND_BACKEND = {
-    .backend_init              = wayland_backend_init,
-    .backend_shutdown          = wayland_backend_shutdown,
-    .window_create             = wayland_window_create,
-    .window_show               = wayland_window_show,
-    .window_destroy            = wayland_window_destroy,
-    .window_set_event_callback = wayland_window_set_event_callback,
+    .backend_init                    = wayland_backend_init,
+    .backend_shutdown                = wayland_backend_shutdown,
+    .window_create                   = wayland_window_create,
+    .window_show                     = wayland_window_show,
+    .window_destroy                  = wayland_window_destroy,
+    .window_set_event_callback       = wayland_window_set_event_callback,
+    .window_events_poll_and_dispatch = wayland_events_poll_and_dispatch,
 };
 
 const WindowBackend* wayland_backend()
@@ -64,3 +67,6 @@ void wayland_window_destroy(void* backend)
 
 void wayland_window_set_event_callback(void* backend, EventCallbackFn event_callback)
 { ANVIL_CORE_TRACE("Wayland Window EventCallback set."); }
+
+static void wayland_events_poll_and_dispatch(void* backend)
+{ ANVIL_CORE_TRACE("Wayland Window polling events."); }
