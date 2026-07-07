@@ -24,11 +24,21 @@ static uint32               _window_backend_detect();
 NativeWindow* anvl_platform_window_create(const char* window_title, uint16 window_width, uint16 window_height)
 {
     NativeWindow* window = malloc(sizeof(NativeWindow));
+    if (!window) { return NULL; }
 
     window->backend = _window_backend_create(window);
-    if (!window->backend) { return NULL; }
+    if (!window->backend)
+    {
+        free(window);
+        return NULL;
+    }
 
     window->backend_data = window->backend->backend_init();
+    if (!window->backend_data)
+    {
+        free(window);
+        return NULL;
+    }
 
     window->backend->window_create(window->backend_data, window_title, window_width, window_height);
     // ...
@@ -45,9 +55,12 @@ void anvl_platform_window_update(NativeWindow* window)
 
 void anvl_platform_window_destroy(NativeWindow* window)
 {
+    if (!window) { return; }
 
     window->backend->window_destroy(window->backend_data);
     window->backend->backend_shutdown(window->backend_data);
+
+    free(window);
 }
 
 void anvl_platform_set_window_event_callback(NativeWindow* window, EventCallbackFn event_callback)
