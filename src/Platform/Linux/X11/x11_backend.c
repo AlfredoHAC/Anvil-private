@@ -2,6 +2,7 @@
 
 #include "Platform/Linux/X11/x11_backend.h"
 #include "Platform/event.h"
+#include "Tools/logger.h"
 
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
