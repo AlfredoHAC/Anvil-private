@@ -1,3 +1,4 @@
+
 #include "anvlpch.h"
 
 #include "Platform/Linux/Wayland/wayland_backend.h"
@@ -77,8 +78,8 @@ void anvl_platform_set_window_event_callback(NativeWindow* window, EventCallback
 static const WindowBackend* _window_backend_create(NativeWindow* window)
 {
     WindowBackendType window_backend_type = _window_backend_detect();
-    if (window_backend_type == wbX11) { return x11_backend(); }
-    else if (window_backend_type == wbWayland) { return wayland_backend(); }
+    if (window_backend_type == wbWayland) { return wayland_backend(); }
+    else if (window_backend_type == wbX11) { return x11_backend(); }
     else
     {
         return NULL;
@@ -91,11 +92,11 @@ static uint32 _window_backend_detect()
     char* x11_display      = getenv("DISPLAY");
     char* wayland_display  = getenv("WAYLAND_DISPLAY");
 
-    if (xdg_session_type != NULL && x11_display != NULL && strcmp(xdg_session_type, "x11") == 0) { return wbX11; }
-    else if (xdg_session_type != NULL && wayland_display != NULL && strcmp(xdg_session_type, "wayland") == 0)
+    if (xdg_session_type != NULL && wayland_display != NULL && strcmp(xdg_session_type, "wayland") == 0)
     {
         return wbWayland;
     }
+    else if (xdg_session_type != NULL && x11_display != NULL && strcmp(xdg_session_type, "x11") == 0) { return wbX11; }
 
     return wbNone;
 }
