@@ -14,11 +14,27 @@ SpaceAfterCStyleCast: false
 BreakBeforeBraces: Allman
 InsertBraces: true
 InsertNewlineAtEOF: true
+BinPackArguments: false
+BinPackParameters: OnePerLine
+BraceWrapping:
+  AfterCaseLabel: true
 
 # Short Blocks
 AllowShortBlocksOnASingleLine: Always
 AllowShortIfStatementsOnASingleLine: WithoutElse
 AllowShortFunctionsOnASingleLine: None
+
+# Case statements
+IndentCaseLabels: true
+IndentCaseBlocks: false
+AllowShortCaseExpressionOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: true
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AlignCaseColons: true
+
+# Pre-processor statements
+IndentPPDirectives: AfterHash
 
 # Return and Alignment
 BreakAfterReturnType: Automatic
