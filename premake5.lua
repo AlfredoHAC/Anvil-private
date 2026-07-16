@@ -55,6 +55,7 @@ project "Anvil"
         links {
             "X11",
             "xcb",
+            "wayland-client"
         }
 
         removefiles {
