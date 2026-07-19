@@ -18,6 +18,14 @@ typedef struct WaylandBackend
     // Wayland objects
     struct wl_compositor* compositor;
     struct xdg_wm_base*   wm_base;
+    struct wl_surface*    surface;
+    struct xdg_surface*   xdg_surface;
+    struct xdg_toplevel*  top_level;
+
+    // Configure data
+    int32  cfg_width;
+    int32  cfg_height;
+    uint32 cfg_pending_serial;
 
     // Event callback
     EventCallbackFn event_callback;
@@ -33,6 +41,8 @@ static void  wayland_events_poll_and_dispatch(void* backend);
 
 static void _on_wl_registry_global_notify(
     void* data, struct wl_registry* registry, uint32 id, const char* interface, uint32 version);
+static void _on_xdg_wm_base_ping(void* data, struct xdg_wm_base* xdg_wm_base, uint32 serial);
+static void _on_xdg_surface_configure(void* data, struct xdg_surface* xdg_surface, uint32 serial);
 
 static const WindowBackend WAYLAND_BACKEND = {
     .backend_init                    = wayland_backend_init,
@@ -47,6 +57,14 @@ static const WindowBackend WAYLAND_BACKEND = {
 static const struct wl_registry_listener registry_listener = {
     .global        = _on_wl_registry_global_notify,
     .global_remove = NULL,
+};
+
+static const struct xdg_wm_base_listener XDG_WM_BASE_LISTENER = {
+    .ping = _on_xdg_wm_base_ping,
+};
+
+static const struct xdg_surface_listener XDG_SURFACE_LISTENER = {
+    .configure = _on_xdg_surface_configure,
 };
 
 // clang-format off
@@ -74,7 +92,7 @@ void* wayland_backend_init()
         free(backend_data);
         return NULL;
     }
-    wl_registry_add_listener(backend_data->registry, &registry_listener, (void*)backend_data);
+    wl_registry_add_listener(backend_data->registry, &REGISTRY_LISTENER, (void*)backend_data);
     wl_display_roundtrip(backend_data->display);
 
     if (!backend_data->compositor || !backend_data->wm_base)
@@ -94,17 +112,41 @@ void wayland_backend_shutdown(void* backend)
 
     WaylandBackend* b_end = (WaylandBackend*)backend;
 
-    wl_compositor_destroy(b_end->compositor);
-    xdg_wm_base_destroy(b_end->wm_base);
+    // Window Objects
+    xdg_toplevel_destroy(b_end->top_level);
+    xdg_surface_destroy(b_end->xdg_surface);
+    wl_surface_destroy(b_end->surface);
 
+    // Globals
     wl_registry_destroy(b_end->registry);
+    xdg_wm_base_destroy(b_end->wm_base);
+    wl_compositor_destroy(b_end->compositor);
+
+    // Connection
     wl_display_disconnect(b_end->display);
 
     free(b_end);
 }
 
 void wayland_window_create(void* backend, const char* window_title, uint16 width, uint16 height)
-{ ANVIL_CORE_TRACE("Wayland Window Created."); }
+{
+    WaylandBackend* b_end = (WaylandBackend*)backend;
+    b_end->cfg_height     = height;
+    b_end->cfg_width      = width;
+
+    b_end->surface     = wl_compositor_create_surface(b_end->compositor);
+    b_end->xdg_surface = xdg_wm_base_get_xdg_surface(b_end->wm_base, b_end->surface);
+    xdg_surface_add_listener(b_end->xdg_surface, &XDG_SURFACE_LISTENER, (void*)b_end);
+    xdg_wm_base_add_listener(b_end->wm_base, &XDG_WM_BASE_LISTENER, (void*)b_end);
+
+    wl_display_roundtrip(b_end->display);
+
+    b_end->top_level = xdg_surface_get_toplevel(b_end->xdg_surface);
+    xdg_toplevel_set_title(b_end->top_level, window_title);
+    xdg_toplevel_set_min_size(b_end->top_level, width, height);
+
+    wl_surface_commit(b_end->surface);
+}
 
 void wayland_window_show(void* backend)
 { ANVIL_CORE_TRACE("Wayland Window Showed."); }
@@ -132,3 +174,15 @@ static void _on_wl_registry_global_notify(
         b_end->wm_base = wl_registry_bind(b_end->registry, id, &xdg_wm_base_interface, version);
     }
 }
+
+// clang-format off
+static void _on_xdg_wm_base_ping(void* data, struct xdg_wm_base* xdg_wm_base, uint32 serial)
+{
+    xdg_wm_base_pong(xdg_wm_base, serial);
+}
+
+static void _on_xdg_surface_configure(void* data, struct xdg_surface* xdg_surface, uint32 serial)
+{
+    xdg_surface_ack_configure(xdg_surface, serial);
+}
+// clang-format on
