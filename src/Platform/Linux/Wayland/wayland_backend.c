@@ -54,7 +54,7 @@ static const WindowBackend WAYLAND_BACKEND = {
     .window_events_poll_and_dispatch = wayland_events_poll_and_dispatch,
 };
 
-static const struct wl_registry_listener registry_listener = {
+static const struct wl_registry_listener REGISTRY_LISTENER = {
     .global        = _on_wl_registry_global_notify,
     .global_remove = NULL,
 };
