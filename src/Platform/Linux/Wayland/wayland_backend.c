@@ -2,6 +2,7 @@
 
 #include "Platform/Linux/Wayland/wayland_backend.h"
 #include "Platform/Linux/Wayland/xdg_shell_client_protocol.h"
+#include "Platform/Linux/Wayland/xdg_shell_decoration_protocol.h"
 
 #include <fcntl.h>
 #include <string.h>
@@ -20,22 +21,26 @@ typedef struct WaylandBackend
     struct wl_registry* registry;
 
     // Wayland objects
-    struct wl_compositor* compositor;
-    struct xdg_wm_base*   wm_base;
-    struct wl_surface*    surface;
-    struct xdg_surface*   xdg_surface;
-    struct xdg_toplevel*  top_level;
-    struct wl_shm*        shared_mem;
+    struct wl_compositor*              compositor;
+    struct xdg_wm_base*                wm_base;
+    struct wl_surface*                 surface;
+    struct xdg_surface*                xdg_surface;
+    struct xdg_toplevel*               top_level;
+    struct wl_shm*                     shared_mem;
+    struct zxdg_decoration_manager_v1* dc_manager;
 
     // Configure data
     const char* title;
-    int32       width;
-    int32       height;
+    uint32      width;
+    uint32      height;
 
     // Shared Memory (Pixel Buffer) data
     int32             shm_fd;
     void*             shm_data;
     struct wl_buffer* shm_buffer;
+
+    // Decoration data
+    struct zxdg_toplevel_decoration_v1* dc_object;
 
     // Event callback
     EventCallbackFn event_callback;
@@ -123,20 +128,36 @@ void wayland_backend_shutdown(void* backend)
 {
     if (!backend) { return; }
 
-    WaylandBackend* b_end = (WaylandBackend*)backend;
+    WaylandBackend* b_end       = (WaylandBackend*)backend;
+    uint64          buffer_size = b_end->width * b_end->height * sizeof(uint32);
 
-    // Window Objects
+    if (b_end->dc_object) { zxdg_toplevel_decoration_v1_destroy(b_end->dc_object); }
+
     xdg_toplevel_destroy(b_end->top_level);
     xdg_surface_destroy(b_end->xdg_surface);
-    wl_surface_destroy(b_end->surface);
 
-    // Globals
-    wl_registry_destroy(b_end->registry);
+    if (b_end->shm_buffer)
+    {
+        wl_buffer_destroy(b_end->shm_buffer);
+        b_end->shm_buffer = NULL;
+    }
+    if (b_end->surface)
+    {
+        wl_surface_destroy(b_end->surface);
+        b_end->surface = NULL;
+    }
+
+    if (b_end->dc_manager) { zxdg_decoration_manager_v1_destroy(b_end->dc_manager); }
+
+    wl_shm_destroy(b_end->shared_mem);
     xdg_wm_base_destroy(b_end->wm_base);
     wl_compositor_destroy(b_end->compositor);
 
-    // Connection
-    wl_display_disconnect(b_end->display);
+    if (b_end->registry) { wl_registry_destroy(b_end->registry); }
+    if (b_end->display) { wl_display_disconnect(b_end->display); }
+
+    if (b_end->shm_data != MAP_FAILED && b_end->shm_fd >= 0) { munmap(b_end->shm_data, buffer_size); }
+    close(b_end->shm_fd);
 
     free(b_end);
 }
@@ -156,6 +177,16 @@ void wayland_window_create(void* backend, const char* window_title, uint16 width
     xdg_toplevel_set_app_id(b_end->top_level, "ANVIL_WINDOW");
     xdg_toplevel_set_title(b_end->top_level, window_title);
     xdg_toplevel_set_min_size(b_end->top_level, width, height);
+
+    if (b_end->dc_manager)
+    {
+        b_end->dc_object = zxdg_decoration_manager_v1_get_toplevel_decoration(b_end->dc_manager, b_end->top_level);
+
+        if (b_end->dc_object)
+        {
+            zxdg_toplevel_decoration_v1_set_mode(b_end->dc_object, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+        }
+    }
 
     wl_surface_commit(b_end->surface);
     wl_display_roundtrip(b_end->display);
@@ -235,6 +266,10 @@ static void _on_wl_registry_global_notify(
     else if (strcmp(interface, wl_shm_interface.name) == 0)
     {
         b_end->shared_mem = wl_registry_bind(b_end->registry, id, &wl_shm_interface, version);
+    }
+    else if (strcmp(interface, zxdg_decoration_manager_v1_interface.name) == 0)
+    {
+        b_end->dc_manager = wl_registry_bind(b_end->registry, id, &zxdg_decoration_manager_v1_interface, version);
     }
 }
 
