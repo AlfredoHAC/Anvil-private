@@ -58,6 +58,10 @@ project "Anvil"
             "wayland-client"
         }
 
+        defines {
+            "_GNU_SOURCE"
+        }
+
         removefiles {
             "./**/Windows/**"
         }
