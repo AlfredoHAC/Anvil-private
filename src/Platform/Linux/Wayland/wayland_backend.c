@@ -3,6 +3,10 @@
 #include "Platform/Linux/Wayland/wayland_backend.h"
 #include "Platform/Linux/Wayland/xdg_shell_client_protocol.h"
 
+#include <fcntl.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <unistd.h>
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
 #include <wayland-client.h>
@@ -21,11 +25,17 @@ typedef struct WaylandBackend
     struct wl_surface*    surface;
     struct xdg_surface*   xdg_surface;
     struct xdg_toplevel*  top_level;
+    struct wl_shm*        shared_mem;
 
     // Configure data
-    int32  cfg_width;
-    int32  cfg_height;
-    uint32 cfg_pending_serial;
+    const char* title;
+    int32       width;
+    int32       height;
+
+    // Shared Memory (Pixel Buffer) data
+    int32             shm_fd;
+    void*             shm_data;
+    struct wl_buffer* shm_buffer;
 
     // Event callback
     EventCallbackFn event_callback;
@@ -38,6 +48,8 @@ static void  wayland_window_show(void* backend);
 static void  wayland_window_destroy(void* backend);
 static void  wayland_window_set_event_callback(void* backend, EventCallbackFn event_callback);
 static void  wayland_events_poll_and_dispatch(void* backend);
+
+static void _create_shm_buffer(WaylandBackend* backend, int32 width, int32 height);
 
 static void _on_wl_registry_global_notify(
     void* data, struct wl_registry* registry, uint32 id, const char* interface, uint32 version);
@@ -102,6 +114,7 @@ void* wayland_backend_init()
         free(backend_data);
         return NULL;
     }
+    xdg_wm_base_add_listener(backend_data->wm_base, &XDG_WM_BASE_LISTENER, (void*)backend_data);
 
     return backend_data;
 }
@@ -131,25 +144,37 @@ void wayland_backend_shutdown(void* backend)
 void wayland_window_create(void* backend, const char* window_title, uint16 width, uint16 height)
 {
     WaylandBackend* b_end = (WaylandBackend*)backend;
-    b_end->cfg_height     = height;
-    b_end->cfg_width      = width;
+    b_end->title          = window_title;
+    b_end->height         = height;
+    b_end->width          = width;
 
     b_end->surface     = wl_compositor_create_surface(b_end->compositor);
     b_end->xdg_surface = xdg_wm_base_get_xdg_surface(b_end->wm_base, b_end->surface);
     xdg_surface_add_listener(b_end->xdg_surface, &XDG_SURFACE_LISTENER, (void*)b_end);
-    xdg_wm_base_add_listener(b_end->wm_base, &XDG_WM_BASE_LISTENER, (void*)b_end);
-
-    wl_display_roundtrip(b_end->display);
 
     b_end->top_level = xdg_surface_get_toplevel(b_end->xdg_surface);
+    xdg_toplevel_set_app_id(b_end->top_level, "ANVIL_WINDOW");
     xdg_toplevel_set_title(b_end->top_level, window_title);
     xdg_toplevel_set_min_size(b_end->top_level, width, height);
 
     wl_surface_commit(b_end->surface);
+    wl_display_roundtrip(b_end->display);
 }
 
 void wayland_window_show(void* backend)
-{ ANVIL_CORE_TRACE("Wayland Window Showed."); }
+{
+    WaylandBackend* b_end = (WaylandBackend*)backend;
+
+    _create_shm_buffer(b_end, b_end->width, b_end->height);
+    if (!b_end->shm_buffer) { return; }
+
+    wl_surface_attach(b_end->surface, b_end->shm_buffer, 0, 0);
+
+    wl_surface_damage_buffer(b_end->surface, 0, 0, b_end->width, b_end->height);
+
+    wl_surface_commit(b_end->surface);
+    wl_display_roundtrip(b_end->display);
+}
 
 void wayland_window_destroy(void* backend)
 { ANVIL_CORE_TRACE("Wayland Window Destroyed."); }
@@ -159,6 +184,40 @@ void wayland_window_set_event_callback(void* backend, EventCallbackFn event_call
 
 static void wayland_events_poll_and_dispatch(void* backend)
 { ANVIL_CORE_TRACE("Wayland Window polling events."); }
+
+static void _create_shm_buffer(WaylandBackend* backend, int32 width, int32 height)
+{
+    if (backend->shm_data != MAP_FAILED && backend->shm_fd >= 0) { return; }
+
+    int32 buffer_size = width * height * sizeof(uint32);
+
+    if (buffer_size <= 0) { return; }
+
+    backend->shm_fd = memfd_create("FORGE_WM_BUFFER", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+
+    ftruncate(backend->shm_fd, buffer_size);
+
+    backend->shm_data = mmap(NULL, buffer_size, PROT_READ | PROT_WRITE, MAP_SHARED, backend->shm_fd, 0);
+    if (backend->shm_data == MAP_FAILED)
+    {
+        close(backend->shm_fd);
+        return;
+    }
+
+    uint32* pixels = (uint32*)backend->shm_data;
+    for (uint32 i = 0; i < width * height; ++i)
+    {
+        pixels[i] = 0xFF000000u;
+    }
+
+    if (!backend->shared_mem) { return; }
+
+    struct wl_shm_pool* shm_pool = wl_shm_create_pool(backend->shared_mem, backend->shm_fd, buffer_size);
+
+    backend->shm_buffer = wl_shm_pool_create_buffer(shm_pool, 0, width, height, width * 4, WL_SHM_FORMAT_ARGB8888);
+
+    wl_shm_pool_destroy(shm_pool);
+}
 
 static void _on_wl_registry_global_notify(
     void* data, struct wl_registry* registry, uint32 id, const char* interface, uint32 version)
@@ -173,6 +232,10 @@ static void _on_wl_registry_global_notify(
     {
         b_end->wm_base = wl_registry_bind(b_end->registry, id, &xdg_wm_base_interface, version);
     }
+    else if (strcmp(interface, wl_shm_interface.name) == 0)
+    {
+        b_end->shared_mem = wl_registry_bind(b_end->registry, id, &wl_shm_interface, version);
+    }
 }
 
 // clang-format off
@@ -183,6 +246,10 @@ static void _on_xdg_wm_base_ping(void* data, struct xdg_wm_base* xdg_wm_base, ui
 
 static void _on_xdg_surface_configure(void* data, struct xdg_surface* xdg_surface, uint32 serial)
 {
+    WaylandBackend* b_end = (WaylandBackend*)data;
+
+    xdg_surface_set_window_geometry(b_end->xdg_surface, 0, 0, b_end->width, b_end->height);
+
     xdg_surface_ack_configure(xdg_surface, serial);
 }
 // clang-format on
