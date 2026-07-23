@@ -3,6 +3,7 @@
 #include "Platform/Linux/Wayland/wayland_backend.h"
 #include "Platform/Linux/Wayland/xdg_shell_client_protocol.h"
 #include "Platform/Linux/Wayland/xdg_shell_decoration_protocol.h"
+#include "Platform/event.h"
 
 #include <fcntl.h>
 #include <string.h>
@@ -28,6 +29,7 @@ typedef struct WaylandBackend
     struct xdg_toplevel*               top_level;
     struct wl_shm*                     shared_mem;
     struct zxdg_decoration_manager_v1* dc_manager;
+    struct wl_seat*                    seat;
 
     // Configure data
     const char* title;
@@ -38,9 +40,18 @@ typedef struct WaylandBackend
     int32             shm_fd;
     void*             shm_data;
     struct wl_buffer* shm_buffer;
+    uint32            buffer_width;
+    uint32            buffer_height;
 
     // Decoration data
     struct zxdg_toplevel_decoration_v1* dc_object;
+
+    // Event devices
+    struct wl_keyboard* keyboard;
+    struct wl_pointer*  pointer;
+
+    // Event capturing data
+    uint32 capabilities;
 
     // Event callback
     EventCallbackFn event_callback;
@@ -54,12 +65,26 @@ static void  wayland_window_destroy(void* backend);
 static void  wayland_window_set_event_callback(void* backend, EventCallbackFn event_callback);
 static void  wayland_events_poll_and_dispatch(void* backend);
 
-static void _create_shm_buffer(WaylandBackend* backend, int32 width, int32 height);
+static void _shm_buffer_create(WaylandBackend* backend, int32 width, int32 height);
+static void _shm_buffer_destroy(WaylandBackend* backend);
 
 static void _on_wl_registry_global_notify(
     void* data, struct wl_registry* registry, uint32 id, const char* interface, uint32 version);
 static void _on_xdg_wm_base_ping(void* data, struct xdg_wm_base* xdg_wm_base, uint32 serial);
 static void _on_xdg_surface_configure(void* data, struct xdg_surface* xdg_surface, uint32 serial);
+
+static void _on_wl_seat_capabilities(void* data, struct wl_seat* seat, uint32 capabilities);
+static void _on_wl_seat_name_noop(void* data, struct wl_seat* seat, const char* name);
+static void _on_xdg_toplevel_close(void* data, struct xdg_toplevel* xdg_toplevel);
+static void _on_xdg_toplevel_configure(
+    void* data, struct xdg_toplevel* xdg_toplevel, int32 width, int32 height, struct wl_array* states);
+static void _on_xdg_toplevel_configure_bounds_noop(void*                data,
+                                                   struct xdg_toplevel* xdg_toplevel,
+                                                   int32                width,
+                                                   int32                height);
+static void _on_xdg_toplevel_wm_capabilities_noop(void*                data,
+                                                  struct xdg_toplevel* xdg_toplevel,
+                                                  struct wl_array*     capabilities);
 
 static const WindowBackend WAYLAND_BACKEND = {
     .backend_init                    = wayland_backend_init,
@@ -84,6 +109,18 @@ static const struct xdg_surface_listener XDG_SURFACE_LISTENER = {
     .configure = _on_xdg_surface_configure,
 };
 
+static const struct wl_seat_listener WL_SEAT_LISTENER = {
+    .capabilities = _on_wl_seat_capabilities,
+    .name         = _on_wl_seat_name_noop,
+};
+
+static const struct xdg_toplevel_listener XDG_TOPLEVEL_LISTENER = {
+    .close            = _on_xdg_toplevel_close,
+    .configure        = _on_xdg_toplevel_configure,
+    .configure_bounds = _on_xdg_toplevel_configure_bounds_noop,
+    .wm_capabilities  = _on_xdg_toplevel_wm_capabilities_noop,
+};
+
 // clang-format off
 const WindowBackend* wayland_backend()
 {
@@ -94,6 +131,8 @@ const WindowBackend* wayland_backend()
 void* wayland_backend_init()
 {
     WaylandBackend* backend_data = malloc(sizeof(WaylandBackend));
+    memset(backend_data, 0, sizeof(WaylandBackend));
+    backend_data->shm_fd = -1;
 
     backend_data->display = wl_display_connect(NULL);
     if (!backend_data->display)
@@ -128,36 +167,10 @@ void wayland_backend_shutdown(void* backend)
 {
     if (!backend) { return; }
 
-    WaylandBackend* b_end       = (WaylandBackend*)backend;
-    uint64          buffer_size = b_end->width * b_end->height * sizeof(uint32);
-
-    if (b_end->dc_object) { zxdg_toplevel_decoration_v1_destroy(b_end->dc_object); }
-
-    xdg_toplevel_destroy(b_end->top_level);
-    xdg_surface_destroy(b_end->xdg_surface);
-
-    if (b_end->shm_buffer)
-    {
-        wl_buffer_destroy(b_end->shm_buffer);
-        b_end->shm_buffer = NULL;
-    }
-    if (b_end->surface)
-    {
-        wl_surface_destroy(b_end->surface);
-        b_end->surface = NULL;
-    }
-
-    if (b_end->dc_manager) { zxdg_decoration_manager_v1_destroy(b_end->dc_manager); }
-
-    wl_shm_destroy(b_end->shared_mem);
-    xdg_wm_base_destroy(b_end->wm_base);
-    wl_compositor_destroy(b_end->compositor);
+    WaylandBackend* b_end = (WaylandBackend*)backend;
 
     if (b_end->registry) { wl_registry_destroy(b_end->registry); }
     if (b_end->display) { wl_display_disconnect(b_end->display); }
-
-    if (b_end->shm_data != MAP_FAILED && b_end->shm_fd >= 0) { munmap(b_end->shm_data, buffer_size); }
-    close(b_end->shm_fd);
 
     free(b_end);
 }
@@ -177,6 +190,7 @@ void wayland_window_create(void* backend, const char* window_title, uint16 width
     xdg_toplevel_set_app_id(b_end->top_level, "ANVIL_WINDOW");
     xdg_toplevel_set_title(b_end->top_level, window_title);
     xdg_toplevel_set_min_size(b_end->top_level, width, height);
+    xdg_toplevel_add_listener(b_end->top_level, &XDG_TOPLEVEL_LISTENER, (void*)b_end);
 
     if (b_end->dc_manager)
     {
@@ -188,6 +202,8 @@ void wayland_window_create(void* backend, const char* window_title, uint16 width
         }
     }
 
+    if (b_end->seat) { wl_seat_add_listener(b_end->seat, &WL_SEAT_LISTENER, (void*)b_end); }
+
     wl_surface_commit(b_end->surface);
     wl_display_roundtrip(b_end->display);
 }
@@ -196,7 +212,7 @@ void wayland_window_show(void* backend)
 {
     WaylandBackend* b_end = (WaylandBackend*)backend;
 
-    _create_shm_buffer(b_end, b_end->width, b_end->height);
+    _shm_buffer_create(b_end, b_end->width, b_end->height);
     if (!b_end->shm_buffer) { return; }
 
     wl_surface_attach(b_end->surface, b_end->shm_buffer, 0, 0);
@@ -204,23 +220,47 @@ void wayland_window_show(void* backend)
     wl_surface_damage_buffer(b_end->surface, 0, 0, b_end->width, b_end->height);
 
     wl_surface_commit(b_end->surface);
-    wl_display_roundtrip(b_end->display);
 }
 
 void wayland_window_destroy(void* backend)
-{ ANVIL_CORE_TRACE("Wayland Window Destroyed."); }
+{
+    WaylandBackend* b_end = (WaylandBackend*)backend;
+
+    if (b_end->dc_object) { zxdg_toplevel_decoration_v1_destroy(b_end->dc_object); }
+
+    _shm_buffer_destroy(b_end);
+
+    xdg_toplevel_destroy(b_end->top_level);
+    xdg_surface_destroy(b_end->xdg_surface);
+
+    if (b_end->surface)
+    {
+        wl_surface_destroy(b_end->surface);
+        b_end->surface = NULL;
+    }
+}
 
 void wayland_window_set_event_callback(void* backend, EventCallbackFn event_callback)
-{ ANVIL_CORE_TRACE("Wayland Window EventCallback set."); }
+{
+    WaylandBackend* b_end = (WaylandBackend*)backend;
+
+    b_end->event_callback = event_callback;
+}
 
 static void wayland_events_poll_and_dispatch(void* backend)
-{ ANVIL_CORE_TRACE("Wayland Window polling events."); }
-
-static void _create_shm_buffer(WaylandBackend* backend, int32 width, int32 height)
 {
-    if (backend->shm_data != MAP_FAILED && backend->shm_fd >= 0) { return; }
+    WaylandBackend* b_end = (WaylandBackend*)backend;
 
-    int32 buffer_size = width * height * sizeof(uint32);
+    wl_display_dispatch(b_end->display);
+}
+
+static void _shm_buffer_create(WaylandBackend* backend, int32 width, int32 height)
+{
+    if (backend->shm_data && backend->shm_fd >= 0) { return; }
+
+    backend->buffer_width  = width;
+    backend->buffer_height = height;
+    int32 buffer_size      = width * height * sizeof(uint32);
 
     if (buffer_size <= 0) { return; }
 
@@ -250,6 +290,25 @@ static void _create_shm_buffer(WaylandBackend* backend, int32 width, int32 heigh
     wl_shm_pool_destroy(shm_pool);
 }
 
+static void _shm_buffer_destroy(WaylandBackend* b_end)
+{
+    uint64 buffer_size = b_end->buffer_width * b_end->buffer_height * sizeof(uint32);
+
+    if (b_end->shm_buffer)
+    {
+        wl_buffer_destroy(b_end->shm_buffer);
+        b_end->shm_buffer = NULL;
+    }
+    if (b_end->shm_data != NULL && b_end->shm_fd >= 0)
+    {
+        munmap(b_end->shm_data, buffer_size);
+        close(b_end->shm_fd);
+
+        b_end->shm_data = NULL;
+        b_end->shm_fd   = -1;
+    }
+}
+
 static void _on_wl_registry_global_notify(
     void* data, struct wl_registry* registry, uint32 id, const char* interface, uint32 version)
 {
@@ -271,6 +330,10 @@ static void _on_wl_registry_global_notify(
     {
         b_end->dc_manager = wl_registry_bind(b_end->registry, id, &zxdg_decoration_manager_v1_interface, version);
     }
+    else if (strcmp(interface, wl_seat_interface.name) == 0)
+    {
+        b_end->seat = wl_registry_bind(b_end->registry, id, &wl_seat_interface, version);
+    }
 }
 
 // clang-format off
@@ -278,6 +341,7 @@ static void _on_xdg_wm_base_ping(void* data, struct xdg_wm_base* xdg_wm_base, ui
 {
     xdg_wm_base_pong(xdg_wm_base, serial);
 }
+// clang-format on
 
 static void _on_xdg_surface_configure(void* data, struct xdg_surface* xdg_surface, uint32 serial)
 {
@@ -286,5 +350,66 @@ static void _on_xdg_surface_configure(void* data, struct xdg_surface* xdg_surfac
     xdg_surface_set_window_geometry(b_end->xdg_surface, 0, 0, b_end->width, b_end->height);
 
     xdg_surface_ack_configure(xdg_surface, serial);
+
+    if (b_end->shm_buffer)
+    {
+        _shm_buffer_destroy(b_end);
+        wayland_window_show(b_end);
+    }
 }
-// clang-format on
+
+static void _on_wl_seat_capabilities(void* data, struct wl_seat* seat, uint32 capabilities)
+{
+    WaylandBackend* b_end = (WaylandBackend*)data;
+
+    if (capabilities & WL_SEAT_CAPABILITY_KEYBOARD) { b_end->keyboard = wl_seat_get_keyboard(seat); }
+    if (capabilities & WL_SEAT_CAPABILITY_POINTER) { b_end->pointer = wl_seat_get_pointer(seat); }
+}
+
+static void _on_wl_seat_name_noop(void* data, struct wl_seat* seat, const char* name)
+{
+}
+
+static void _on_xdg_toplevel_close(void* data, struct xdg_toplevel* xdg_toplevel)
+{
+    WaylandBackend* b_end = (WaylandBackend*)data;
+
+    Event event = {
+        .type         = WindowClose,
+        .handled      = false,
+        .window_close = {0},
+    };
+    b_end->event_callback(event);
+}
+
+static void _on_xdg_toplevel_configure(
+    void* data, struct xdg_toplevel* xdg_toplevel, int32 width, int32 height, struct wl_array* states)
+{
+    WaylandBackend* b_end = (WaylandBackend*)data;
+
+    if (width > 0 && height > 0)
+    {
+        b_end->width  = width;
+        b_end->height = height;
+
+        Event event = {
+            .type          = WindowResize,
+            .handled       = false,
+            .window_resize = {.width = width, .height = height},
+        };
+        b_end->event_callback(event);
+    }
+}
+
+static void _on_xdg_toplevel_configure_bounds_noop(void*                data,
+                                                   struct xdg_toplevel* xdg_toplevel,
+                                                   int32                width,
+                                                   int32                height)
+{
+}
+
+static void _on_xdg_toplevel_wm_capabilities_noop(void*                data,
+                                                  struct xdg_toplevel* xdg_toplevel,
+                                                  struct wl_array*     capabilities)
+{
+}
