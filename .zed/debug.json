@@ -19,7 +19,7 @@
     "adapter": "CodeLLDB",
   },
   {
-    "label": "GDB (Linux)",
+    "label": "LLDB (Linux)",
     "build": {
       "command": "bash",
       "args": [
@@ -30,6 +30,6 @@
     },
     "program": "${ZED_WORKTREE_ROOT}/bin/Debug/Anvil",
     "request": "launch",
-    "adapter": "GDB",
+    "adapter": "CodeLLDB",
   }
 ]
