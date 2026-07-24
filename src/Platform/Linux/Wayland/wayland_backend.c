@@ -50,6 +50,9 @@ typedef struct WaylandBackend
     struct wl_keyboard* keyboard;
     struct wl_pointer*  pointer;
 
+    // Event devices data
+    uint32 modifier_state;
+
     // Event capturing data
     uint32 capabilities;
 
@@ -85,6 +88,25 @@ static void _on_xdg_toplevel_configure_bounds_noop(void*                data,
 static void _on_xdg_toplevel_wm_capabilities_noop(void*                data,
                                                   struct xdg_toplevel* xdg_toplevel,
                                                   struct wl_array*     capabilities);
+static void _on_wl_keyboard_keymap_noop(
+    void* data, struct wl_keyboard* wl_keyboard, uint32 format, int32 fd, uint32 size);
+static void _on_wl_keyboard_enter_noop(
+    void* data, struct wl_keyboard* wl_keyboard, uint32 serial, struct wl_surface* surface, struct wl_array* keys);
+static void _on_wl_keyboard_leave_noop(void*               data,
+                                       struct wl_keyboard* wl_keyboard,
+                                       uint32              serial,
+                                       struct wl_surface*  surface);
+static void _on_wl_keyboard_key(
+    void* data, struct wl_keyboard* wl_keyboard, uint32 serial, uint32 time, uint32 key, uint32 state);
+static void _on_wl_keyboard_modifier(void*               data,
+                                     struct wl_keyboard* wl_keyboard,
+                                     uint32              serial,
+                                     uint32              mods_depressed,
+                                     uint32              mods_latched,
+                                     uint32              mods_locked,
+                                     uint32              group);
+static void _on_wl_keyboard_repeat_info_noop(void* data, struct wl_keyboard* wl_keyboard, int32 rate, int32 delay);
+// static void _on
 
 static const WindowBackend WAYLAND_BACKEND = {
     .backend_init                    = wayland_backend_init,
@@ -119,6 +141,15 @@ static const struct xdg_toplevel_listener XDG_TOPLEVEL_LISTENER = {
     .configure        = _on_xdg_toplevel_configure,
     .configure_bounds = _on_xdg_toplevel_configure_bounds_noop,
     .wm_capabilities  = _on_xdg_toplevel_wm_capabilities_noop,
+};
+
+static const struct wl_keyboard_listener WL_KEYBOARD_LISTENER = {
+    .keymap      = _on_wl_keyboard_keymap_noop,
+    .enter       = _on_wl_keyboard_enter_noop,
+    .leave       = _on_wl_keyboard_leave_noop,
+    .key         = _on_wl_keyboard_key,
+    .modifiers   = _on_wl_keyboard_modifier,
+    .repeat_info = _on_wl_keyboard_repeat_info_noop,
 };
 
 // clang-format off
@@ -201,8 +232,6 @@ void wayland_window_create(void* backend, const char* window_title, uint16 width
             zxdg_toplevel_decoration_v1_set_mode(b_end->dc_object, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
         }
     }
-
-    if (b_end->seat) { wl_seat_add_listener(b_end->seat, &WL_SEAT_LISTENER, (void*)b_end); }
 
     wl_surface_commit(b_end->surface);
     wl_display_roundtrip(b_end->display);
@@ -333,6 +362,7 @@ static void _on_wl_registry_global_notify(
     else if (strcmp(interface, wl_seat_interface.name) == 0)
     {
         b_end->seat = wl_registry_bind(b_end->registry, id, &wl_seat_interface, version);
+        wl_seat_add_listener(b_end->seat, &WL_SEAT_LISTENER, (void*)b_end);
     }
 }
 
@@ -362,7 +392,11 @@ static void _on_wl_seat_capabilities(void* data, struct wl_seat* seat, uint32 ca
 {
     WaylandBackend* b_end = (WaylandBackend*)data;
 
-    if (capabilities & WL_SEAT_CAPABILITY_KEYBOARD) { b_end->keyboard = wl_seat_get_keyboard(seat); }
+    if (capabilities & WL_SEAT_CAPABILITY_KEYBOARD)
+    {
+        b_end->keyboard = wl_seat_get_keyboard(seat);
+        if (b_end->keyboard) { wl_keyboard_add_listener(b_end->keyboard, &WL_KEYBOARD_LISTENER, (void*)b_end); }
+    }
     if (capabilities & WL_SEAT_CAPABILITY_POINTER) { b_end->pointer = wl_seat_get_pointer(seat); }
 }
 
@@ -411,5 +445,62 @@ static void _on_xdg_toplevel_configure_bounds_noop(void*                data,
 static void _on_xdg_toplevel_wm_capabilities_noop(void*                data,
                                                   struct xdg_toplevel* xdg_toplevel,
                                                   struct wl_array*     capabilities)
+{
+}
+
+static void _on_wl_keyboard_keymap_noop(
+    void* data, struct wl_keyboard* wl_keyboard, uint32 format, int32 fd, uint32 size)
+{
+}
+
+static void _on_wl_keyboard_enter_noop(
+    void* data, struct wl_keyboard* wl_keyboard, uint32 serial, struct wl_surface* surface, struct wl_array* keys)
+{
+}
+
+static void _on_wl_keyboard_leave_noop(void*               data,
+                                       struct wl_keyboard* wl_keyboard,
+                                       uint32              serial,
+                                       struct wl_surface*  surface)
+{
+}
+
+static void _on_wl_keyboard_key(
+    void* data, struct wl_keyboard* wl_keyboard, uint32 serial, uint32 time, uint32 key, uint32 state)
+{
+    WaylandBackend* b_end = (WaylandBackend*)data;
+
+    Event event;
+    event.handled = false;
+    if (state == WL_KEYBOARD_KEY_STATE_PRESSED)
+    {
+        event.type                   = KeyPress;
+        event.key_press.key_code     = key;
+        event.key_press.modifier_set = b_end->modifier_state;
+    }
+    else if (state == WL_KEYBOARD_KEY_STATE_RELEASED)
+    {
+        event.type                     = KeyRelease;
+        event.key_release.key_code     = key;
+        event.key_release.modifier_set = b_end->modifier_state;
+    }
+
+    b_end->event_callback(event);
+}
+
+static void _on_wl_keyboard_modifier(void*               data,
+                                     struct wl_keyboard* wl_keyboard,
+                                     uint32              serial,
+                                     uint32              mods_depressed,
+                                     uint32              mods_latched,
+                                     uint32              mods_locked,
+                                     uint32              group)
+{
+    WaylandBackend* b_end = (WaylandBackend*)data;
+
+    b_end->modifier_state = mods_depressed;
+}
+
+static void _on_wl_keyboard_repeat_info_noop(void* data, struct wl_keyboard* wl_keyboard, int32 rate, int32 delay)
 {
 }

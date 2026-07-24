@@ -70,10 +70,10 @@ void anvl_application_on_event(Event event)
         ANVIL_CORE_DEBUG("Window resize: %dx%d", event.window_resize.width, event.window_resize.height);
         break;
     case KeyPress:
-        ANVIL_CORE_DEBUG("Key press: %d", event.key_press.key_code);
+        ANVIL_CORE_DEBUG("Key press: %d (Mod: %d)", event.key_press.key_code, event.key_press.modifier_set);
         break;
     case KeyRelease:
-        ANVIL_CORE_DEBUG("Key release: %d", event.key_release.key_code);
+        ANVIL_CORE_DEBUG("Key release: %d (Mod: %d)", event.key_release.key_code, event.key_release.modifier_set);
         break;
     case MouseMove:
         ANVIL_CORE_DEBUG("Mouse move: (%.1f,%.1f)", event.mouse_move.x, event.mouse_move.y);
