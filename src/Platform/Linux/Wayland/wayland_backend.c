@@ -246,14 +246,12 @@ void wayland_backend_shutdown(void* backend)
     if (b_end->registry) { wl_registry_destroy(b_end->registry); }
     if (b_end->display) { wl_display_disconnect(b_end->display); }
 
-    free((void*)b_end->title);
     free(b_end);
 }
 
 void wayland_window_create(void* backend, const char* window_title, uint16 width, uint16 height)
 {
     WaylandBackend* b_end = (WaylandBackend*)backend;
-    b_end->title          = window_title;
     b_end->height         = height;
     b_end->width          = width;
 
@@ -262,7 +260,7 @@ void wayland_window_create(void* backend, const char* window_title, uint16 width
     xdg_surface_add_listener(b_end->xdg_surface, &XDG_SURFACE_LISTENER, (void*)b_end);
 
     b_end->top_level = xdg_surface_get_toplevel(b_end->xdg_surface);
-    xdg_toplevel_set_app_id(b_end->top_level, "ANVIL_WINDOW");
+    xdg_toplevel_set_app_id(b_end->top_level, window_title);
     xdg_toplevel_set_title(b_end->top_level, window_title);
     xdg_toplevel_set_min_size(b_end->top_level, width, height);
     xdg_toplevel_add_listener(b_end->top_level, &XDG_TOPLEVEL_LISTENER, (void*)b_end);
