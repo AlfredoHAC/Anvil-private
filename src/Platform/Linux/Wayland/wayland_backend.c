@@ -527,7 +527,7 @@ static void _on_wl_keyboard_key(
 {
     WaylandBackend* b_end = (WaylandBackend*)data;
 
-    Event event;
+    Event event = {0};
     event.handled = false;
     if (state == WL_KEYBOARD_KEY_STATE_PRESSED)
     {
