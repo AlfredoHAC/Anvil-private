@@ -6,6 +6,7 @@
 #include "Platform/event.h"
 
 #include <fcntl.h>
+#include <linux/input-event-codes.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <wayland-client-core.h>
@@ -604,19 +605,29 @@ static void _on_wl_pointer_button(
 
     Event event   = {0};
     event.handled = false;
+
+    uint8 mouse_button_code = 0;
+    switch (button)
+    {
+        case BTN_LEFT  : mouse_button_code = 1; break;
+        case BTN_MIDDLE: mouse_button_code = 2; break;
+        case BTN_RIGHT : mouse_button_code = 3; break;
+        default        : mouse_button_code = button;
+    }
+
     if (state == WL_POINTER_BUTTON_STATE_PRESSED)
     {
         event.type                           = MouseButtonClick;
         event.mouse_button_click.x           = b_end->pointer_x;
         event.mouse_button_click.y           = b_end->pointer_y;
-        event.mouse_button_click.button_code = button;
+        event.mouse_button_click.button_code = mouse_button_code;
     }
     else if (state == WL_POINTER_BUTTON_STATE_RELEASED)
     {
         event.type                             = MouseButtonRelease;
         event.mouse_button_release.x           = b_end->pointer_x;
         event.mouse_button_release.y           = b_end->pointer_y;
-        event.mouse_button_release.button_code = button;
+        event.mouse_button_release.button_code = mouse_button_code;
     }
 
     b_end->event_callback(event);
