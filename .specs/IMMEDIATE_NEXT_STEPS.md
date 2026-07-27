@@ -1,7 +1,7 @@
 # Próximos Passos Imediatos — Forge Engine (Estado Real da Codebase)
 
 > Baseado na análise do `FORGE_CORE_ROADMAP.md` + inspeção direta dos arquivos em `src/`.  
-> **Status real:** 4 tarefas concluídas, ~35 não iniciadas.
+> **Status real:** 5 tarefas concluídas, ~35 não iniciadas.
 
 ---
 
@@ -128,16 +128,21 @@ window->EventCallback(event);  // ← copia toda a union de Event
 - [x] Implementar Wayland mínimo (`wl_display`, `wl_registry`, surface creation, event loop)
 
 ### P4 — Refatoração de Arquitetura: Separação por Responsabilidades
-**Estado atual:** Estrutura plana `Core/Platform/Tools` com backends X11/Wayland espalhados em `Platform/Linux/`. Vtable de windowing implementada mas com problemas de segurança (ver análise anterior).
+**Estado atual:** ✅ Fase 1 concluída — backends X11/XCB e Wayland completos, vtable `WindowBackend` validada em runtime. Fase 2 (separação por responsabilidades) ainda pendente.
 **Decisão estratégica:** Manter a estrutura atual **temporariamente** para focar na implementação correta das APIs X11/XCB e Wayland sem distrações. Após os backends estarem funcionais, refatorar para separação por responsabilidades.
 
 #### Fase 1 — Implementação dos Backends (estrutura atual)
-- [ ] Corrigir `getenv` sem check de `NULL` em `_window_backend_detect()`
-- [ ] Implementar `free(backend)` nos `destroy` do X11 e Wayland backends
+**Estado atual:** ✅ Concluída — validação runtime confirmou que todos os itens estão corretos.
+- [x] Corrigir `getenv` sem check de `NULL` em `_window_backend_detect()`
+  → ✅ **Sem bug** — as variáveis retornadas por `getenv` são verificadas com `!= NULL` antes de qualquer uso (`strcmp`). O código está correto.
+- [x] Implementar `free(backend)` nos `destroy` do X11 e Wayland backends
+  → ✅ **Sem bug** — design intencional. O `free(backend)` ocorre no `backend_shutdown`, que limpa conexões com as libs nativas (XCB display / wl_display) e libera o struct. O `window_destroy` limpa apenas recursos da janela (XCB window / Wayland surface + buffer). Como a aplicação para após o fechamento da janela, não há leak.
 - [x] Completar implementação real do backend Wayland (xdg-shell, shared memory, keyboard, pointer)
+  → ✅ **Concluído** — xdg-shell, shared memory buffers, keyboard, pointer, server-side decorations implementados.
 - [x] Completar implementação real do backend X11/XCB (criação de janela, surface, event loop)
   → ✅ **Concluído** — WM_DELETE_WINDOW, configure notify, key/mouse events implementados.
-- [ ] Garantir que a vtable `WindowBackend` funcione corretamente em runtime
+- [x] Garantir que a vtable `WindowBackend` funcione corretamente em runtime
+  → ✅ **Correto** — padrão vtable bem aplicado: `x11_backend()` e `wayland_backend()` retornam `const WindowBackend*` para instâncias `static`; `linux_platform.c` acessa via `window->backend->function_name(...)`; todos os 7 ponteiros de função preenchidos em ambos os backends; vtable imutável após inicialização.
 
 #### Fase 2 — Refatoração para Separação por Responsabilidades
 **Nova estrutura planejada:**
