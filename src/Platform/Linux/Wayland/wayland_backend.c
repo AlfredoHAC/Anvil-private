@@ -235,9 +235,18 @@ void wayland_backend_shutdown(void* backend)
 
     WaylandBackend* b_end = (WaylandBackend*)backend;
 
+    wl_keyboard_destroy(b_end->keyboard);
+    wl_pointer_destroy(b_end->pointer);
+    wl_seat_destroy(b_end->seat);
+    zxdg_decoration_manager_v1_destroy(b_end->dc_manager);
+    wl_shm_destroy(b_end->shared_mem);
+    xdg_wm_base_destroy(b_end->wm_base);
+    wl_compositor_destroy(b_end->compositor);
+
     if (b_end->registry) { wl_registry_destroy(b_end->registry); }
     if (b_end->display) { wl_display_disconnect(b_end->display); }
 
+    free((void*)b_end->title);
     free(b_end);
 }
 
@@ -345,7 +354,12 @@ static void _shm_buffer_create(WaylandBackend* backend, int32 width, int32 heigh
         pixels[i] = 0xFF000000u;
     }
 
-    if (!backend->shared_mem) { return; }
+    if (!backend->shared_mem)
+    {
+        munmap(backend->shm_data, buffer_size);
+        close(backend->shm_fd);
+        return;
+    }
 
     struct wl_shm_pool* shm_pool = wl_shm_create_pool(backend->shared_mem, backend->shm_fd, buffer_size);
 
