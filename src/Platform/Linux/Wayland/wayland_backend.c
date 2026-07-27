@@ -6,12 +6,12 @@
 #include "Platform/event.h"
 
 #include <fcntl.h>
-#include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
 #include <wayland-client.h>
+#include <wayland-util.h>
 
 typedef struct WaylandBackend
 {
@@ -51,7 +51,9 @@ typedef struct WaylandBackend
     struct wl_pointer*  pointer;
 
     // Event devices data
-    uint32 modifier_state;
+    uint32  modifier_state;
+    float32 pointer_x;
+    float32 pointer_y;
 
     // Event capturing data
     uint32 capabilities;
@@ -106,7 +108,28 @@ static void _on_wl_keyboard_modifier(void*               data,
                                      uint32              mods_locked,
                                      uint32              group);
 static void _on_wl_keyboard_repeat_info_noop(void* data, struct wl_keyboard* wl_keyboard, int32 rate, int32 delay);
-// static void _on
+static void _on_wl_pointer_enter_noop(void*              data,
+                                      struct wl_pointer* wl_pointer,
+                                      uint32             serial,
+                                      struct wl_surface* surface,
+                                      wl_fixed_t         surface_x,
+                                      wl_fixed_t         surface_y);
+static void _on_wl_pointer_leave_noop(void*              data,
+                                      struct wl_pointer* wl_pointer,
+                                      uint32             serial,
+                                      struct wl_surface* surface);
+static void _on_wl_pointer_motion(
+    void* data, struct wl_pointer* wl_pointer, uint32 time, wl_fixed_t surface_x, wl_fixed_t surface_y);
+static void _on_wl_pointer_button(
+    void* data, struct wl_pointer* wl_pointer, uint32 serial, uint32 time, uint32 button, uint32 state);
+static void _on_wl_pointer_axis(void* data, struct wl_pointer* wl_pointer, uint32 time, uint32 axis, wl_fixed_t value);
+static void _on_wl_pointer_frame_noop(void* data, struct wl_pointer* wl_pointer);
+static void _on_wl_pointer_axis_source_noop(void* data, struct wl_pointer* wl_pointer, uint32 axis_source);
+static void _on_wl_pointer_axis_stop_noop(void* data, struct wl_pointer* wl_pointer, uint32 time, uint32 axis);
+static void _on_wl_pointer_axis_relative_direction_noop(void*              data,
+                                                        struct wl_pointer* wl_pointer,
+                                                        uint32             axis,
+                                                        uint32             direction);
 
 static const WindowBackend WAYLAND_BACKEND = {
     .backend_init                    = wayland_backend_init,
@@ -150,6 +173,18 @@ static const struct wl_keyboard_listener WL_KEYBOARD_LISTENER = {
     .key         = _on_wl_keyboard_key,
     .modifiers   = _on_wl_keyboard_modifier,
     .repeat_info = _on_wl_keyboard_repeat_info_noop,
+};
+
+static const struct wl_pointer_listener WL_POINTER_LISTENER = {
+    .enter                   = _on_wl_pointer_enter_noop,
+    .leave                   = _on_wl_pointer_leave_noop,
+    .motion                  = _on_wl_pointer_motion,
+    .button                  = _on_wl_pointer_button,
+    .axis                    = _on_wl_pointer_axis,
+    .frame                   = _on_wl_pointer_frame_noop,
+    .axis_source             = _on_wl_pointer_axis_source_noop,
+    .axis_stop               = _on_wl_pointer_axis_stop_noop,
+    .axis_relative_direction = _on_wl_pointer_axis_relative_direction_noop,
 };
 
 // clang-format off
@@ -394,10 +429,20 @@ static void _on_wl_seat_capabilities(void* data, struct wl_seat* seat, uint32 ca
 
     if (capabilities & WL_SEAT_CAPABILITY_KEYBOARD)
     {
-        b_end->keyboard = wl_seat_get_keyboard(seat);
-        if (b_end->keyboard) { wl_keyboard_add_listener(b_end->keyboard, &WL_KEYBOARD_LISTENER, (void*)b_end); }
+        if (!b_end->keyboard)
+        {
+            b_end->keyboard = wl_seat_get_keyboard(seat);
+            wl_keyboard_add_listener(b_end->keyboard, &WL_KEYBOARD_LISTENER, (void*)b_end);
+        }
     }
-    if (capabilities & WL_SEAT_CAPABILITY_POINTER) { b_end->pointer = wl_seat_get_pointer(seat); }
+    if (capabilities & WL_SEAT_CAPABILITY_POINTER)
+    {
+        if (!b_end->pointer)
+        {
+            b_end->pointer = wl_seat_get_pointer(seat);
+            wl_pointer_add_listener(b_end->pointer, &WL_POINTER_LISTENER, (void*)b_end);
+        }
+    }
 }
 
 static void _on_wl_seat_name_noop(void* data, struct wl_seat* seat, const char* name)
@@ -502,5 +547,107 @@ static void _on_wl_keyboard_modifier(void*               data,
 }
 
 static void _on_wl_keyboard_repeat_info_noop(void* data, struct wl_keyboard* wl_keyboard, int32 rate, int32 delay)
+{
+}
+
+static void _on_wl_pointer_enter_noop(void*              data,
+                                      struct wl_pointer* wl_pointer,
+                                      uint32             serial,
+                                      struct wl_surface* surface,
+                                      wl_fixed_t         surface_x,
+                                      wl_fixed_t         surface_y)
+{
+}
+
+static void _on_wl_pointer_leave_noop(void*              data,
+                                      struct wl_pointer* wl_pointer,
+                                      uint32             serial,
+                                      struct wl_surface* surface)
+{
+}
+
+static void _on_wl_pointer_motion(
+    void* data, struct wl_pointer* wl_pointer, uint32 time, wl_fixed_t surface_x, wl_fixed_t surface_y)
+{
+    WaylandBackend* b_end = (WaylandBackend*)data;
+
+    b_end->pointer_x = (float32)wl_fixed_to_double(surface_x);
+    b_end->pointer_y = (float32)wl_fixed_to_double(surface_y);
+
+    Event event = {
+        .type    = MouseMove,
+        .handled = false,
+        .mouse_move =
+            {
+                .x = b_end->pointer_x,
+                .y = b_end->pointer_y,
+            },
+    };
+    b_end->event_callback(event);
+}
+
+static void _on_wl_pointer_button(
+    void* data, struct wl_pointer* wl_pointer, uint32 serial, uint32 time, uint32 button, uint32 state)
+{
+    WaylandBackend* b_end = (WaylandBackend*)data;
+
+    Event event = {0};
+    event.handled = false;
+    if (state == WL_POINTER_BUTTON_STATE_PRESSED)
+    {
+        event.type                           = MouseButtonClick;
+        event.mouse_button_click.x           = b_end->pointer_x;
+        event.mouse_button_click.y           = b_end->pointer_y;
+        event.mouse_button_click.button_code = button;
+    }
+    else if (state == WL_POINTER_BUTTON_STATE_RELEASED)
+    {
+        event.type                             = MouseButtonRelease;
+        event.mouse_button_release.x           = b_end->pointer_x;
+        event.mouse_button_release.y           = b_end->pointer_y;
+        event.mouse_button_release.button_code = button;
+    }
+
+    b_end->event_callback(event);
+}
+
+static void _on_wl_pointer_axis(void* data, struct wl_pointer* wl_pointer, uint32 time, uint32 axis, wl_fixed_t value)
+{
+    WaylandBackend* b_end = (WaylandBackend*)data;
+
+    Event event = {0};
+    event.handled = false;
+    event.type    = MouseScroll;
+
+    if (axis == WL_POINTER_AXIS_VERTICAL_SCROLL) {
+        float32 y_offset = (float32)wl_fixed_to_double(value) > 0 ? -1.0f : 1.0f;
+
+        event.mouse_scroll.y_offset = y_offset;
+    }
+    else if (axis == WL_POINTER_AXIS_HORIZONTAL_SCROLL)
+    {
+        float32 x_offset = (float32)wl_fixed_to_double(value) > 0 ? 1.0f : -1.0f;
+        event.mouse_scroll.x_offset = x_offset;
+    }
+
+    b_end->event_callback(event);
+}
+
+static void _on_wl_pointer_frame_noop(void* data, struct wl_pointer* wl_pointer)
+{
+}
+
+static void _on_wl_pointer_axis_source_noop(void* data, struct wl_pointer* wl_pointer, uint32 axis_source)
+{
+}
+
+static void _on_wl_pointer_axis_relative_direction_noop(void*              data,
+                                                        struct wl_pointer* wl_pointer,
+                                                        uint32             axis,
+                                                        uint32             direction)
+{
+}
+
+static void _on_wl_pointer_axis_stop_noop(void* data, struct wl_pointer* wl_pointer, uint32 time, uint32 axis)
 {
 }
