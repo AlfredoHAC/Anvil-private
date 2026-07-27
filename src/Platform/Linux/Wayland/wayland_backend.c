@@ -143,7 +143,7 @@ static const WindowBackend WAYLAND_BACKEND = {
 };
 
 static const struct wl_registry_listener REGISTRY_LISTENER = {
-    .global        = _on_wl_registry_global_notify,
+    .global = _on_wl_registry_global_notify,
 };
 
 static const struct xdg_wm_base_listener XDG_WM_BASE_LISTENER = {
@@ -291,6 +291,7 @@ void wayland_window_show(void* backend)
     wl_surface_damage_buffer(b_end->surface, 0, 0, b_end->width, b_end->height);
 
     wl_surface_commit(b_end->surface);
+    wl_display_roundtrip(b_end->display);
 }
 
 void wayland_window_destroy(void* backend)
@@ -323,6 +324,7 @@ static void wayland_events_poll_and_dispatch(void* backend)
     WaylandBackend* b_end = (WaylandBackend*)backend;
 
     wl_display_dispatch(b_end->display);
+    wl_display_flush(b_end->display);
 }
 
 static void _shm_buffer_create(WaylandBackend* b_end, int32 width, int32 height)
