@@ -70,8 +70,8 @@ static void  wayland_window_destroy(void* backend);
 static void  wayland_window_set_event_callback(void* backend, EventCallbackFn event_callback);
 static void  wayland_events_poll_and_dispatch(void* backend);
 
-static void _shm_buffer_create(WaylandBackend* backend, int32 width, int32 height);
-static void _shm_buffer_destroy(WaylandBackend* backend);
+static void _shm_buffer_create(WaylandBackend* b_end, int32 width, int32 height);
+static void _shm_buffer_destroy(WaylandBackend* b_end);
 
 static void _on_wl_registry_global_notify(
     void* data, struct wl_registry* registry, uint32 id, const char* interface, uint32 version);
@@ -325,43 +325,43 @@ static void wayland_events_poll_and_dispatch(void* backend)
     wl_display_dispatch(b_end->display);
 }
 
-static void _shm_buffer_create(WaylandBackend* backend, int32 width, int32 height)
+static void _shm_buffer_create(WaylandBackend* b_end, int32 width, int32 height)
 {
-    if (backend->shm_data && backend->shm_fd >= 0) { return; }
+    if (b_end->shm_data && b_end->shm_fd >= 0) { return; }
 
-    backend->buffer_width  = width;
-    backend->buffer_height = height;
-    int32 buffer_size      = width * height * sizeof(uint32);
+    b_end->buffer_width  = width;
+    b_end->buffer_height = height;
+    int32 buffer_size    = width * height * sizeof(uint32);
 
     if (buffer_size <= 0) { return; }
 
-    backend->shm_fd = memfd_create("FORGE_WM_BUFFER", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    b_end->shm_fd = memfd_create("FORGE_WM_BUFFER", MFD_CLOEXEC | MFD_ALLOW_SEALING);
 
-    ftruncate(backend->shm_fd, buffer_size);
+    ftruncate(b_end->shm_fd, buffer_size);
 
-    backend->shm_data = mmap(NULL, buffer_size, PROT_READ | PROT_WRITE, MAP_SHARED, backend->shm_fd, 0);
-    if (backend->shm_data == MAP_FAILED)
+    b_end->shm_data = mmap(NULL, buffer_size, PROT_READ | PROT_WRITE, MAP_SHARED, b_end->shm_fd, 0);
+    if (b_end->shm_data == MAP_FAILED)
     {
-        close(backend->shm_fd);
+        close(b_end->shm_fd);
         return;
     }
 
-    uint32* pixels = (uint32*)backend->shm_data;
+    uint32* pixels = (uint32*)b_end->shm_data;
     for (uint32 i = 0; i < width * height; ++i)
     {
         pixels[i] = 0xFF000000u;
     }
 
-    if (!backend->shared_mem)
+    if (!b_end->shared_mem)
     {
-        munmap(backend->shm_data, buffer_size);
-        close(backend->shm_fd);
+        munmap(b_end->shm_data, buffer_size);
+        close(b_end->shm_fd);
         return;
     }
 
-    struct wl_shm_pool* shm_pool = wl_shm_create_pool(backend->shared_mem, backend->shm_fd, buffer_size);
+    struct wl_shm_pool* shm_pool = wl_shm_create_pool(b_end->shared_mem, b_end->shm_fd, buffer_size);
 
-    backend->shm_buffer = wl_shm_pool_create_buffer(shm_pool, 0, width, height, width * 4, WL_SHM_FORMAT_ARGB8888);
+    b_end->shm_buffer = wl_shm_pool_create_buffer(shm_pool, 0, width, height, width * 4, WL_SHM_FORMAT_ARGB8888);
 
     wl_shm_pool_destroy(shm_pool);
 }
@@ -527,7 +527,7 @@ static void _on_wl_keyboard_key(
 {
     WaylandBackend* b_end = (WaylandBackend*)data;
 
-    Event event = {0};
+    Event event   = {0};
     event.handled = false;
     if (state == WL_KEYBOARD_KEY_STATE_PRESSED)
     {
@@ -603,7 +603,7 @@ static void _on_wl_pointer_button(
 {
     WaylandBackend* b_end = (WaylandBackend*)data;
 
-    Event event = {0};
+    Event event   = {0};
     event.handled = false;
     if (state == WL_POINTER_BUTTON_STATE_PRESSED)
     {
@@ -627,18 +627,18 @@ static void _on_wl_pointer_axis(void* data, struct wl_pointer* wl_pointer, uint3
 {
     WaylandBackend* b_end = (WaylandBackend*)data;
 
-    Event event = {0};
+    Event event   = {0};
     event.handled = false;
     event.type    = MouseScroll;
 
-    if (axis == WL_POINTER_AXIS_VERTICAL_SCROLL) {
-        float32 y_offset = (float32)wl_fixed_to_double(value) > 0 ? -1.0f : 1.0f;
-
+    if (axis == WL_POINTER_AXIS_VERTICAL_SCROLL)
+    {
+        float32 y_offset            = (float32)wl_fixed_to_double(value) > 0 ? -1.0f : 1.0f;
         event.mouse_scroll.y_offset = y_offset;
     }
     else if (axis == WL_POINTER_AXIS_HORIZONTAL_SCROLL)
     {
-        float32 x_offset = (float32)wl_fixed_to_double(value) > 0 ? 1.0f : -1.0f;
+        float32 x_offset            = (float32)wl_fixed_to_double(value) > 0 ? 1.0f : -1.0f;
         event.mouse_scroll.x_offset = x_offset;
     }
 
