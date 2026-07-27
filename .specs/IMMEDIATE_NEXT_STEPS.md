@@ -1,7 +1,7 @@
 # Próximos Passos Imediatos — Forge Engine (Estado Real da Codebase)
 
 > Baseado na análise do `FORGE_CORE_ROADMAP.md` + inspeção direta dos arquivos em `src/`.  
-> **Status real:** 3 tarefas concluídas, 1 parcialmente implementada, ~35 não iniciadas.
+> **Status real:** 4 tarefas concluídas, ~35 não iniciadas.
 
 ---
 
@@ -27,7 +27,7 @@ src/
 │   ├── linux_platform.c     ← detecção X11/Wayland + dispatch via vtable
 │   ├── window_backend.h     ← WindowBackend vtable interface
 │   ├── X11/x11_backend.*    ← backend X11/XCB completo (event capturing)
-│   └── Wayland/wayland_backend.c  ← stubs com trace apenas
+│   └── Wayland/wayland_backend.c  ← backend completo (xdg-shell, shm, keyboard, pointer)
 └── Tools/
     ├── logger.h         ← LogLevel enum + anvlLog*/ANVIL_CORE_* macros
     └── logger.c         ← timestamp, cores ANSI, fprintf(stderr)
@@ -39,7 +39,7 @@ src/
 |-------|--------|--------|----------------------|
 | **1.2 Eventos de Entrada** | Captura teclado/mouse/janela | ✅ Concluída | `event.h` (8 tipos), `win32_platform.c` (WM_* mapeados) |
 | **1.3 Logging** | Sistema com níveis | ✅ Concluída | `logger.h/c` (6 níveis + macros core/client) |
-| **1.1 Gerenciamento de Janelas** | Criação/redimensionamento/fechamento | ⚠️ Parcial | Backend Win32 completo; X11/XCB com event capturing implementado (WM_CLOSE, resize, key/mouse); Wayland stub (`ANVIL_CORE_TRACE`); opaque pointer aplicado corretamente (`platform.h`) |
+| **1.1 Gerenciamento de Janelas** | Criação/redimensionamento/fechamento | ✅ Concluída | Backend Win32 completo; X11/XCB completo (event capturing); Wayland completo (xdg-shell, shm, keyboard, pointer); opaque pointer aplicado corretamente (`platform.h`)
 | 1.4 I/O de Arquivos | Abstração filesystem | ❌ Não iniciado | Nenhum arquivo em `src/` relacionado |
 | 1.5 Propagação de Eventos | Layer System | ❌ Não iniciado | Callback vai direto para `anvlApplicationOnEvent()` — sem stack de layers |
 
@@ -81,7 +81,7 @@ window->EventCallback(event);  // ← copia toda a union de Event
 #### 4. Wayland stub e macOS sem backend
 **Arquivo:** `src/Platform/Linux/Wayland/*`
 - ✅ X11/XCB completo em `src/Platform/Linux/X11/x11_backend.c`
-- ⚠️ Wayland stub (`ANVIL_CORE_TRACE`) — polling de eventos não implementado
+- ✅ Wayland completo: xdg-shell, shared memory buffers, keyboard, pointer, server-side decorations
 - ❌ macOS sem backend
 
 ---
@@ -120,12 +120,12 @@ window->EventCallback(event);  // ← copia toda a union de Event
 - [x] Nenhum outro arquivo precisa das macros — o PCH agora é 100% cross-platform
 
 ### P3 — Backend Linux (stub ou mínimo)
-**Estado atual:** ⚠️ Parcialmente concluído — backend X11 com event capturing completo via XCB; stubs Wayland em `src/Platform/Linux/Wayland/*`.  
+**Estado atual:** ✅ Concluída — backends X11/XCB e Wayland completos com event capturing.  
 **Arquivos afetados:** `src/Platform/Linux/linux_platform.c`, `src/Platform/Linux/X11/x11_backend.c`, `src/Platform/Linux/Wayland/wayland_backend.c`
 
-- [x] Criar stub com `#error "Linux backend not yet implemented"` para progresso incremental
+- [x] Criar stub com `#error` para progresso incremental
 - [x] Implementar X11/XCB mínimo com event capturing (`xcb_connect`, `xcb_create_window`, `xcb_map_window`, `xcb_poll_for_event`)
-- [ ] Implementar Wayland mínimo (`wl_display`, `wl_registry`, surface creation, event loop)
+- [x] Implementar Wayland mínimo (`wl_display`, `wl_registry`, surface creation, event loop)
 
 ### P4 — Refatoração de Arquitetura: Separação por Responsabilidades
 **Estado atual:** Estrutura plana `Core/Platform/Tools` com backends X11/Wayland espalhados em `Platform/Linux/`. Vtable de windowing implementada mas com problemas de segurança (ver análise anterior).
@@ -134,7 +134,7 @@ window->EventCallback(event);  // ← copia toda a union de Event
 #### Fase 1 — Implementação dos Backends (estrutura atual)
 - [ ] Corrigir `getenv` sem check de `NULL` em `_window_backend_detect()`
 - [ ] Implementar `free(backend)` nos `destroy` do X11 e Wayland backends
-- [ ] Completar implementação real do backend Wayland (atualmente stubs com apenas trace)
+- [x] Completar implementação real do backend Wayland (xdg-shell, shared memory, keyboard, pointer)
 - [x] Completar implementação real do backend X11/XCB (criação de janela, surface, event loop)
   → ✅ **Concluído** — WM_DELETE_WINDOW, configure notify, key/mouse events implementados.
 - [ ] Garantir que a vtable `WindowBackend` funcione corretamente em runtime
@@ -217,8 +217,7 @@ void anvlEventDispatcherDispatch(Event event);  // chama layers em ordem inversa
 |------------|--------|-------------------|------|
 | **P0** | Quebrar acoplamento Platform → Core no callback | `src/Platform/platform.h`, `src/Platform/Windows/win32_platform.c` | Refatoração |
 | **P1** | Isolar detecção de platform do PCH | `src/anvlpch.h`, `src/Tools/logger.c`, `src/Core/base.h` | Refatoração |
-| **P2** | Backend Linux (stub ou mínimo) | `src/Platform/Linux/linux_platform.c`, `X11/*`, `Wayland/*` | ⚠️ Parcialmente concluída |
-| **P3** | Wayland completo + macOS stub | Novos: backends por plataforma | Implementação |
-| **P4** | Refatoração de Arquitetura (separação por responsabilidades) | Move: `window_backend.h`, backends → `Windowing/` | Refatoração |
-| **P5** | I/O de Arquivos abstrato | Novo: `src/FileSystem/filesystem.h` + backends por plataforma | Implementação |
-| **P6** | Layer System / Event Dispatcher | Novo: `src/Core/event_layer.h`, `src/Core/event_layer.c` | Implementação |
+| **P2** | Backend Linux (stub ou mínimo) | `src/Platform/Linux/linux_platform.c`, `X11/*`, `Wayland/*` | ✅ Concluída |
+| **P3** | Refatoração de Arquitetura (separação por responsabilidades) | Move: `window_backend.h`, backends → `Windowing/` | Refatoração |
+| **P4** | I/O de Arquivos abstrato | Novo: `src/FileSystem/filesystem.h` + backends por plataforma | Implementação |
+| **P5** | Layer System / Event Dispatcher | Novo: `src/Core/event_layer.h`, `src/Core/event_layer.c` | Implementação |
