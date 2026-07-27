@@ -51,6 +51,17 @@ project "Anvil"
         systemversion "latest"
         cdialect "gnu11"
 
+
+        links {
+            "X11",
+            "xcb",
+            "wayland-client"
+        }
+
+        defines {
+            "_GNU_SOURCE"
+        }
+
         removefiles {
             "./**/Windows/**"
         }
