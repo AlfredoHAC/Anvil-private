@@ -11,11 +11,11 @@ typedef struct NativeWindow
     void*                backend_data;
 } NativeWindow;
 
-typedef enum
+typedef enum WindowBackendType
 {
-    wbNone = 0,
-    wbX11,
-    wbWayland,
+    ANVL_WINDOW_BACKEND_NONE = 0,
+    ANVL_WINDOW_BACKEND_X11,
+    ANVL_WINDOW_BACKEND_WAYLAND,
 } WindowBackendType;
 
 static const WindowBackend* _window_backend_create(NativeWindow* window);
@@ -79,8 +79,8 @@ void anvl_platform_set_window_event_callback(NativeWindow* window, EventCallback
 static const WindowBackend* _window_backend_create(NativeWindow* window)
 {
     WindowBackendType window_backend_type = _window_backend_detect();
-    if (window_backend_type == wbWayland) { return wayland_backend(); }
-    else if (window_backend_type == wbX11) { return x11_backend(); }
+    if (window_backend_type == ANVL_WINDOW_BACKEND_WAYLAND) { return wayland_backend(); }
+    else if (window_backend_type == ANVL_WINDOW_BACKEND_X11) { return x11_backend(); }
     else
     {
         return NULL;
@@ -96,13 +96,13 @@ static uint32 _window_backend_detect()
     if (xdg_session_type != NULL && wayland_display != NULL &&
         strcmp(xdg_session_type, "wayland") == 0)
     {
-        return wbWayland;
+        return ANVL_WINDOW_BACKEND_WAYLAND;
     }
     else if (xdg_session_type != NULL && x11_display != NULL &&
              strcmp(xdg_session_type, "x11") == 0)
     {
-        return wbX11;
+        return ANVL_WINDOW_BACKEND_X11;
     }
 
-    return wbNone;
+    return ANVL_WINDOW_BACKEND_NONE;
 }

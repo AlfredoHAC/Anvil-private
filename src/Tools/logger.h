@@ -3,13 +3,13 @@
 
 typedef enum LogLevel
 {
-    NoLog = 0,
-    Fatal,
-    Error,
-    Warning,
-    Info,
-    Debug,
-    Trace,
+    ANVL_LOG_LEVEL_NONE = 0,
+    ANVL_LOG_LEVEL_FATAL,
+    ANVL_LOG_LEVEL_ERROR,
+    ANVL_LOG_LEVEL_WARNING,
+    ANVL_LOG_LEVEL_INFO,
+    ANVL_LOG_LEVEL_DEBUG,
+    ANVL_LOG_LEVEL_TRACE,
 } LogLevel;
 
 void anvl_logger_set_level(LogLevel level);
