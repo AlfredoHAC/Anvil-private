@@ -1,7 +1,7 @@
 #include "anvlpch.h"
 
 #include "Core/application.h"
-#include "Platform/platform.h"
+#include "Windowing/window.h"
 
 #include "Tools/logger.h"
 
@@ -15,7 +15,7 @@ typedef struct Application
 Application* anvl_application_init(const ApplicationOptions opts)
 {
     Application* app = malloc(sizeof(Application));
-    if (!app) return NULL;
+    if (!app) { return NULL; }
     anvl_logger_set_level(Trace);
 
     ANVIL_CORE_INFO("Starting application.");
@@ -40,7 +40,7 @@ Application* anvl_application_init(const ApplicationOptions opts)
 
 void anvl_application_run(Application* app)
 {
-    if(!app) return;
+    if (!app) { return; }
 
     while (app_running)
     {
@@ -50,7 +50,7 @@ void anvl_application_run(Application* app)
 
 void anvl_application_shutdown(Application* app)
 {
-    if (!app) return;
+    if (!app) { return; }
 
     anvl_platform_window_destroy(app->window);
 
@@ -63,40 +63,49 @@ void anvl_application_on_event(Event event)
 
     switch (event.type)
     {
-    case WindowClose:
-        anvl_application_on_window_close();
-        break;
-    case WindowResize:
-        ANVIL_CORE_DEBUG("Window resize: %dx%d", event.window_resize.width, event.window_resize.height);
-        break;
-    case KeyPress:
-        ANVIL_CORE_DEBUG("Key press: %d (Mod: %d)", event.key_press.key_code, event.key_press.modifier_set);
-        break;
-    case KeyRelease:
-        ANVIL_CORE_DEBUG("Key release: %d (Mod: %d)", event.key_release.key_code, event.key_release.modifier_set);
-        break;
-    case MouseMove:
-        ANVIL_CORE_DEBUG("Mouse move: (%.1f,%.1f)", event.mouse_move.x, event.mouse_move.y);
-        break;
-    case MouseButtonClick:
-        ANVIL_CORE_DEBUG("Mouse button click: %d (%.1f,%.1f)", event.mouse_button_click.button_code,
-                         event.mouse_button_click.x, event.mouse_button_click.y);
-        break;
-    case MouseButtonRelease:
-        ANVIL_CORE_DEBUG("Mouse button release: %d (%.1f,%.1f)", event.mouse_button_release.button_code,
-                         event.mouse_button_release.x, event.mouse_button_release.y);
-        break;
-    case MouseScroll:
-        ANVIL_CORE_DEBUG("Mouse scroll: (%.1f,%.1f)", event.mouse_scroll.x_offset, event.mouse_scroll.y_offset);
-        break;
-    default:
-        break;
+        case WindowClose: anvl_application_on_window_close(); break;
+        case WindowResize:
+            ANVIL_CORE_DEBUG(
+                "Window resize: %dx%d", event.window_resize.width, event.window_resize.height);
+            break;
+        case KeyPress:
+            ANVIL_CORE_DEBUG(
+                "Key press: %d (Mod: %d)", event.key_press.key_code, event.key_press.modifier_set);
+            break;
+        case KeyRelease:
+            ANVIL_CORE_DEBUG("Key release: %d (Mod: %d)",
+                             event.key_release.key_code,
+                             event.key_release.modifier_set);
+            break;
+        case MouseMove:
+            ANVIL_CORE_DEBUG("Mouse move: (%.1f,%.1f)", event.mouse_move.x, event.mouse_move.y);
+            break;
+        case MouseButtonClick:
+            ANVIL_CORE_DEBUG("Mouse button click: %d (%.1f,%.1f)",
+                             event.mouse_button_click.button_code,
+                             event.mouse_button_click.x,
+                             event.mouse_button_click.y);
+            break;
+        case MouseButtonRelease:
+            ANVIL_CORE_DEBUG("Mouse button release: %d (%.1f,%.1f)",
+                             event.mouse_button_release.button_code,
+                             event.mouse_button_release.x,
+                             event.mouse_button_release.y);
+            break;
+        case MouseScroll:
+            ANVIL_CORE_DEBUG("Mouse scroll: (%.1f,%.1f)",
+                             event.mouse_scroll.x_offset,
+                             event.mouse_scroll.y_offset);
+            break;
+        default: break;
     }
 
     event.handled = true;
 }
 
+// clang-format off
 void anvl_application_on_window_close()
 {
     app_running = false;
 }
+// clang-format on

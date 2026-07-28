@@ -1,10 +1,9 @@
-
 #include "anvlpch.h"
 
-#include "Platform/Linux/Wayland/wayland_backend.h"
-#include "Platform/Linux/X11/x11_backend.h"
-#include "Platform/Linux/window_backend.h"
-#include "Platform/platform.h"
+#include "Windowing/Linux/Wayland/wayland_backend.h"
+#include "Windowing/Linux/X11/x11_backend.h"
+#include "Windowing/window.h"
+#include "Windowing/window_backend.h"
 
 typedef struct NativeWindow
 {
@@ -22,7 +21,9 @@ typedef enum
 static const WindowBackend* _window_backend_create(NativeWindow* window);
 static uint32               _window_backend_detect();
 
-NativeWindow* anvl_platform_window_create(const char* window_title, uint16 window_width, uint16 window_height)
+NativeWindow* anvl_platform_window_create(const char* window_title,
+                                          uint16      window_width,
+                                          uint16      window_height)
 {
     NativeWindow* window = malloc(sizeof(NativeWindow));
     if (!window) { return NULL; }
@@ -92,11 +93,16 @@ static uint32 _window_backend_detect()
     char* x11_display      = getenv("DISPLAY");
     char* wayland_display  = getenv("WAYLAND_DISPLAY");
 
-    if (xdg_session_type != NULL && wayland_display != NULL && strcmp(xdg_session_type, "wayland") == 0)
+    if (xdg_session_type != NULL && wayland_display != NULL &&
+        strcmp(xdg_session_type, "wayland") == 0)
     {
         return wbWayland;
     }
-    else if (xdg_session_type != NULL && x11_display != NULL && strcmp(xdg_session_type, "x11") == 0) { return wbX11; }
+    else if (xdg_session_type != NULL && x11_display != NULL &&
+             strcmp(xdg_session_type, "x11") == 0)
+    {
+        return wbX11;
+    }
 
     return wbNone;
 }
