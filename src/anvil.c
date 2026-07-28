@@ -11,7 +11,7 @@ int main()
     };
 
     Application* app = anvl_application_init(opts);
-    if (!app) return 1;
+    if (!app) { return 1; }
 
     anvl_application_run(app);
 

@@ -1,8 +1,8 @@
 #include "anvlpch.h"
 
-#include "Platform/Linux/X11/x11_backend.h"
-#include "Platform/event.h"
 #include "Tools/logger.h"
+#include "Windowing/Linux/X11/x11_backend.h"
+#include "Windowing/event.h"
 
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
@@ -25,14 +25,15 @@ typedef struct X11Backend
     xcb_atom_t wm_delete_window_atom;
 } X11Backend;
 
+// clang-format off
 static void* x11_backend_init();
 static void  x11_backend_shutdown(void* backend);
 static void  x11_window_create(void* backend, const char* window_title, uint16 width, uint16 height);
 static void  x11_window_show(void* backend);
 static void  x11_window_destroy(void* backend);
 static void  x11_window_set_event_callback(void* backend, EventCallbackFn event_callback);
-
-static void x11_events_poll_and_dispatch(void* backend);
+static void  x11_events_poll_and_dispatch(void* backend);
+// clang-format on
 
 static const WindowBackend X11_BACKEND = {
     .backend_init                    = x11_backend_init,
@@ -92,7 +93,8 @@ static void _register_wm_delete_window_message(X11Backend* b_end)
 {
     xcb_intern_atom_cookie_t protocols_cookie =
         xcb_intern_atom(b_end->display, 0, strlen("WM_PROTOCOLS"), "WM_PROTOCOLS");
-    xcb_intern_atom_reply_t* protocols_reply = xcb_intern_atom_reply(b_end->display, protocols_cookie, NULL);
+    xcb_intern_atom_reply_t* protocols_reply =
+        xcb_intern_atom_reply(b_end->display, protocols_cookie, NULL);
 
     if (!protocols_reply)
     {
@@ -102,7 +104,8 @@ static void _register_wm_delete_window_message(X11Backend* b_end)
 
     xcb_intern_atom_cookie_t wm_del_cookie =
         xcb_intern_atom(b_end->display, 0, strlen("WM_DELETE_WINDOW"), "WM_DELETE_WINDOW");
-    xcb_intern_atom_reply_t* wm_del_reply = xcb_intern_atom_reply(b_end->display, wm_del_cookie, NULL);
+    xcb_intern_atom_reply_t* wm_del_reply =
+        xcb_intern_atom_reply(b_end->display, wm_del_cookie, NULL);
 
     if (!wm_del_reply)
     {
@@ -137,8 +140,8 @@ void x11_window_create(void* backend, const char* window_title, uint16 width, ui
         b_end->screen->black_pixel,
         b_end->screen->white_pixel,
         XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE |
-            XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
-            XCB_EVENT_MASK_BUTTON_MOTION,
+            XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_PRESS |
+            XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_BUTTON_MOTION,
     };
 
     xcb_create_window(b_end->display,                // XCB connection

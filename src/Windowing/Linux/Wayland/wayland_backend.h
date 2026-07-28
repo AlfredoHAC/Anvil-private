@@ -1,7 +1,7 @@
 #ifndef ANVL_WINDOW_BACKEND_WAYLAND_HEADER
 #define ANVL_WINDOW_BACKEND_WAYLAND_HEADER
 
-#include "Platform/Linux/window_backend.h"
+#include "Windowing/window_backend.h"
 
 typedef struct WaylandBackend WaylandBackend;
 

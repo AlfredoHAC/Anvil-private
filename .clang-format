@@ -5,7 +5,7 @@ BasedOnStyle: LLVM
 # Spacing and Indentation
 IndentWidth: 4
 PPIndentWidth: 4
-ColumnLimit: 120
+ColumnLimit: 100
 PointerAlignment: Left
 SpaceBeforeParens: ControlStatements
 SpaceAfterCStyleCast: false

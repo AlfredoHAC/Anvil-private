@@ -1,7 +1,7 @@
 #ifndef ANVL_EVENT_HEADER
 #define ANVL_EVENT_HEADER
 
-#include "typedefs.h"
+#include "Core/typedefs.h"
 
 typedef enum EventType
 {
@@ -30,36 +30,36 @@ typedef struct WindowResizeEvent
 typedef struct KeyPressEvent
 {
     uint16 key_code;
-    uint8 modifier_set;
+    uint8  modifier_set;
 } KeyPressEvent;
 
 typedef struct KeyReleaseEvent
 {
     uint16 key_code;
-    uint8 modifier_set;
+    uint8  modifier_set;
 } KeyReleaseEvent;
 
 typedef struct MouseMoveEvent
 {
     float32 x;
     float32 y;
-    uint8 modifier_set;
+    uint8   modifier_set;
 } MouseMoveEvent;
 
 typedef struct MouseButtonClickEvent
 {
     float32 x;
     float32 y;
-    uint8 button_code;
-    uint8 modifier_set;
+    uint8   button_code;
+    uint8   modifier_set;
 } MouseButtonClickEvent;
 
 typedef struct MouseButtonReleaseEvent
 {
     float32 x;
     float32 y;
-    uint8 button_code;
-    uint8 modifier_set;
+    uint8   button_code;
+    uint8   modifier_set;
 } MouseButtonReleaseEvent;
 
 typedef struct MouseScrollEvent
@@ -71,18 +71,18 @@ typedef struct MouseScrollEvent
 typedef struct Event
 {
     EventType type;
-    bool handled;
+    bool      handled;
 
     union
     {
-        WindowCloseEvent window_close;
-        WindowResizeEvent window_resize;
-        KeyPressEvent key_press;
-        KeyReleaseEvent key_release;
-        MouseMoveEvent mouse_move;
-        MouseButtonClickEvent mouse_button_click;
+        WindowCloseEvent        window_close;
+        WindowResizeEvent       window_resize;
+        KeyPressEvent           key_press;
+        KeyReleaseEvent         key_release;
+        MouseMoveEvent          mouse_move;
+        MouseButtonClickEvent   mouse_button_click;
         MouseButtonReleaseEvent mouse_button_release;
-        MouseScrollEvent mouse_scroll;
+        MouseScrollEvent        mouse_scroll;
     };
 } Event;
 
