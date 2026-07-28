@@ -47,7 +47,7 @@ src/
 | **1.2 Eventos de Entrada** | Captura teclado/mouse/janela | ✅ Concluída | `Windowing/event.h` (8 tipos), `win32_window.c` (WM_* mapeados) |
 | **1.3 Logging** | Sistema com níveis | ✅ Concluída | `logger.h/c` (6 níveis + macros core/client) |
 | **1.1 Gerenciamento de Janelas** | Criação/redimensionamento/fechamento | ✅ Concluída | Backends Win32/X11/Wayland completos; opaque pointer em `window.h`; vtable `WindowBackend` validada em runtime |
-| 1.4 I/O de Arquivos | Abstração filesystem | ❌ Não iniciado | Nenhum arquivo em `src/` relacionado |
+| 1.4 I/O de Arquivos | Abstração FileIO | ❌ Não iniciado | Nenhum arquivo em `src/` relacionado |
 | 1.5 Propagação de Eventos | Layer System | ❌ Não iniciado | Callback vai direto para `anvl_application_on_event()` — sem stack de layers |
 
 ### Seções 2–8 do Roadmap
@@ -179,19 +179,19 @@ typedef void (*EventCallbackFn)(Event event);  // ← copia toda a union de Even
 ---
 
 ### P5 — I/O de Arquivos abstrato (Novo)
-**Estado:** Zero implementação.  
-**Dependência:** `Platform/` está estável (primitivas OS puras), então FileSystem pode nascer na estrutura correta.
+**Estado:** Planejamento concluído (ver `P5/P5_FILEIO.md`).  
+**Dependência:** `Platform/` está estável (primitivas OS puras), então FileIO pode nascer na estrutura correta.
 
-- [ ] Criar `src/FileSystem/filesystem.h`:
+- [ ] Criar `src/FileIO/fileio.h`:
 ```c
 typedef struct FileHandle FileHandle;
-FileHandle* anvl_filesystem_open(const char* path, const char* mode);
-uint64 anvl_filesystem_read(FileHandle* file, void* buffer, uint64 size);
-uint64 anvl_filesystem_write(FileHandle* file, const void* buffer, uint64 size);
-bool anvl_filesystem_close(FileHandle* file);
-bool anvl_filesystem_exists(const char* path);
+FileHandle* anvl_file_open(const char* path, FileMode mode);
+uint64 anvl_file_read(FileHandle* file, void* buffer, uint64 size);
+uint64 anvl_file_write(FileHandle* file, const void* buffer, uint64 size);
+bool anvl_file_close(FileHandle* file);
+bool anvl_file_exists(const char* path);
 ```
-- [ ] Criar `src/FileSystem/Windows/windows_filesystem.c` + `src/FileSystem/Linux/linux_filesystem.c`
+- [ ] Criar `src/FileIO/Linux/posix_fileio.c` + `src/FileIO/Windows/win32_fileio.c`
 
 ### P6 — Layer System / Event Dispatcher (Novo)
 
@@ -233,6 +233,6 @@ void anvl_event_dispatcher_dispatch(Event event);  // chama layers em ordem inve
 | ~~**P1**~~ | ~~Isolar detecção de platform do PCH~~ | ~~`anvlpch.h`, `Tools/logger.c`~~ | ✅ Concluída |
 | ~~**P2**~~ | ~~Backend Linux (stub ou mínimo)~~ | ~~`Windowing/Linux/linux_window.c`, `X11/*`, `Wayland/*`~~ | ✅ Concluída |
 | ~~**P3**~~ | ~~Refatoração de Arquitetura (separação por responsabilidades)~~ | ~~Move: `window.h`, `event.h`, backends → `Windowing/`~~ | ✅ Concluída |
-| **P4** | I/O de Arquivos abstrato | Novo: `src/FileSystem/filesystem.h` + backends por plataforma | Implementação |
+| **P4** | I/O de Arquivos abstrato | Novo: `src/FileIO/fileio.h` + backends por plataforma | Implementação |
 | **P5** | Layer System / Event Dispatcher | Novo: `src/Core/event_layer.h`, `src/Core/event_layer.c` | Implementação |
 | **P6** | Corrigir callback: `Event` por valor → `const Event*` | `Windowing/window.h`, `application.c`, backends | Refatoração |
