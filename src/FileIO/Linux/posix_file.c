@@ -78,11 +78,7 @@ bool anvl_file_exists(const char* path)
 
 uint64 anvl_file_get_size(FileHandle* file)
 {
-    if (!file || !file->pointer)
-    {
-        ANVIL_CORE_ERROR("Failed to open file %s", file->path);
-        return 0;
-    }
+    if (!file || !file->pointer) { return 0; }
 
     if (fseek(file->pointer, 0, SEEK_END) != 0) { return 0; }
 
