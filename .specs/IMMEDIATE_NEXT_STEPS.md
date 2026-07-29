@@ -178,7 +178,7 @@ typedef void (*EventCallbackFn)(Event event);  // ← copia toda a union de Even
 
 ---
 
-### P4 — I/O de Arquivos abstrato (Novo)
+### P5 — I/O de Arquivos abstrato (Novo)
 **Estado:** ✅ Concluída (ver `P5/P5_FILEIO.md`).  
 **Dependência:** Nenhuma (Platform está estável).
 
@@ -224,10 +224,10 @@ void anvl_event_dispatcher_dispatch(Event event);  // chama layers em ordem inve
 
 | Prioridade | Tarefa | Arquivos Afetados | Tipo |
 |------------|--------|-------------------|------|
-| ~~**P0**~~ | ~~Quebrar acoplamento Platform → Core no callback~~ | ~~`Windowing/window.h`, `Windowing/Windows/win32_window.c`~~ | ✅ Concluída |
-| ~~**P1**~~ | ~~Isolar detecção de platform do PCH~~ | ~~`anvlpch.h`, `Tools/logger.c`~~ | ✅ Concluída |
-| ~~**P2**~~ | ~~Backend Linux (stub ou mínimo)~~ | ~~`Windowing/Linux/linux_window.c`, `X11/*`, `Wayland/*`~~ | ✅ Concluída |
-| ~~**P3**~~ | ~~Refatoração de Arquitetura (separação por responsabilidades)~~ | ~~Move: `window.h`, `event.h`, backends → `Windowing/`~~ | ✅ Concluída |
-| **P4** | I/O de Arquivos abstrato | `src/FileIO/fileio.h` + backends por plataforma | ✅ Concluída |
-| **P5** | Layer System / Event Dispatcher | Novo: `src/Core/event_layer.h`, `src/Core/event_layer.c` | Implementação |
-| **P6** | Corrigir callback: `Event` por valor → `const Event*` | `Windowing/window.h`, `application.c`, backends | Refatoração |
+| ~~**P1**~~ | ~~Quebrar acoplamento Platform → Core no callback~~ | ~~`Windowing/window.h`, `Windowing/Windows/win32_window.c`~~ | ✅ Concluída |
+| ~~**P2**~~ | ~~Isolar detecção de platform do PCH~~ | ~~`anvlpch.h`, `Tools/logger.c`~~ | ✅ Concluída |
+| ~~**P3**~~ | ~~Backend Linux (stub ou mínimo)~~ | ~~`Windowing/Linux/linux_window.c`, `X11/*`, `Wayland/*`~~ | ✅ Concluída |
+| ~~**P4**~~ | ~~Refatoração de Arquitetura (separação por responsabilidades)~~ | ~~Move: `window.h`, `event.h`, backends → `Windowing/`~~ | ✅ Concluída |
+| **P5** | I/O de Arquivos abstrato | `src/FileIO/fileio.h` + backends por plataforma | ✅ Concluída |
+| **P6** | Layer System / Event Dispatcher | Novo: `src/Core/event_layer.h`, `src/Core/event_layer.c` | Implementação |
+| **P7** | Corrigir callback: `Event` por valor → `const Event*` | `Windowing/window.h`, `application.c`, backends | Refatoração |
