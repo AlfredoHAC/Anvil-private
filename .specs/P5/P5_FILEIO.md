@@ -1,6 +1,6 @@
 # P5 — File I/O Abstrato
 
-> **Status:** Planejamento  
+> **Status:** Concluído  
 > **Dependência:** Nenhuma (Platform está estável)  
 > **Módulo:** Novo — `FileIO/`
 
@@ -145,7 +145,7 @@ Contém SOMENTE:
 
 Cada backend inclui este header e implementa as funções declaradas nele.
 
-### 4.2 Backend POSIX (`posix_fileio.c`)
+### 4.2 Backend POSIX (`posix_file.c`)
 
 Implementa as 6 funções usando stdio/POSIX:
 
@@ -155,12 +155,12 @@ Implementa as 6 funções usando stdio/POSIX:
 | `anvl_file_read` | `fread(buffer, 1, size, file)` — retorna bytes lidos |
 | `anvl_file_write` | `fwrite(buffer, 1, size, file)` — retorna bytes escritos |
 | `anvl_file_close` | `fclose(file)` — retorna `true` se `fclose` retorna 0 |
-| `anvl_file_exists` | `fopen(path, "r")` e fecha imediatamente (ou `access()` no POSIX) |
-| `anvl_file_get_size` | `fseek(EOF) + ftell()` ou `fstat()` no POSIX |
+| `anvl_file_exists` | `fopen(path, "r")` e fecha imediatamente |
+| `anvl_file_get_size` | `fseek(SEEK_END) + ftell()` + `rewind()` |
 
 **Dados do backend:** `FILE*` armazenado diretamente no `FileHandle*` (cast de/para `void*`).
 
-**Inclui:** `anvlpch.h` + `FileIO/fileio.h` + `<stdio.h>` + `<sys/stat.h>`
+**Inclui:** `anvlpch.h` + `FileIO/fileio.h` + `<stdio.h>`
 
 ### 4.3 Backend Win32 (`win32_fileio.c`)
 
@@ -168,22 +168,20 @@ Implementa as 6 funções usando Win32 API:
 
 | Função | Implementação |
 |--------|---------------|
-| `anvl_file_open` | `CreateFileW` com conversão `const char*` → `wchar_t*` via `MultiByteToWideChar(CP_UTF8, ...)` |
+| `anvl_file_open` | `CreateFileA` — paths ANSI (sem conversão UTF-8) |
 | `anvl_file_read` | `ReadFile(handle, buffer, size, &bytes_read, NULL)` |
 | `anvl_file_write` | `WriteFile(handle, buffer, size, &bytes_written, NULL)` |
-| `anvl_file_close` | `CloseHandle(handle)` |
-| `anvl_file_exists` | `GetFileAttributesW(path_wide) != INVALID_FILE_ATTRIBUTES` |
+| `anvl_file_close` | `CloseHandle(handle)` + seta `pointer = NULL` |
+| `anvl_file_exists` | `GetFileAttributesA(path) != INVALID_FILE_ATTRIBUTES` |
 | `anvl_file_get_size` | `GetFileSizeEx(handle, &large_integer)` |
 
 **Dados do backend:** `HANDLE` armazenado diretamente no `FileHandle*` (cast de/para `void*`).
 
-**Conversão de path:** O engine usa `const char*` para paths (padrão C). No Windows, convertemos para `wchar_t*` usando `MultiByteToWideChar(CP_UTF8, ...)`. Caminhos no Windows são tratados como UTF-8 (alinhado com a tendência moderna do Windows 10+).
+**Conversão de path:** O engine usa `const char*` para paths (padrão C). Win32 usa `CreateFileA` diretamente — paths ANSI. Caminhos com caracteres Unicode (japonês, emoji) não são suportados nesta versão.
 
-**Por que `CreateFileW` ao invés de `_wfopen`?**
-- `CreateFileW` dá controle fino sobre share mode, creation disposition, e flags.
-- Para um engine, o controle fino é preferível — pode-se estender para `FILE_FLAG_OVERLAPPED` no futuro se necessário.
+**Nota:** A spec original previa `CreateFileW` + `MultiByteToWideChar(CP_UTF8)`. Optou-se por `CreateFileA` para simplificar. Se o Furnace precisar de Unicode, refatorar para `CreateFileW`.
 
-**Inclui:** `anvlpch.h` + `FileIO/fileio.h` + `<windows.h>` + `<wchar.h>` + `<stdlib.h>`
+**Inclui:** `anvlpch.h` + `FileIO/fileio.h` + `<windows.h>` + `<fileapi.h>`
 
 ---
 
@@ -191,17 +189,7 @@ Implementa as 6 funções usando Win32 API:
 
 ### 5.1 Build System (premake5.lua)
 
-**Alteração mínima:** adicionar `removefiles` para a pasta errada do FileIO.
-
-```lua
-filter "system:linux"
-    removefiles { "./src/FileIO/Windows/**" }
-
-filter "system:windows"
-    removefiles { "./src/FileIO/Linux/**" }
-```
-
-O glob `"./src/**.h"` e `"./src/**.c"` captura recursivamente todos os arquivos. O `removefiles` garante que apenas o backend correto é compilado por plataforma.
+**Sem alterações.** Os `removefiles` existentes (`"./**/Linux/**"` e `"./**/Windows/**"`) cobrem recursivamente `src/FileIO/`.
 
 ### 5.2 Dependências de Link
 
@@ -214,20 +202,23 @@ O glob `"./src/**.h"` e `"./src/**.c"` captura recursivamente todos os arquivos.
 
 ### 5.4 Logging
 
-Usar `ANVIL_CORE_ERROR` para falhas de abertura (ex: arquivo não encontrado, permissão negada).
+Logar falhas **apenas em `anvl_file_open`** com `ANVIL_CORE_ERROR`. O consumer não tem como saber o porquê do `NULL` retornado.
+
+Demais funções (`read`, `write`, `close`, `exists`, `get_size`) **não logam** — o valor de retorno (`0`, `false`) já é o sinal de erro. Logar em cada chamada seria ruído (ex: EOF em `read` não é erro).
 
 ```c
-// Exemplo: posix_fileio.c
+// Exemplo: win32_fileio.c
 FileHandle* anvl_file_open(const char* path, FileMode mode)
 {
-    const char* stdio_mode = _filemode_to_stdio(mode);
-    FILE* fp = fopen(path, stdio_mode);
-    if (!fp)
+    // ...
+    if (file->pointer == INVALID_HANDLE_VALUE)
     {
-        ANVIL_CORE_ERROR("Failed to open file: %s (mode: %d)", path, mode);
+        DWORD err = GetLastError();
+        free(file);
+        ANVIL_CORE_ERROR("Failed to open file %s: %lu", path, err);
         return NULL;
     }
-    return fp;
+    return file;
 }
 ```
 
@@ -253,11 +244,10 @@ O `Application` **não** precisa saber sobre o FileIO agora. Quando o Furnace fo
 
 ### 6.3 Error Handling
 
-- `NULL` para `open` falhando.
-- `0` para `read`/`write` falhando ou EOF.
-- `false` para `close`/`exists` falhando.
-- Sempre logar falhas com `ANVIL_CORE_ERROR`.
-- Sempre checkar `NULL` antes de usar `FileHandle*`.
+- `NULL` para `open` falhando (com `ANVIL_CORE_ERROR`).
+- `0` para `read`/`write` falhando ou EOF (sem log).
+- `false` para `close`/`exists` falhando (sem log).
+- Sempre checkar `NULL`/`INVALID_HANDLE_VALUE` antes de usar `FileHandle*`.
 
 ### 6.4 Translation Unit Encapsulation
 
@@ -280,11 +270,11 @@ Criar `src/FileIO/fileio.h` com:
 - Enum `FileMode`
 - Protótipos das 6 funções
 
-### Etapa 2: Backend POSIX (`posix_fileio.c`)
+### Etapa 2: Backend POSIX (`posix_file.c`)
 
-Criar `src/FileIO/Linux/posix_fileio.c` com:
+Criar `src/FileIO/Linux/posix_file.c` com:
 - `#include "anvlpch.h"` + `#include "FileIO/fileio.h"`
-- `#include <stdio.h>` + `#include <sys/stat.h>`
+- `#include <stdio.h>`
 - Implementação direta das 6 funções usando stdio/POSIX
 - `FileHandle*` como `FILE*` (cast de/para `void*`)
 
@@ -292,21 +282,14 @@ Criar `src/FileIO/Linux/posix_fileio.c` com:
 
 Criar `src/FileIO/Windows/win32_fileio.c` com:
 - `#include "anvlpch.h"` + `#include "FileIO/fileio.h"`
-- `#include <windows.h>` + `<wchar.h>` + `<stdlib.h>`
+- `#include <windows.h>` + `<fileapi.h>`
 - Implementação direta das 6 funções usando Win32 API
 - `FileHandle*` como `HANDLE` (cast de/para `void*`)
-- Conversão de path: `const char*` → `wchar_t*` via `MultiByteToWideChar(CP_UTF8, ...)`
+- Paths ANSI via `CreateFileA` (sem conversão UTF-8)
 
 ### Etapa 4: Build System
 
-Adicionar `removefiles` ao `premake5.lua`:
-```lua
-filter "system:linux"
-    removefiles { "./src/FileIO/Windows/**" }
-
-filter "system:windows"
-    removefiles { "./src/FileIO/Linux/**" }
-```
+**Sem alterações.** Glos existentes cobrem `src/FileIO/`.
 
 ### Etapa 5: Validação
 
@@ -358,13 +341,13 @@ free(buffer);
 
 | Item | Detalhe |
 |------|---------|
-| **Arquivos novos** | 3 (`fileio.h`, `posix_fileio.c`, `win32_fileio.c`) |
-| **Arquivos modificados** | 1 (`premake5.lua` — adicionar `removefiles`) |
+| **Arquivos novos** | 3 (`fileio.h`, `posix_file.c`, `win32_fileio.c`) |
+| **Arquivos modificados** | Nenhum (glos existentes cobrem) |
 | **Novas dependências** | Nenhuma |
 | **Novos links** | Nenhum |
 | **PCH alterado** | Não |
 | **API pública** | 6 funções + 1 enum + 1 tipo opaque |
 | **Backend Linux** | POSIX (fopen/fread/fwrite/fclose) |
-| **Backend Windows** | Win32 API (CreateFileW/ReadFile/WriteFile/CloseHandle) |
+| **Backend Windows** | Win32 API (CreateFileA/ReadFile/WriteFile/CloseHandle) |
 | **Seleção de backend** | Compile-time via `removefiles` do Premake |
 | **Naming** | `anvl_file_*` (prefixo `anvl_` + recurso) |
