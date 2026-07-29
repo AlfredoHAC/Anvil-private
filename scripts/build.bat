@@ -265,6 +265,11 @@ if "%DELETED_PROJECTS%"=="1" (
     echo %C_GREEN%✔ Arquivos de solucao do Visual Studio ^(.sln, .vcxproj^) removidos.%C_RESET%
 )
 
+if exist "tmp" (
+    rmdir /s /q "tmp"
+    echo %C_GREEN%✔ Pasta tmp de testes removida.%C_RESET%
+)
+
 echo.
 echo %C_GREEN%✨ Todos os artefatos de compilação foram limpos!%C_RESET%
 exit /b 0

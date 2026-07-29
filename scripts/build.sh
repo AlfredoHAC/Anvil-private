@@ -47,6 +47,11 @@ _clean_build() {
     find . -maxdepth 2 -name "*.make" -delete 2>/dev/null
     success "Arquivos de projeto (.make) removidos."
 
+    if [ -d "tmp" ]; then
+        rm -rf "tmp"
+        success "Pasta 'tmp' de testes removida."
+    fi
+
     echo ""
     success "Todos os artefatos de compilação foram limpos!"
     exit 0
