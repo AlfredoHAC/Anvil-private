@@ -46,10 +46,8 @@ FileHandle* anvl_file_open(const char* path, FileMode mode)
         BOOL result = SetFilePointerEx(file->pointer, (LARGE_INTEGER){0}, NULL, FILE_END);
         if (!result)
         {
-            DWORD err = GetLastError();
             CloseHandle(file->pointer);
             free(file);
-            ANVIL_CORE_ERROR("Failed to seek to end of file %s: %lu", path, err);
             return NULL;
         }
     }
@@ -64,12 +62,7 @@ uint64 anvl_file_read(FileHandle* file, void* buffer, uint64 size)
     DWORD bytes_read = 0;
     BOOL  result     = ReadFile(file->pointer, buffer, size, &bytes_read, NULL);
 
-    if (!result)
-    {
-        DWORD err = GetLastError();
-        ANVIL_CORE_ERROR("Failed to read file %s: %lu", file->path, err);
-        return 0;
-    }
+    if (!result) { return 0; }
 
     if (bytes_read == 0) { return 0; }
 
@@ -83,12 +76,7 @@ uint64 anvl_file_write(FileHandle* file, const void* buffer, uint64 size)
     DWORD bytes_written = 0;
     BOOL  result        = WriteFile(file->pointer, buffer, size, &bytes_written, NULL);
 
-    if (!result)
-    {
-        DWORD err = GetLastError();
-        ANVIL_CORE_ERROR("Failed to write to file %s: %lu", file->path, err);
-        return 0;
-    }
+    if (!result) { return 0; }
 
     if (bytes_written == 0) { return 0; }
 
@@ -100,12 +88,7 @@ bool anvl_file_close(FileHandle* file)
     if (!file || file->pointer == INVALID_HANDLE_VALUE) { return false; }
 
     BOOL closed = CloseHandle(file->pointer);
-    if (!closed)
-    {
-        DWORD err = GetLastError();
-        ANVIL_CORE_ERROR("Failed to close file %s: %lu", file->path, err);
-        return false;
-    }
+    if (!closed) { return false; }
     file->pointer = NULL;
 
     free((void*)file->path);
@@ -117,12 +100,7 @@ bool anvl_file_close(FileHandle* file)
 bool anvl_file_exists(const char* path)
 {
     DWORD result = GetFileAttributesA(path);
-    if (result == INVALID_FILE_ATTRIBUTES)
-    {
-        DWORD err = GetLastError();
-        ANVIL_CORE_ERROR("Failed to check file (%s) existence: %lu", path, err);
-        return false;
-    }
+    if (result == INVALID_FILE_ATTRIBUTES) { return false; }
 
     return true;
 }
@@ -133,12 +111,7 @@ uint64 anvl_file_get_size(FileHandle* file)
 
     LARGE_INTEGER file_size;
     BOOL          result = GetFileSizeEx(file->pointer, &file_size);
-    if (!result)
-    {
-        DWORD err = GetLastError();
-        ANVIL_CORE_ERROR("Failed to get file (%s) size: %lu", file->path, err);
-        return 0;
-    }
+    if (!result) { return 0; }
 
     if (file_size.QuadPart < 0) { return 0; }
 

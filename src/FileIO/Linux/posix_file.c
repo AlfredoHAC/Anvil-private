@@ -32,57 +32,33 @@ FileHandle* anvl_file_open(const char* path, FileMode mode)
 
 uint64 anvl_file_read(FileHandle* file, void* buffer, uint64 size)
 {
-    if (!file || !file->pointer)
-    {
-        ANVIL_CORE_ERROR("Failed to read file %s", file->path);
-        return 0;
-    }
+    if (!file || !file->pointer) { return 0; }
 
     size_t result = fread(buffer, 1, size, file->pointer);
 
-    if (result == 0 && ferror(file->pointer))
-    {
-        ANVIL_CORE_ERROR("Failed to read file %s", file->path);
-        return 0;
-    }
+    if (result == 0 && ferror(file->pointer)) { return 0; }
 
     return (uint64)result;
 }
 
 uint64 anvl_file_write(FileHandle* file, const void* buffer, uint64 size)
 {
-    if (!file || !file->pointer)
-    {
-        ANVIL_CORE_ERROR("Failed to write to file %s", file->path);
-        return 0;
-    }
+    if (!file || !file->pointer) { return 0; }
 
     size_t result = fwrite(buffer, 1, size, file->pointer);
 
-    if (result == 0 && ferror(file->pointer))
-    {
-        ANVIL_CORE_ERROR("Failed to write to file %s", file->path);
-        return 0;
-    }
+    if (result == 0 && ferror(file->pointer)) { return 0; }
 
     return (uint64)result;
 }
 
 bool anvl_file_close(FileHandle* file)
 {
-    if (!file || !file->pointer)
-    {
-        ANVIL_CORE_ERROR("Failed to close file %s", file->path);
-        return false;
-    }
+    if (!file || !file->pointer) { return false; }
 
     uint32 result = fclose(file->pointer);
 
-    if (result != 0)
-    {
-        ANVIL_CORE_ERROR("Failed to close file %s", file->path);
-        return false;
-    }
+    if (result != 0) { return false; }
 
     free((void*)file->path);
     free(file);
@@ -108,20 +84,12 @@ uint64 anvl_file_get_size(FileHandle* file)
         return 0;
     }
 
-    if (fseek(file->pointer, 0, SEEK_END) != 0)
-    {
-        ANVIL_CORE_ERROR("Failed to seek in file %s", file->path);
-        return 0;
-    }
+    if (fseek(file->pointer, 0, SEEK_END) != 0) { return 0; }
 
     int64 file_size = ftell(file->pointer);
     rewind(file->pointer);
 
-    if (file_size < 0)
-    {
-        ANVIL_CORE_ERROR("Failed to get file %s size", file->path);
-        return 0;
-    }
+    if (file_size < 0) { return 0; }
 
     return (uint64)file_size;
 }
