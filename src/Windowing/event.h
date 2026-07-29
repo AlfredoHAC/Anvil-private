@@ -5,15 +5,15 @@
 
 typedef enum EventType
 {
-    None = 0,
-    WindowClose,
-    WindowResize,
-    KeyPress,
-    KeyRelease,
-    MouseMove,
-    MouseButtonClick,
-    MouseButtonRelease,
-    MouseScroll
+    ANVL_EVENT_TYPE_NONE = 0,
+    ANVL_EVENT_TYPE_WINDOW_CLOSE,
+    ANVL_EVENT_TYPE_WINDOW_RESIZE,
+    ANVL_EVENT_TYPE_KEY_PRESS,
+    ANVL_EVENT_TYPE_KEY_RELEASE,
+    ANVL_EVENT_TYPE_MOUSE_MOVE,
+    ANVL_EVENT_TYPE_MOUSE_BUTTON_CLICK,
+    ANVL_EVENT_TYPE_MOUSE_BUTTON_RELEASE,
+    ANVL_EVENT_TYPE_MOUSE_SCROLL,
 } EventType;
 
 typedef struct WindowCloseEvent

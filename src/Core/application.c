@@ -16,7 +16,7 @@ Application* anvl_application_init(const ApplicationOptions opts)
 {
     Application* app = malloc(sizeof(Application));
     if (!app) { return NULL; }
-    anvl_logger_set_level(Trace);
+    anvl_logger_set_level(ANVL_LOG_LEVEL_TRACE);
 
     ANVIL_CORE_INFO("Starting application.");
     ANVIL_CORE_INFO("-> Name: %s", opts.name);
@@ -63,36 +63,36 @@ void anvl_application_on_event(Event event)
 
     switch (event.type)
     {
-        case WindowClose: anvl_application_on_window_close(); break;
-        case WindowResize:
+        case ANVL_EVENT_TYPE_WINDOW_CLOSE: anvl_application_on_window_close(); break;
+        case ANVL_EVENT_TYPE_WINDOW_RESIZE:
             ANVIL_CORE_DEBUG(
                 "Window resize: %dx%d", event.window_resize.width, event.window_resize.height);
             break;
-        case KeyPress:
+        case ANVL_EVENT_TYPE_KEY_PRESS:
             ANVIL_CORE_DEBUG(
                 "Key press: %d (Mod: %d)", event.key_press.key_code, event.key_press.modifier_set);
             break;
-        case KeyRelease:
+        case ANVL_EVENT_TYPE_KEY_RELEASE:
             ANVIL_CORE_DEBUG("Key release: %d (Mod: %d)",
                              event.key_release.key_code,
                              event.key_release.modifier_set);
             break;
-        case MouseMove:
+        case ANVL_EVENT_TYPE_MOUSE_MOVE:
             ANVIL_CORE_DEBUG("Mouse move: (%.1f,%.1f)", event.mouse_move.x, event.mouse_move.y);
             break;
-        case MouseButtonClick:
+        case ANVL_EVENT_TYPE_MOUSE_BUTTON_CLICK:
             ANVIL_CORE_DEBUG("Mouse button click: %d (%.1f,%.1f)",
                              event.mouse_button_click.button_code,
                              event.mouse_button_click.x,
                              event.mouse_button_click.y);
             break;
-        case MouseButtonRelease:
+        case ANVL_EVENT_TYPE_MOUSE_BUTTON_RELEASE:
             ANVIL_CORE_DEBUG("Mouse button release: %d (%.1f,%.1f)",
                              event.mouse_button_release.button_code,
                              event.mouse_button_release.x,
                              event.mouse_button_release.y);
             break;
-        case MouseScroll:
+        case ANVL_EVENT_TYPE_MOUSE_SCROLL:
             ANVIL_CORE_DEBUG("Mouse scroll: (%.1f,%.1f)",
                              event.mouse_scroll.x_offset,
                              event.mouse_scroll.y_offset);

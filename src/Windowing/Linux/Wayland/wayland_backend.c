@@ -503,7 +503,7 @@ static void _on_xdg_toplevel_close(void* data, struct xdg_toplevel* xdg_toplevel
     WaylandBackend* b_end = (WaylandBackend*)data;
 
     Event event = {
-        .type         = WindowClose,
+        .type         = ANVL_EVENT_TYPE_WINDOW_CLOSE,
         .handled      = false,
         .window_close = {0},
     };
@@ -524,7 +524,7 @@ static void _on_xdg_toplevel_configure(void*                data,
         b_end->height = height;
 
         Event event = {
-            .type          = WindowResize,
+            .type          = ANVL_EVENT_TYPE_WINDOW_RESIZE,
             .handled       = false,
             .window_resize = {.width = width, .height = height},
         };
@@ -578,13 +578,13 @@ static void _on_wl_keyboard_key(void*               data,
     event.handled = false;
     if (state == WL_KEYBOARD_KEY_STATE_PRESSED)
     {
-        event.type                   = KeyPress;
+        event.type                   = ANVL_EVENT_TYPE_KEY_PRESS;
         event.key_press.key_code     = key;
         event.key_press.modifier_set = b_end->modifier_state;
     }
     else if (state == WL_KEYBOARD_KEY_STATE_RELEASED)
     {
-        event.type                     = KeyRelease;
+        event.type                     = ANVL_EVENT_TYPE_KEY_RELEASE;
         event.key_release.key_code     = key;
         event.key_release.modifier_set = b_end->modifier_state;
     }
@@ -640,7 +640,7 @@ static void _on_wl_pointer_motion(void*              data,
     b_end->pointer_y = (float32)wl_fixed_to_double(surface_y);
 
     Event event = {
-        .type    = MouseMove,
+        .type    = ANVL_EVENT_TYPE_MOUSE_MOVE,
         .handled = false,
         .mouse_move =
             {
@@ -674,14 +674,14 @@ static void _on_wl_pointer_button(void*              data,
 
     if (state == WL_POINTER_BUTTON_STATE_PRESSED)
     {
-        event.type                           = MouseButtonClick;
+        event.type                           = ANVL_EVENT_TYPE_MOUSE_BUTTON_CLICK;
         event.mouse_button_click.x           = b_end->pointer_x;
         event.mouse_button_click.y           = b_end->pointer_y;
         event.mouse_button_click.button_code = mouse_button_code;
     }
     else if (state == WL_POINTER_BUTTON_STATE_RELEASED)
     {
-        event.type                             = MouseButtonRelease;
+        event.type                             = ANVL_EVENT_TYPE_MOUSE_BUTTON_RELEASE;
         event.mouse_button_release.x           = b_end->pointer_x;
         event.mouse_button_release.y           = b_end->pointer_y;
         event.mouse_button_release.button_code = mouse_button_code;
@@ -697,7 +697,7 @@ static void _on_wl_pointer_axis(
 
     Event event   = {0};
     event.handled = false;
-    event.type    = MouseScroll;
+    event.type    = ANVL_EVENT_TYPE_MOUSE_SCROLL;
 
     if (axis == WL_POINTER_AXIS_VERTICAL_SCROLL)
     {

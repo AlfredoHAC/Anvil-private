@@ -211,7 +211,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
             if (client_msg->data.data32[0] == b_end->wm_delete_window_atom)
             {
                 Event event = {
-                    .type         = WindowClose,
+                    .type         = ANVL_EVENT_TYPE_WINDOW_CLOSE,
                     .handled      = false,
                     .window_close = {0},
                 };
@@ -232,7 +232,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
             if (!(cfg_notify->width == 0) || !(cfg_notify->height == 0))
             {
                 Event event = {
-                    .type          = WindowResize,
+                    .type          = ANVL_EVENT_TYPE_WINDOW_RESIZE,
                     .handled       = false,
                     .window_resize = {.width = cfg_notify->width, .height = cfg_notify->height},
                 };
@@ -246,7 +246,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
             xcb_key_press_event_t* key_press = (xcb_key_press_event_t*)xcb_event;
 
             Event event = {
-                .type      = KeyPress,
+                .type      = ANVL_EVENT_TYPE_KEY_PRESS,
                 .handled   = false,
                 .key_press = {.key_code = key_press->detail, .modifier_set = 0},
             };
@@ -259,7 +259,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
             xcb_key_release_event_t* key_press = (xcb_key_release_event_t*)xcb_event;
 
             Event event = {
-                .type        = KeyRelease,
+                .type        = ANVL_EVENT_TYPE_KEY_RELEASE,
                 .handled     = false,
                 .key_release = {.key_code = key_press->detail, .modifier_set = 0},
             };
@@ -272,7 +272,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
             xcb_motion_notify_event_t* motion_notify = (xcb_motion_notify_event_t*)xcb_event;
 
             Event event = {
-                .type       = MouseMove,
+                .type       = ANVL_EVENT_TYPE_MOUSE_MOVE,
                 .handled    = false,
                 .mouse_move = {.x = motion_notify->event_x, .y = motion_notify->event_y},
             };
@@ -288,7 +288,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
             if (button <= XCB_BUTTON_INDEX_3)
             {
                 Event event = {
-                    .type    = MouseButtonClick,
+                    .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_CLICK,
                     .handled = false,
                     .mouse_button_click =
                         {
@@ -304,7 +304,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
             else if (button == XCB_BUTTON_INDEX_4)
             {
                 Event event = {
-                    .type    = MouseScroll,
+                    .type    = ANVL_EVENT_TYPE_MOUSE_SCROLL,
                     .handled = false,
                     .mouse_scroll =
                         {
@@ -318,7 +318,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
             else if (button == XCB_BUTTON_INDEX_5)
             {
                 Event event = {
-                    .type    = MouseScroll,
+                    .type    = ANVL_EVENT_TYPE_MOUSE_SCROLL,
                     .handled = false,
                     .mouse_scroll =
                         {
@@ -338,7 +338,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
             if (button_release->detail > XCB_BUTTON_INDEX_3) { break; }
 
             Event event = {
-                .type    = MouseButtonRelease,
+                .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_RELEASE,
                 .handled = false,
                 .mouse_button_release =
                     {

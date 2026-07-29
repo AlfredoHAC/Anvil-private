@@ -22,7 +22,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         case WM_CLOSE:
         {
             Event event = {
-                .type         = WindowClose,
+                .type         = ANVL_EVENT_TYPE_WINDOW_CLOSE,
                 .handled      = false,
                 .window_close = {0},
             };
@@ -38,7 +38,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
             {
 
                 Event event = {
-                    .type    = WindowResize,
+                    .type    = ANVL_EVENT_TYPE_WINDOW_RESIZE,
                     .handled = false,
                     .window_resize =
                         {
@@ -55,7 +55,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         case WM_SYSKEYDOWN:
         {
             Event event = {
-                .type      = KeyPress,
+                .type      = ANVL_EVENT_TYPE_KEY_PRESS,
                 .handled   = false,
                 .key_press = {.key_code = (uint16)wparam, .modifier_set = 0},
             };
@@ -67,7 +67,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         case WM_SYSKEYUP:
         {
             Event event = {
-                .type        = KeyRelease,
+                .type        = ANVL_EVENT_TYPE_KEY_RELEASE,
                 .handled     = false,
                 .key_release = {.key_code = (uint16)wparam, .modifier_set = 0},
             };
@@ -78,7 +78,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         case WM_MOUSEMOVE:
         {
             Event event = {
-                .type       = MouseMove,
+                .type       = ANVL_EVENT_TYPE_MOUSE_MOVE,
                 .handled    = false,
                 .mouse_move = {.x = (float32)GET_X_LPARAM(lparam),
                                .y = (float32)GET_Y_LPARAM(lparam)},
@@ -90,7 +90,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         case WM_LBUTTONDOWN:
         {
             Event event = {
-                .type    = MouseButtonClick,
+                .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_CLICK,
                 .handled = false,
                 .mouse_button_click =
                     {
@@ -107,7 +107,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         case WM_MBUTTONDOWN:
         {
             Event event = {
-                .type    = MouseButtonClick,
+                .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_CLICK,
                 .handled = false,
                 .mouse_button_click =
                     {
@@ -124,7 +124,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         case WM_RBUTTONDOWN:
         {
             Event event = {
-                .type    = MouseButtonClick,
+                .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_CLICK,
                 .handled = false,
                 .mouse_button_click =
                     {
@@ -141,7 +141,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         case WM_XBUTTONDOWN:
         {
             Event event = {
-                .type    = MouseButtonClick,
+                .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_CLICK,
                 .handled = false,
                 .mouse_button_click =
                     {
@@ -158,7 +158,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         case WM_LBUTTONUP:
         {
             Event event = {
-                .type    = MouseButtonRelease,
+                .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_RELEASE,
                 .handled = false,
                 .mouse_button_release =
                     {
@@ -175,7 +175,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         case WM_MBUTTONUP:
         {
             Event event = {
-                .type    = MouseButtonRelease,
+                .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_RELEASE,
                 .handled = false,
                 .mouse_button_release =
                     {
@@ -192,7 +192,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         case WM_RBUTTONUP:
         {
             Event event = {
-                .type    = MouseButtonRelease,
+                .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_RELEASE,
                 .handled = false,
                 .mouse_button_release =
                     {
@@ -209,7 +209,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         case WM_XBUTTONUP:
         {
             Event event = {
-                .type    = MouseButtonRelease,
+                .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_RELEASE,
                 .handled = false,
                 .mouse_button_release =
                     {
@@ -226,7 +226,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         case WM_MOUSEWHEEL:
         {
             Event event = {
-                .type    = MouseScroll,
+                .type    = ANVL_EVENT_TYPE_MOUSE_SCROLL,
                 .handled = false,
                 .mouse_scroll =
                     {
@@ -241,7 +241,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         case WM_MOUSEHWHEEL:
         {
             Event event = {
-                .type    = MouseScroll,
+                .type    = ANVL_EVENT_TYPE_MOUSE_SCROLL,
                 .handled = false,
                 .mouse_scroll =
                     {

@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 
 // IWYU pragma: end_exports
 #endif // !ANVL_PRECOMPILED_HEADER
