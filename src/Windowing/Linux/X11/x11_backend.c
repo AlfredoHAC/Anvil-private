@@ -215,7 +215,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
                     .handled      = false,
                     .window_close = {0},
                 };
-                b_end->event_callback(event);
+                b_end->event_callback(&event);
 
                 if (!event.handled)
                 {
@@ -236,7 +236,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
                     .handled       = false,
                     .window_resize = {.width = cfg_notify->width, .height = cfg_notify->height},
                 };
-                b_end->event_callback(event);
+                b_end->event_callback(&event);
             }
 
             break;
@@ -250,7 +250,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
                 .handled   = false,
                 .key_press = {.key_code = key_press->detail, .modifier_set = 0},
             };
-            b_end->event_callback(event);
+            b_end->event_callback(&event);
 
             break;
         }
@@ -263,7 +263,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
                 .handled     = false,
                 .key_release = {.key_code = key_press->detail, .modifier_set = 0},
             };
-            b_end->event_callback(event);
+            b_end->event_callback(&event);
 
             break;
         }
@@ -276,7 +276,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
                 .handled    = false,
                 .mouse_move = {.x = motion_notify->event_x, .y = motion_notify->event_y},
             };
-            b_end->event_callback(event);
+            b_end->event_callback(&event);
 
             break;
         }
@@ -299,7 +299,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
                         },
                 };
 
-                b_end->event_callback(event);
+                b_end->event_callback(&event);
             }
             else if (button == XCB_BUTTON_INDEX_4)
             {
@@ -313,7 +313,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
                         },
                 };
 
-                b_end->event_callback(event);
+                b_end->event_callback(&event);
             }
             else if (button == XCB_BUTTON_INDEX_5)
             {
@@ -327,7 +327,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
                         },
                 };
 
-                b_end->event_callback(event);
+                b_end->event_callback(&event);
             }
 
             break;
@@ -349,7 +349,7 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
                     },
             };
 
-            b_end->event_callback(event);
+            b_end->event_callback(&event);
 
             break;
         }

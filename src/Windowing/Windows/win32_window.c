@@ -26,7 +26,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
                 .handled      = false,
                 .window_close = {0},
             };
-            window->event_callback(event);
+            window->event_callback(&event);
 
             if (event.handled) { return 0; }
 
@@ -46,7 +46,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
                             .height = (uint16)HIWORD(lparam),
                         },
                 };
-                window->event_callback(event);
+                window->event_callback(&event);
             }
 
             break;
@@ -59,7 +59,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
                 .handled   = false,
                 .key_press = {.key_code = (uint16)wparam, .modifier_set = 0},
             };
-            window->event_callback(event);
+            window->event_callback(&event);
 
             break;
         }
@@ -71,7 +71,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
                 .handled     = false,
                 .key_release = {.key_code = (uint16)wparam, .modifier_set = 0},
             };
-            window->event_callback(event);
+            window->event_callback(&event);
 
             break;
         }
@@ -83,7 +83,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
                 .mouse_move = {.x = (float32)GET_X_LPARAM(lparam),
                                .y = (float32)GET_Y_LPARAM(lparam)},
             };
-            window->event_callback(event);
+            window->event_callback(&event);
 
             break;
         }
@@ -100,7 +100,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
                         .modifier_set = 0,
                     },
             };
-            window->event_callback(event);
+            window->event_callback(&event);
 
             break;
         }
@@ -117,7 +117,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
                         .modifier_set = 0,
                     },
             };
-            window->event_callback(event);
+            window->event_callback(&event);
 
             break;
         }
@@ -134,7 +134,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
                         .modifier_set = 0,
                     },
             };
-            window->event_callback(event);
+            window->event_callback(&event);
 
             break;
         }
@@ -151,7 +151,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
                         .modifier_set = 0,
                     },
             };
-            window->event_callback(event);
+            window->event_callback(&event);
 
             break;
         }
@@ -168,7 +168,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
                         .modifier_set = 0,
                     },
             };
-            window->event_callback(event);
+            window->event_callback(&event);
 
             break;
         }
@@ -185,7 +185,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
                         .modifier_set = 0,
                     },
             };
-            window->event_callback(event);
+            window->event_callback(&event);
 
             break;
         }
@@ -202,7 +202,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
                         .modifier_set = 0,
                     },
             };
-            window->event_callback(event);
+            window->event_callback(&event);
 
             break;
         }
@@ -219,7 +219,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
                         .modifier_set = 0,
                     },
             };
-            window->event_callback(event);
+            window->event_callback(&event);
 
             break;
         }
@@ -234,7 +234,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
                         .y_offset = (float32)GET_WHEEL_DELTA_WPARAM(wparam) > 0 ? 1.0f : -1.0f,
                     },
             };
-            window->event_callback(event);
+            window->event_callback(&event);
 
             break;
         }
@@ -249,7 +249,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
                         .y_offset = 0,
                     },
             };
-            window->event_callback(event);
+            window->event_callback(&event);
 
             break;
         }

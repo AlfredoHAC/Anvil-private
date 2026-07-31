@@ -507,7 +507,7 @@ static void _on_xdg_toplevel_close(void* data, struct xdg_toplevel* xdg_toplevel
         .handled      = false,
         .window_close = {0},
     };
-    b_end->event_callback(event);
+    b_end->event_callback(&event);
 }
 
 static void _on_xdg_toplevel_configure(void*                data,
@@ -528,7 +528,7 @@ static void _on_xdg_toplevel_configure(void*                data,
             .handled       = false,
             .window_resize = {.width = width, .height = height},
         };
-        b_end->event_callback(event);
+        b_end->event_callback(&event);
     }
 }
 
@@ -589,7 +589,7 @@ static void _on_wl_keyboard_key(void*               data,
         event.key_release.modifier_set = b_end->modifier_state;
     }
 
-    b_end->event_callback(event);
+    b_end->event_callback(&event);
 }
 
 static void _on_wl_keyboard_modifier(void*               data,
@@ -648,7 +648,7 @@ static void _on_wl_pointer_motion(void*              data,
                 .y = b_end->pointer_y,
             },
     };
-    b_end->event_callback(event);
+    b_end->event_callback(&event);
 }
 
 static void _on_wl_pointer_button(void*              data,
@@ -687,7 +687,7 @@ static void _on_wl_pointer_button(void*              data,
         event.mouse_button_release.button_code = mouse_button_code;
     }
 
-    b_end->event_callback(event);
+    b_end->event_callback(&event);
 }
 
 static void _on_wl_pointer_axis(
@@ -710,7 +710,7 @@ static void _on_wl_pointer_axis(
         event.mouse_scroll.x_offset = x_offset;
     }
 
-    b_end->event_callback(event);
+    b_end->event_callback(&event);
 }
 
 static void _on_wl_pointer_frame_noop(void* data, struct wl_pointer* wl_pointer)
