@@ -42,7 +42,7 @@ Application* anvl_application_init(const ApplicationOptions opts)
 
     anvl_layer_stack_push(&app_layer);
 
-    anvl_platform_set_window_event_callback(app->window, anvl_layer_stack_dispatch_event);
+    anvl_platform_window_set_event_callback(app->window, anvl_layer_stack_dispatch_event);
     anvl_platform_window_show(app->window);
 
     app_running = true;
@@ -65,6 +65,7 @@ void anvl_application_shutdown(Application* app)
     if (!app) { return; }
 
     anvl_layer_stack_clear();
+    anvl_platform_window_unset_event_callback(app->window);
     anvl_platform_window_destroy(app->window);
 
     free(app);

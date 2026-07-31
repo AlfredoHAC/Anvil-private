@@ -353,9 +353,16 @@ void anvl_platform_window_destroy(NativeWindow* window)
     }
 }
 
-void anvl_platform_set_window_event_callback(NativeWindow* window, EventCallbackFn event_callback)
+void anvl_platform_window_set_event_callback(NativeWindow* window, EventCallbackFn event_callback)
 {
     if (!event_callback) { return; }
 
     window->event_callback = event_callback;
 }
+
+// clang-format off
+void anvl_platform_window_unset_event_callback(NativeWindow* window)
+{
+    window->event_callback = NULL;
+}
+// clang-format on

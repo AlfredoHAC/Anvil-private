@@ -69,11 +69,16 @@ void anvl_platform_window_destroy(NativeWindow* window)
     free(window);
 }
 
-void anvl_platform_set_window_event_callback(NativeWindow* window, EventCallbackFn event_callback)
+void anvl_platform_window_set_event_callback(NativeWindow* window, EventCallbackFn event_callback)
 {
     if (!event_callback) { return; }
 
     window->backend->window_set_event_callback(window->backend_data, event_callback);
+}
+
+void anvl_platform_window_unset_event_callback(NativeWindow* window)
+{
+    window->backend->window_set_event_callback(window->backend_data, NULL);
 }
 
 static const WindowBackend* _window_backend_create(NativeWindow* window)
