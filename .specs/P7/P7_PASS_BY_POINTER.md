@@ -1,9 +1,11 @@
 # P7 — Event Callback: Pass by Value → Pass by Pointer
 
-> **Status:** ❌ Não iniciada  
+> **Status:** ✅ Concluída  
 > **Dependência:** Nenhuma (P1–P6 concluídas)  
 > **Módulo:** Refatoração — `Windowing/`, `Core/`  
-> **Tipo:** Refatoração (mudança de assinatura)
+> **Tipo:** Refatoração (mudança de assinatura)  
+> **Branch:** `feat/event-pass-by-pointer` → `master`
+> **Branch:** `feat/event-pass-by-pointer` → `master`
 
 ---
 
