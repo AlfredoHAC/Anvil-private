@@ -98,13 +98,13 @@ src/
 - ✅ Wayland completo: xdg-shell, shared memory buffers, keyboard, pointer, server-side decorations
 - ❌ macOS sem backend
 
-#### 5. Callback passa `Event` por valor + sem contexto — **Pendente** (P7)
+#### 5. Callback passa `Event` por valor — **Pendente** (P7)
 **Arquivo:** `Windowing/window.h`, linha 11:
 ```c
-typedef void (*EventCallbackFn)(Event event);  // ← copia union + sem closure
+typedef void (*EventCallbackFn)(Event event);  // ← copia union, handled não propaga
 ```
-**Impacto:** Cada evento copia ~32-40 bytes. Além disso, o callback não tem acesso a contexto do consumer — não é possível passar dados arbitrários (ex: ponteiro para uma entidade, estado da aplicação).
-**Correção:** Mudar para `(const Event*, void* data)` — `const Event*` evita cópia, `void* data` simula closure (contexto passado no register, repassado no invoke).
+**Impacto:** Cada evento copia ~16 bytes. O bug funcional: `event.handled = true` no layer consumer não é visto pelo dispatcher — a propagação nunca para.
+**Correção:** Mudar para `(Event* event)` — ponteiro evita cópia e permite que `handled` propague corretamente.
 
 ---
 
@@ -223,15 +223,19 @@ void anvl_layer_stack_clear();
 - [x] Adicionar `anvl_layer_stack_call_update()` no `anvl_application_run()`
 - [x] Shutdown order: `clear()` → `unset_event_callback()` → `destroy()`
 
-### P7 — Callback: `(Event)` → `(const Event*, void* data)` — Closure pattern
-**Estado atual:** `EventCallbackFn` copia a union inteira e não tem contexto.
+### P7 — Callback: `(Event)` → `(Event*)` — Pass by Pointer
+**Estado atual:** `EventCallbackFn` copia a union inteira; `event.handled` não propaga.
 
-- [ ] Mudar `EventCallbackFn` de `(Event event)` para `(const Event* event, void* data)`
-- [ ] Adicionar `void* user_data` ao setter de callback (ex: `anvl_platform_set_window_event_callback(window, callback, user_data)`)
-- [ ] Backend armazena `user_data` junto com o callback
-- [ ] Backend repassa `user_data` ao invocar o callback
-- [ ] Atualizar consumers: `application.c`, `win32_window.c`, `x11_backend.c`, `wayland_backend.c`
-- [ ] Atualizar `WindowCloseEvent` para ter dados reais (atualmente é `{ char _pad[1]; }`)
+**Escopo:** Mudança de `Event` por valor para `Event*` por valor. Sem `void* user_data`, sem closure pattern.
+
+- [ ] Mudar `EventCallbackFn` de `(Event event)` para `(Event* event)`
+- [ ] Mudar `LayerOnEventFn` de `(Layer* layer, Event event)` para `(Layer* layer, Event* event)`
+- [ ] Mudar `anvl_layer_stack_dispatch_event(Event event)` para `anvl_layer_stack_dispatch_event(Event* event)`
+- [ ] `event.h` NÃO altera (`_pad[1]` é necessário — struct vazio não compila)
+- [ ] Atualizar consumers: `application.c` (assinatura + acesso via `->`)
+- [ ] Atualizar backends: `win32_window.c` (15 invocações), `x11_backend.c` (9 invocações), `wayland_backend.c` (5 invocações)
+- [ ] `linux_window.c` NÃO altera (vtable não muda)
+- [ ] `window_backend.h` NÃO altera (vtable não muda)
 
 ---
 
@@ -245,4 +249,4 @@ void anvl_layer_stack_clear();
 | ~~**P4**~~ | ~~Refatoração de Arquitetura (separação por responsabilidades)~~ | ~~Move: `window.h`, `event.h`, backends → `Windowing/`~~ | ✅ Concluída |
 | **P5** | I/O de Arquivos abstrato | `src/FileIO/fileio.h` + backends por plataforma | ✅ Concluída |
 | **P6** | Layer System / Update Loop | `src/Core/layer.h` + `layer.c` | ✅ Concluída |
-| **P7** | Callback: `(Event)` → `(const Event*, void* data)` + closure | `Windowing/window.h`, `application.c`, backends | Refatoração |
+| **P7** | Callback: `(Event)` → `(Event*)` — pass by pointer | `Windowing/window.h`, `Core/layer.h`, `application.c`, backends | Refatoração |
