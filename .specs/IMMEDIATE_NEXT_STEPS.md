@@ -35,6 +35,12 @@ src/
 │   │       └── xdg_shell_decoration_protocol.c/h
 │   └── Windows/
 │       └── win32_window.c     ← backend Win32: WNDCLASS, HWND, message loop, eventos mapeados
+├── FileIO/
+│   ├── fileio.h           ← API pública: FileHandle (opaque), FileMode, 6 funções
+│   ├── Linux/
+│   │   └── posix_file.c   ← backend POSIX (fopen/fread/fwrite/fclose)
+│   └── Windows/
+│       └── win32_fileio.c ← backend Win32 (CreateFile/ReadFile/WriteFile)
 ├── Platform/
 │   └── platform_detection.h   ← detecção de compiler/OS (MSVC/GCC, Win/Linux/macOS)
 └── Tools/
