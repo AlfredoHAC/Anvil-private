@@ -1,8 +1,9 @@
 # P6 — Layer System (Update Loop)
 
-> **Status:** Não iniciado  
+> **Status:** ✅ Concluído  
 > **Dependência:** Nenhuma (Platform estável)  
-> **Módulo:** `Core/` (layer.h + layer.c)
+> **Módulo:** `Core/` (layer.h + layer.c)  
+> **Branch:** `feat/layer-system` → `master`
 
 ---
 
@@ -69,7 +70,7 @@ Por frame:
 Cada layer pode implementar **qualquer combinação** dos seguintes callbacks:
 
 ```c
-typedef void (*LayerOnUpdateFn)(Layer* layer, float32 delta_time);
+typedef void (*LayerOnUpdateFn)(Layer* layer);
 typedef void (*LayerOnEventFn)(Layer* layer, Event event);
 typedef void (*LayerOnRenderFn)(Layer* layer);  // Futuro — Furnace
 ```
@@ -93,7 +94,7 @@ Um layer **não precisa implementar todos**. Callbacks não implementados são `
 typedef struct Layer Layer;
 
 // Callbacks opcionais — NULL significa "não implementado".
-typedef void (*LayerOnUpdateFn)(Layer* layer, float32 delta_time);
+typedef void (*LayerOnUpdateFn)(Layer* layer);
 typedef void (*LayerOnEventFn)(Layer* layer, Event event);
 
 // Estrutura do layer — consumers definem uma struct maior e fazem cast.
@@ -110,25 +111,30 @@ struct Layer
 ```c
 // Registra um layer no array (empilha).
 // O layer deve permanecer válido enquanto estiver no array.
-void anvl_layer_system_push(Layer* layer);
+void anvl_layer_stack_push(Layer* layer);
 
-// Remove um layer do array (desempilha).
+// Remove o último layer da pilha (LIFO).
 // Não libera a memória do layer — o caller é responsável.
-void anvl_layer_system_pop(Layer* layer);
+void anvl_layer_stack_pop();
+
+// Remove um layer específico do array.
+// Busca reverse (consistente com LIFO), shift dos seguintes.
+void anvl_layer_stack_remove(Layer* layer);
 
 // Dispara evento para todos os layers (ordem LIFO).
 // Se um layer marcar `event.handled = true`, a propagação para.
-void anvl_layer_system_dispatch_event(Event event);
+void anvl_layer_stack_dispatch_event(Event event);
 
 // Atualiza todos os layers (ordem LIFO).
-// `delta_time` em segundos.
-void anvl_layer_system_update(float32 delta_time);
+// `on_update` NULL é pulado.
+void anvl_layer_stack_call_update();
 
 // Retorna o número de layers no array.
-uint32 anvl_layer_system_count();
+uint32 anvl_layer_stack_length();
 
 // Limpa todos os layers (shutdown).
-void anvl_layer_system_clear();
+// Apenas reseta o count — não libera memória.
+void anvl_layer_stack_clear();
 ```
 
 ### 3.3 Justificativa das decisões de design
@@ -175,20 +181,21 @@ Contém SOMENTE:
 
 Array interno:
 ```c
-#define LAYER_SYSTEM_MAX_LAYERS 32
+#define LAYER_STACK_MAX_LENGTH 32
 
-static Layer* s_layers[LAYER_SYSTEM_MAX_LAYERS];
-static uint32 s_layer_count = 0;
+static Layer* layer_stack[LAYER_STACK_MAX_LENGTH];
+static uint32 layer_stack_length = 0;
 ```
 
-- `push`: insere no próximo índice livre (O(1)), verifica limite.
-- `pop`: encontra o layer, move todos os seguintes uma posição (O(n)).
+- `push`: insere no próximo índice livre (O(1)), verifica limite, checa NULL.
+- `pop`: remove o topo (LIFO), checa stack vazia, seta slot como NULL.
+- `remove`: busca reverse, shift dos seguintes, checa NULL e stack vazia.
 - `dispatch_event`: for-loop reverso (count-1 → 0), chama `on_event`, verifica `handled`.
-- `update`: for-loop reverso (count-1 → 0), chama `on_update` se não for NULL.
-- `count`: retorna `s_layer_count`.
-- `clear`: seta `s_layer_count = 0` (não libera memória — caller responsável).
+- `call_update`: for-loop reverso (count-1 → 0), chama `on_update` se não for NULL.
+- `length`: retorna `layer_stack_length`.
+- `clear`: seta `layer_stack_length = 0` (não libera memória — caller responsável).
 
-**Inclui:** `anvlpch.h` + `Core/layer.h` + `Windowing/event.h`
+**Inclui:** `anvlpch.h` + `Core/layer.h`
 
 ---
 
@@ -204,20 +211,34 @@ anvl_platform_set_window_event_callback(app->window, anvl_application_on_event);
 **Depois:**
 ```c
 // Criar e registrar o ApplicationLayer como default.
-static Layer s_app_layer = {
-    .name        = "Application",
+static Layer app_layer = {
+    .name        = "Application_Layer",
     .on_update   = NULL,
-    .on_event    = _app_layer_on_event,
+    .on_event    = _on_application_event,
 };
 
-anvl_layer_system_push(&s_app_layer);
+anvl_layer_stack_push(&app_layer);
 
 // O callback da janela agora aponta para o dispatcher.
-anvl_platform_set_window_event_callback(
-    app->window, anvl_layer_system_dispatch_event);
+anvl_platform_window_set_event_callback(
+    app->window, anvl_layer_stack_dispatch_event);
 ```
 
-O `anvl_application_on_event` existente se torna `_app_layer_on_event` (assinatura atualizada).
+A função pública `anvl_application_on_event` foi removida. O callback interno `_on_application_event` recebe `Layer*` e `Event`, e chama `_on_application_window_close()` (agora `static`) para setar `app_running = false`.
+
+**Shutdown order:**
+```c
+void anvl_application_shutdown(Application* app)
+{
+    if (!app) { return; }
+
+    anvl_layer_stack_clear();
+    anvl_platform_window_unset_event_callback(app->window);
+    anvl_platform_window_destroy(app->window);
+
+    free(app);
+}
+```
 
 ### 5.2 `application_run` — Adicionar `update`
 
@@ -228,13 +249,13 @@ void anvl_application_run(Application* app)
 
     while (app_running)
     {
+        anvl_layer_stack_call_update();
         anvl_platform_window_update(app->window);
-        anvl_layer_system_update(0.0f);  // delta_time = 0 por enquanto
     }
 }
 ```
 
-> **Nota:** `delta_time` é passado como `0.0f` por enquanto. O sistema de timing (roadmap seção 1) será implementado depois.
+> **Nota:** `on_update` não recebe `delta_time` por enquanto. O sistema de timing (roadmap seção 1) será implementado depois.
 
 ### 5.3 `window.h` — Sem alterações no callback
 
@@ -262,22 +283,23 @@ O `EventCallbackFn` permanece como `(Event event)` — o dispatcher é chamado c
 
 ### 6.1 Naming
 
-- Funções: `anvl_layer_system_*` (prefixo `anvl_` + módulo + recurso + ação)
+- Funções: `anvl_layer_stack_*` (prefixo `anvl_` + módulo + recurso + ação)
 - Tipos: `Layer`, `LayerOnUpdateFn`, `LayerOnEventFn` (PascalCase)
-- Internos: `_app_layer_*` (underscore + nome do layer)
-- Constante: `LAYER_SYSTEM_MAX_LAYERS` (UPPER_SNAKE_CASE)
+- Internos: `_on_application_*` (underscore + nome do layer)
+- Constante: `LAYER_STACK_MAX_LENGTH` (UPPER_SNAKE_CASE)
 
 ### 6.2 Ownership
 
 - **Array owns indices, caller owns data:** O array gerencia os ponteiros. O caller é responsável pela memória do struct concreto.
 - **Lifetime:** O layer deve permanecer válido enquanto estiver no array. O `pop` não libera memória.
-- **Shutdown:** `anvl_layer_system_clear()` resetea o count (não libera memória).
+- **Shutdown:** `anvl_layer_stack_clear()` reseta o count (não libera memória).
 
 ### 6.3 Error Handling
 
-- `push` falha silenciosamente se o array está cheio (limite de `LAYER_SYSTEM_MAX_LAYERS`).
-- `pop` falha silenciosamente se o layer não está no array.
-- `dispatch_event` / `update` nunca falham.
+- `push` loga erro e retorna se o array está cheio (limite de `LAYER_STACK_MAX_LENGTH`) ou `layer` é NULL.
+- `pop` retorna silenciosamente se a stack está vazia.
+- `remove` loga erro e retorna se `layer` é NULL ou a stack está vazia.
+- `dispatch_event` / `call_update` nunca falham.
 
 ### 6.4 Translation Unit Encapsulation
 
@@ -300,7 +322,7 @@ typedef struct
 } InputLayer;
 
 // 2. Implementar os callbacks que precisa.
-static void _input_layer_on_update(Layer* layer, float32 delta_time)
+static void _input_layer_on_update(Layer* layer)
 {
     InputLayer* self = (InputLayer*)layer;
     if (!self->input_enabled) { return; }
@@ -335,7 +357,7 @@ InputLayer input_layer = {
     .input_enabled = true,
 };
 
-anvl_layer_system_push(&input_layer.base);
+anvl_layer_stack_push(&input_layer.base);
 ```
 
 **Padrão chave:** O primeiro campo da struct concreta é sempre `Layer base` — cast seguro.
@@ -363,12 +385,13 @@ Criar `src/Core/layer.c` com:
 
 ### Etapa 3: Integração com `application.c`
 
-- Criar `s_app_layer` como `Layer` estático.
-- Substituir `anvl_application_on_event` por `_app_layer_on_event`.
+- Criar `app_layer` como `Layer` estático.
+- Criar `_on_application_event(Layer*, Event)` como callback interno.
+- Criar `_on_application_window_close()` como `static`.
 - Registrar a layer no `anvl_application_init`.
-- Mudar callback da janela para `anvl_layer_system_dispatch_event`.
-- Adicionar `anvl_layer_system_update()` no `anvl_application_run`.
-- Adicionar `anvl_layer_system_clear()` no `anvl_application_shutdown`.
+- Mudar callback da janela para `anvl_layer_stack_dispatch_event`.
+- Adicionar `anvl_layer_stack_call_update()` no `anvl_application_run`.
+- Adicionar `anvl_layer_stack_clear()` e `anvl_platform_window_unset_event_callback()` no `anvl_application_shutdown`.
 
 ### Etapa 4: Build System
 
@@ -414,13 +437,13 @@ Criar `src/Core/layer.c` com:
 | Item | Detalhe |
 |------|---------|
 | **Arquivos novos** | 2 (`layer.h`, `layer.c`) |
-| **Arquivos modificados** | 1 (`application.c`) |
+| **Arquivos modificados** | 4 (`application.c`, `window.h`, `linux_window.c`, `win32_window.c`) |
 | **Novas dependências** | Nenhuma |
 | **Novos links** | Nenhum |
 | **PCH alterado** | Não |
-| **API pública** | 6 funções + 2 callback typedefs + 1 tipo |
+| **API pública** | 7 funções (`push`, `pop`, `remove`, `dispatch_event`, `call_update`, `length`, `clear`) + 2 callback typedefs + 1 tipo |
 | **Implementação** | Array fixo (32 slots) + count |
-| **Callbacks** | `on_update` (delta_time) + `on_event` (opcionais, NULL = skip) |
+| **Callbacks** | `on_update` (sem delta_time) + `on_event` (opcionais, NULL = skip) |
 | **Ordem** | LIFO (último empilhado = primeiro chamado) |
-| **Naming** | `anvl_layer_system_*` (prefixo `anvl_` + módulo + recurso) |
+| **Naming** | `anvl_layer_stack_*` (prefixo `anvl_` + módulo + recurso) |
 | **Pattern** | Update Method (Nystrom) — array de objetos, loop por frame |

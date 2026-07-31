@@ -15,7 +15,9 @@ src/
 ├── anvlpch.c
 ├── Core/
 │   ├── application.h    ← Application struct + anvl_application_init/Run/Shutdown + callbacks
-│   ├── application.c    ← implementação: cria janela, seta callback, event loop simples
+│   ├── application.c    ← implementação: cria janela, layer stack, event loop
+│   ├── layer.h          ← API pública: anvl_layer_stack_* (LIFO, 32 slots)
+│   ├── layer.c          ← implementação: push/pop/remove/dispatch/update/clear
 │   └── typedefs.h       ← uint8..uint64, int8..int64, float32, float64
 ├── Windowing/
 │   ├── event.h          ← EventType enum + structs de evento + union Event
@@ -48,7 +50,7 @@ src/
 | **1.3 Logging** | Sistema com níveis | ✅ Concluída | `logger.h/c` (6 níveis + macros core/client) |
 | **1.1 Gerenciamento de Janelas** | Criação/redimensionamento/fechamento | ✅ Concluída | Backends Win32/X11/Wayland completos; opaque pointer em `window.h`; vtable `WindowBackend` validada em runtime |
 | 1.4 I/O de Arquivos | Abstração FileIO | ✅ Concluída | `FileIO/fileio.h` + backends Win32/POSIX |
-| 1.5 Propagação de Eventos | Layer System | ❌ Não iniciado | Callback vai direto para `anvl_application_on_event()` — sem stack de layers |
+| 1.5 Propagação de Eventos | Layer System | ✅ Concluída | `Core/layer.h` + `layer.c` (stack LIFO, 32 slots); `application.c` usa `anvl_layer_stack_dispatch_event` |
 
 ### Seções 2–8 do Roadmap
 **Nenhum arquivo existe** na codebase atual. Renderização, Assets, Física, Áudio, ECS, Editor e Otimizações estão em branco.
@@ -90,7 +92,7 @@ src/
 - ✅ Wayland completo: xdg-shell, shared memory buffers, keyboard, pointer, server-side decorations
 - ❌ macOS sem backend
 
-#### 5. Callback passa `Event` por valor + sem contexto — **Pendente**
+#### 5. Callback passa `Event` por valor + sem contexto — **Pendente** (P7)
 **Arquivo:** `Windowing/window.h`, linha 11:
 ```c
 typedef void (*EventCallbackFn)(Event event);  // ← copia union + sem closure
@@ -190,15 +192,11 @@ typedef void (*EventCallbackFn)(Event event);  // ← copia union + sem closure
 
 ### P6 — Layer System / Update Loop (Novo)
 
-**Estado atual:** Callback direto em `application.c` (linha 34):
-```c
-anvl_platform_set_window_event_callback(app->window, anvl_application_on_event);
-```
-Sem layers, sem update loop.
+**Estado atual:** ✅ Concluída — `Core/layer.h` + `layer.c` implementados.
 
-**Design:** Array de layers (não linked list) — cache-friendly, padrão Update Method (Nystrom).
+**Design:** Stack de layers LIFO (não linked list) — cache-friendly, padrão Update Method (Nystrom).
 
-- [ ] Criar `src/Core/layer.h`:
+- [x] Criar `src/Core/layer.h`:
 ```c
 typedef struct Layer {
     const char*           name;
@@ -206,16 +204,18 @@ typedef struct Layer {
     LayerOnEventFn        on_event;     // NULL = não implementado
 } Layer;
 
-void anvl_layer_system_push(Layer* layer);
-void anvl_layer_system_pop(Layer* layer);
-void anvl_layer_system_dispatch_event(Event event);
-void anvl_layer_system_update(float32 delta_time);
-uint32 anvl_layer_system_count();
-void anvl_layer_system_clear();
+void anvl_layer_stack_push(Layer* layer);
+void anvl_layer_stack_pop();
+void anvl_layer_stack_remove(Layer* layer);
+void anvl_layer_stack_dispatch_event(Event event);
+void anvl_layer_stack_call_update();
+uint32 anvl_layer_stack_length();
+void anvl_layer_stack_clear();
 ```
-- [ ] Criar `src/Core/layer.c` (array fixo de 32 slots)
-- [ ] Atualizar `application.c` para usar layer system
-- [ ] Adicionar `anvl_layer_system_update()` no `anvl_application_run()`
+- [x] Criar `src/Core/layer.c` (array fixo de 32 slots, `LAYER_STACK_MAX_LENGTH`)
+- [x] Atualizar `application.c` para usar layer system
+- [x] Adicionar `anvl_layer_stack_call_update()` no `anvl_application_run()`
+- [x] Shutdown order: `clear()` → `unset_event_callback()` → `destroy()`
 
 ### P7 — Callback: `(Event)` → `(const Event*, void* data)` — Closure pattern
 **Estado atual:** `EventCallbackFn` copia a union inteira e não tem contexto.
@@ -238,5 +238,5 @@ void anvl_layer_system_clear();
 | ~~**P3**~~ | ~~Backend Linux (stub ou mínimo)~~ | ~~`Windowing/Linux/linux_window.c`, `X11/*`, `Wayland/*`~~ | ✅ Concluída |
 | ~~**P4**~~ | ~~Refatoração de Arquitetura (separação por responsabilidades)~~ | ~~Move: `window.h`, `event.h`, backends → `Windowing/`~~ | ✅ Concluída |
 | **P5** | I/O de Arquivos abstrato | `src/FileIO/fileio.h` + backends por plataforma | ✅ Concluída |
-| **P6** | Layer System / Event Dispatcher | Novo: `src/Core/event_layer.h`, `src/Core/event_layer.c` | Implementação |
+| **P6** | Layer System / Update Loop | `src/Core/layer.h` + `layer.c` | ✅ Concluída |
 | **P7** | Callback: `(Event)` → `(const Event*, void* data)` + closure | `Windowing/window.h`, `application.c`, backends | Refatoração |
