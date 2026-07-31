@@ -188,28 +188,34 @@ typedef void (*EventCallbackFn)(Event event);  // ← copia union + sem closure
 - [x] Build system (globs existentes cobrem)
 - [x] Validação (compila e funciona no Windows)
 
-### P6 — Layer System / Event Dispatcher (Novo)
+### P6 — Layer System / Update Loop (Novo)
 
 **Estado atual:** Callback direto em `application.c` (linha 34):
 ```c
 anvl_platform_set_window_event_callback(app->window, anvl_application_on_event);
 ```
-Sem stack, sem layers.
+Sem layers, sem update loop.
 
-- [ ] Criar `src/Core/event_layer.h`:
+**Design:** Array de layers (não linked list) — cache-friendly, padrão Update Method (Nystrom).
+
+- [ ] Criar `src/Core/layer.h`:
 ```c
-typedef struct EventLayer {
-    const char* name;
-    void (*OnEvent)(struct EventLayer* layer, Event event);
-    struct EventLayer* next;
-} EventLayer;
+typedef struct Layer {
+    const char*           name;
+    LayerOnUpdateFn       on_update;    // NULL = não implementado
+    LayerOnEventFn        on_event;     // NULL = não implementado
+} Layer;
 
-void anvl_event_dispatcher_push_layer(EventLayer* layer);
-void anvl_event_dispatcher_pop_layer(EventLayer* layer);
-void anvl_event_dispatcher_dispatch(Event event);  // chama layers em ordem inversa
+void anvl_layer_system_push(Layer* layer);
+void anvl_layer_system_pop(Layer* layer);
+void anvl_layer_system_dispatch_event(Event event);
+void anvl_layer_system_update(float32 delta_time);
+uint32 anvl_layer_system_count();
+void anvl_layer_system_clear();
 ```
-- [ ] Atualizar `application.c` para usar dispatcher ao invés de callback direto
-- [ ] Adicionar `anvl_application_on_event` como camada default
+- [ ] Criar `src/Core/layer.c` (array fixo de 32 slots)
+- [ ] Atualizar `application.c` para usar layer system
+- [ ] Adicionar `anvl_layer_system_update()` no `anvl_application_run()`
 
 ### P7 — Callback: `(Event)` → `(const Event*, void* data)` — Closure pattern
 **Estado atual:** `EventCallbackFn` copia a union inteira e não tem contexto.
