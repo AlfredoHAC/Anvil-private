@@ -1,16 +1,25 @@
 #include "anvlpch.h"
 
 #include "Core/application.h"
+#include "Core/layer.h"
 #include "Windowing/window.h"
 
 #include "Tools/logger.h"
-
-static bool app_running = false;
 
 typedef struct Application
 {
     NativeWindow* window;
 } Application;
+
+static void _on_application_event(Layer* layer, Event event);
+static void _on_application_window_close();
+
+static bool  app_running = false;
+static Layer app_layer   = {
+    .name      = "Application_Layer",
+    .on_update = NULL,
+    .on_event  = _on_application_event,
+};
 
 Application* anvl_application_init(const ApplicationOptions opts)
 {
@@ -31,7 +40,9 @@ Application* anvl_application_init(const ApplicationOptions opts)
         return NULL;
     }
 
-    anvl_platform_set_window_event_callback(app->window, anvl_application_on_event);
+    anvl_layer_stack_push(&app_layer);
+
+    anvl_platform_set_window_event_callback(app->window, anvl_layer_stack_dispatch_event);
     anvl_platform_window_show(app->window);
 
     app_running = true;
@@ -44,6 +55,7 @@ void anvl_application_run(Application* app)
 
     while (app_running)
     {
+        anvl_layer_stack_call_update();
         anvl_platform_window_update(app->window);
     }
 }
@@ -52,18 +64,19 @@ void anvl_application_shutdown(Application* app)
 {
     if (!app) { return; }
 
+    anvl_layer_stack_clear();
     anvl_platform_window_destroy(app->window);
 
     free(app);
 }
 
-void anvl_application_on_event(Event event)
+static void _on_application_event(Layer* layer, Event event)
 {
     ANVIL_CORE_DEBUG("Event captured!");
 
     switch (event.type)
     {
-        case ANVL_EVENT_TYPE_WINDOW_CLOSE: anvl_application_on_window_close(); break;
+        case ANVL_EVENT_TYPE_WINDOW_CLOSE: _on_application_window_close(); break;
         case ANVL_EVENT_TYPE_WINDOW_RESIZE:
             ANVIL_CORE_DEBUG(
                 "Window resize: %dx%d", event.window_resize.width, event.window_resize.height);
@@ -104,7 +117,7 @@ void anvl_application_on_event(Event event)
 }
 
 // clang-format off
-void anvl_application_on_window_close()
+static void _on_application_window_close()
 {
     app_running = false;
 }

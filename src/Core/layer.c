@@ -4,7 +4,7 @@
 
 #define LAYER_STACK_MAX_LENGTH 32
 
-static Layer* layer_stack[LAYER_STACK_MAX_LENGTH];
+static Layer* layer_stack[LAYER_STACK_MAX_LENGTH] = {0};
 static uint32 layer_stack_length = 0;
 
 void anvl_layer_stack_push(Layer* layer)
@@ -44,7 +44,7 @@ void anvl_layer_stack_remove(Layer* layer)
     if (layer_stack_length == 0) { return; }
 
     int8 layer_index = 0;
-    for (int8 i = (int8)layer_stack_length - 1; i >= 0; ++i)
+    for (int8 i = (int8)layer_stack_length - 1; i >= 0; --i)
     {
         if (layer_stack[i] == layer)
         {
@@ -75,7 +75,7 @@ void anvl_layer_stack_clear()
 
 void anvl_layer_stack_dispatch_event(Event event)
 {
-    for (int8 i = layer_stack_length - 1; i >= 0; ++i)
+    for (int8 i = layer_stack_length - 1; i >= 0; --i)
     {
         if (layer_stack[i] == NULL || layer_stack[i]->on_event == NULL) { continue; }
 
@@ -87,7 +87,7 @@ void anvl_layer_stack_dispatch_event(Event event)
 
 void anvl_layer_stack_call_update()
 {
-    for (int8 i = layer_stack_length - 1; i >= 0; ++i)
+    for (int8 i = layer_stack_length - 1; i >= 0; --i)
     {
         if (layer_stack[i] == NULL || layer_stack[i]->on_update == NULL) { continue; }
 
