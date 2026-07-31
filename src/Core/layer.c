@@ -73,7 +73,7 @@ void anvl_layer_stack_clear()
 }
 // clang-format on
 
-void anvl_layer_stack_dispatch_event(Event event)
+void anvl_layer_stack_dispatch_event(Event* event)
 {
     for (int8 i = layer_stack_length - 1; i >= 0; --i)
     {
@@ -81,7 +81,7 @@ void anvl_layer_stack_dispatch_event(Event event)
 
         layer_stack[i]->on_event(layer_stack[i], event);
 
-        if (event.handled) { break; }
+        if (event->handled) { break; }
     }
 }
 

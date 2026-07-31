@@ -8,7 +8,7 @@
 typedef struct NativeWindow NativeWindow;
 
 // Event callback function pointer type
-typedef void (*EventCallbackFn)(Event event);
+typedef void (*EventCallbackFn)(Event* event);
 
 NativeWindow* anvl_platform_window_create(const char* window_title,
                                           uint16      window_width,
