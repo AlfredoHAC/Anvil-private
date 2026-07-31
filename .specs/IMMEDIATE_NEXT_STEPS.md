@@ -1,7 +1,7 @@
 # Próximos Passos Imediatos — Forge Engine (Estado Real da Codebase)
 
 > Baseado na análise do `FORGE_CORE_ROADMAP.md` + inspeção direta dos arquivos em `src/`.  
-> **Status real:** 8 tarefas concluídas, ~32 não iniciadas.
+**Status real:** 5 tarefas concluídas (1.1–1.5), ~32 não iniciadas (seções 2–8).
 
 ---
 
