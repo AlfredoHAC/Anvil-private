@@ -5,21 +5,12 @@
 #define LAYER_STACK_MAX_LENGTH 32
 
 static Layer* layer_stack[LAYER_STACK_MAX_LENGTH] = {0};
-static uint32 layer_stack_length = 0;
+static uint32 layer_stack_length                  = 0;
 
 void anvl_layer_stack_push(Layer* layer)
 {
-    if (!layer)
-    {
-        ANVIL_CORE_ERROR("Layer invalid.");
-        return;
-    }
-
-    if (layer_stack_length + 1 > LAYER_STACK_MAX_LENGTH)
-    {
-        ANVIL_CORE_ERROR("Layer stack out of space.");
-        return;
-    }
+    ANVIL_ASSERT(layer != NULL);
+    ANVIL_ASSERT(layer_stack_length + 1 <= LAYER_STACK_MAX_LENGTH);
 
     layer_stack[layer_stack_length] = layer;
     layer_stack_length += 1;
@@ -27,7 +18,7 @@ void anvl_layer_stack_push(Layer* layer)
 
 void anvl_layer_stack_pop()
 {
-    if (layer_stack_length == 0) { return; }
+    ANVIL_ASSERT(layer_stack_length > 0);
 
     layer_stack[layer_stack_length] = NULL;
     layer_stack_length -= 1;
@@ -35,13 +26,8 @@ void anvl_layer_stack_pop()
 
 void anvl_layer_stack_remove(Layer* layer)
 {
-    if (!layer)
-    {
-        ANVIL_CORE_ERROR("Layer invalid.");
-        return;
-    }
-
-    if (layer_stack_length == 0) { return; }
+    ANVIL_ASSERT(layer != NULL);
+    ANVIL_ASSERT(layer_stack_length > 0);
 
     int8 layer_index = 0;
     for (int8 i = (int8)layer_stack_length - 1; i >= 0; --i)

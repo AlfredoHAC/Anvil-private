@@ -10,15 +10,16 @@ typedef struct FileHandle
     const char* mode;
 } FileHandle;
 
-const char* _filemode_to_stdio(FileMode mode);
+const char* _filemode_to_string(FileMode mode);
 
 FileHandle* anvl_file_open(const char* path, FileMode mode)
 {
     FileHandle* file = malloc(sizeof(FileHandle));
     if (!file) { return NULL; }
 
+    ANVIL_ASSERT(path != NULL);
     file->path    = strdup(path);
-    file->mode    = _filemode_to_stdio(mode);
+    file->mode    = _filemode_to_string(mode);
     file->pointer = fopen(path, file->mode);
     if (!file->pointer)
     {
@@ -32,7 +33,7 @@ FileHandle* anvl_file_open(const char* path, FileMode mode)
 
 uint64 anvl_file_read(FileHandle* file, void* buffer, uint64 size)
 {
-    if (!file || !file->pointer) { return 0; }
+    ANVIL_ASSERT(file != NULL && file->pointer != NULL);
 
     size_t result = fread(buffer, 1, size, file->pointer);
 
@@ -43,7 +44,7 @@ uint64 anvl_file_read(FileHandle* file, void* buffer, uint64 size)
 
 uint64 anvl_file_write(FileHandle* file, const void* buffer, uint64 size)
 {
-    if (!file || !file->pointer) { return 0; }
+    ANVIL_ASSERT(file != NULL && file->pointer != NULL);
 
     size_t result = fwrite(buffer, 1, size, file->pointer);
 
@@ -78,7 +79,7 @@ bool anvl_file_exists(const char* path)
 
 uint64 anvl_file_get_size(FileHandle* file)
 {
-    if (!file || !file->pointer) { return 0; }
+    ANVIL_ASSERT(file != NULL && file->pointer != NULL);
 
     if (fseek(file->pointer, 0, SEEK_END) != 0) { return 0; }
 
@@ -90,7 +91,7 @@ uint64 anvl_file_get_size(FileHandle* file)
     return (uint64)file_size;
 }
 
-const char* _filemode_to_stdio(FileMode mode)
+const char* _filemode_to_string(FileMode mode)
 {
     switch (mode)
     {
@@ -99,5 +100,5 @@ const char* _filemode_to_stdio(FileMode mode)
         case ANVL_FILE_MODE_APPEND: return "a"; break;
     }
 
-    return NULL;
+    ANVIL_ASSERT_MSG(0, "Invalid FileMode: %d", mode);
 }
