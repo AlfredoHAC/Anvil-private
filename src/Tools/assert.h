@@ -8,7 +8,7 @@
 #    define ANVIL_ASSERT(expression)                                                               \
         do                                                                                         \
         {                                                                                          \
-            if (!expression)                                                                       \
+            if (!(expression))                                                                       \
             {                                                                                      \
                 ANVIL_CORE_FATAL("Assertion failed: %s\n at %s:%d in %s",                          \
                                  #expression,                                                      \
