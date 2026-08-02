@@ -49,22 +49,43 @@ Pense no Anvil como uma **biblioteca** (como `libpthread` ou `libcurl`). Você n
 
 ```
 Sandbox/
-└── main.c              ← entry point: main() + engine init + sandbox layer
+├── main.c                  ← entry point: main() + engine init + shutdown
+├── sandbox_layer.h         ← API pública: create / destroy (autocontida)
+└── sandbox_layer.c         ← implementação da sandbox layer
 ```
 
-**Um único arquivo.** A Sandbox é simples: cria a aplicação, empilha a sandbox layer, roda o loop. Quando o Furnace chegar, a Sandbox ganhará uma `FurnaceLayer`.
+A Sandbox layer é **autocontida**: ela se adiciona e se remove da layer stack. O `main()` não gerencia a stack manualmente.
 
-### 2.2 `Sandbox/main.c`
+**Princípio:** Assim como a `Application` gerencia sua própria janela (criação, callback, destroy), a Sandbox layer gerencia seu próprio ciclo de vida na stack.
+
+### 2.2 `Sandbox/sandbox_layer.h` — API Pública
+
+```c
+#ifndef SANDBOX_LAYER_HEADER
+#define SANDBOX_LAYER_HEADER
+
+#include "Core/layer.h"
+
+Layer* anvl_sandbox_layer_create();
+void   anvl_sandbox_layer_destroy(Layer* layer);
+
+#endif // !SANDBOX_LAYER_HEADER
+```
+
+- `anvl_sandbox_layer_create()` — aloca, inicializa, **empilha** na stack, retorna `Layer*`.
+- `anvl_sandbox_layer_destroy(Layer* layer)` — **remove** da stack, libera memória.
+
+### 2.3 `Sandbox/sandbox_layer.c` — Implementação
 
 ```c
 #include "anvlpch.h"
-#include "Core/application.h"
-#include "Core/layer.h"
+
+#include "sandbox_layer.h"
 #include "Windowing/event.h"
 #include "Tools/logger.h"
 
 // ---------------------------------------------------------------------------
-// Sandbox Layer — demonstração do layer system
+// Sandbox Layer internals
 // ---------------------------------------------------------------------------
 
 typedef struct SandboxLayer
@@ -76,7 +97,11 @@ typedef struct SandboxLayer
 static void _sandbox_on_update(Layer* layer);
 static void _sandbox_on_event(Layer* layer, Event* event);
 
-static Layer* _sandbox_layer_create()
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+Layer* anvl_sandbox_layer_create()
 {
     SandboxLayer* self = malloc(sizeof(SandboxLayer));
     if (!self) { return NULL; }
@@ -88,8 +113,22 @@ static Layer* _sandbox_layer_create()
         .on_event  = _sandbox_on_event,
     };
 
+    anvl_layer_stack_push(&self->base);
+
     return &self->base;
 }
+
+void anvl_sandbox_layer_destroy(Layer* layer)
+{
+    ANVIL_ASSERT(layer != NULL);
+
+    anvl_layer_stack_remove(layer);
+    free(layer);
+}
+
+// ---------------------------------------------------------------------------
+// Callbacks
+// ---------------------------------------------------------------------------
 
 static void _sandbox_on_update(Layer* layer)
 {
@@ -129,10 +168,22 @@ static void _sandbox_on_event(Layer* layer, Event* event)
         default: break;
     }
 }
+```
 
-// ---------------------------------------------------------------------------
-// main()
-// ---------------------------------------------------------------------------
+**Por que `sandbox_layer.c` e não tudo em `main.c`?**
+
+- Separação de responsabilidades: `main.c` orquestra o engine, `sandbox_layer.c` implementa a layer.
+- Padrão consistente com `Core/application.c` (application orquestra, mas a lógica interna fica no `.c`).
+- Facilita testes futuros: a layer pode ser testada independentemente do `main()`.
+
+### 2.4 `Sandbox/main.c` — Entry Point
+
+```c
+#include "anvlpch.h"
+
+#include "Core/application.h"
+#include "Core/layer.h"
+#include "sandbox_layer.h"
 
 int main()
 {
@@ -145,29 +196,33 @@ int main()
     Application* app = anvl_application_init(opts);
     if (!app) { return 1; }
 
-    // Empilhar sandbox layer como demonstração do layer system.
-    Layer* sandbox = _sandbox_layer_create();
-    if (sandbox)
+    Layer* sandbox = anvl_sandbox_layer_create();
+    if (!sandbox)
     {
-        anvl_layer_stack_push(sandbox);
+        ANVIL_CORE_ERROR("Failed to create sandbox layer.");
+        anvl_application_shutdown(app);
+        return 1;
     }
 
     anvl_application_run(app);
 
-    // Shutdown: remover sandbox, depois framework limpa o resto.
-    if (sandbox)
-    {
-        anvl_layer_stack_remove(sandbox);
-        free(sandbox);
-    }
-
+    anvl_sandbox_layer_destroy(sandbox);
     anvl_application_shutdown(app);
 
     return 0;
 }
 ```
 
-### 2.3 Remoção de `src/anvil.c`
+**Fluxo:**
+1. `anvl_application_init` — cria janela, empilha a application layer interna.
+2. `anvl_sandbox_layer_create` — aloca, empilha **acima** da application layer.
+3. `anvl_application_run` — loop de update + events (LIFO: sandbox primeiro).
+4. `anvl_sandbox_layer_destroy` — remove sandbox da stack, free.
+5. `anvl_application_shutdown` — remove application layer, destroy janela, free.
+
+**Nota:** A ordem de shutdown é importante. A sandbox é removida **antes** do shutdown do framework, para que a application layer (interna) processe eventos finais antes do destroy da janela.
+
+### 2.5 Remoção de `src/anvil.c`
 
 `src/anvil.c` é removido. Não há mais entry point dentro do Anvil.
 
@@ -188,10 +243,11 @@ src/
 └── ...
 
 Sandbox/
-└── main.c              ← main() — NOVO
+├── main.c              ← main() — NOVO
+└── sandbox_layer.h     ← API pública — NOVO
 ```
 
-### 2.4 Build System (premake5.lua)
+### 2.6 Build System (premake5.lua)
 
 O Anvil vira uma **static library**. A Sandbox é um **console app** que linka contra ela.
 
@@ -294,14 +350,12 @@ project "Sandbox"
         cdialect "C11"
         links { "user32", "gdi32", "opengl32" }
         defines { "_CRT_SECURE_NO_WARNINGS" }
-        removefiles { "./**/Linux/**" }
 
     filter "system:linux"
         systemversion "latest"
         cdialect "gnu11"
         links { "X11", "xcb", "wayland-client" }
         defines { "_GNU_SOURCE" }
-        removefiles { "./**/Windows/**" }
 
     filter "configurations:Debug"
         defines "ANVIL_CONFIG_DEBUG"
@@ -327,6 +381,8 @@ project "Sandbox"
 - `objdir` do Sandbox muda para `./bin/obj/%{cfg.buildcfg}/sandbox/` (evita colisão com Anvil).
 - `files` do Sandbox aponta para `./Sandbox/**` (não `./src/**`).
 - `includedirs` do Sandbox inclui `./Sandbox/` além de `./src/`.
+- `removefiles` **removido** do bloco Sandbox (não se aplica a um único arquivo).
+- `links` do Sandbox herda as dependências de link do Anvil via `links { "Anvil" }`.
 
 ---
 
@@ -336,7 +392,9 @@ project "Sandbox"
 
 ```
 Sandbox/
-└── main.c              ← entry point + sandbox layer (consumer code)
+├── main.c                  ← entry point: main() + engine init + shutdown
+├── sandbox_layer.h         ← API pública: anvl_sandbox_layer_create / destroy
+└── sandbox_layer.c         ← implementação da sandbox layer
 ```
 
 ### 3.2 Arquivos Removidos
@@ -349,7 +407,7 @@ src/anvil.c              ← main() removido (Sandbox assume)
 
 | Arquivo | Mudança |
 |---------|---------|
-| `premake5.lua` | Anvil vira StaticLib; novo projeto Sandbox; startproject muda |
+| `premake5.lua` | Anvil vira StaticLib; novo projeto Sandbox; startproject muda; removefiles removido do Sandbox |
 
 ---
 
@@ -371,7 +429,7 @@ src/anvil.c              ← main() removido (Sandbox assume)
 
 A Sandbox reutiliza o PCH do Anvil (`anvlpch.h` + `anvlpch.c`). Isso evita duplicação e garante que a Sandbox tenha acesso a todos os tipos e macros do engine.
 
-**Nota:** A Sandbox **não** é parte do Anvil. Ela usa o PCH do Anvil como referência, mas compila separadamente.
+**Nota:** A Sandbox **não** é parte do Anvil. Ela usa o PCH do Anvil como referência, mas compila separadamente. O `pchsource` aponta para `./src/anvlpch.c` — o Premake gera o PCH uma vez e ambos os projetos o reutilizam.
 
 ### 4.3 Ordem de Build
 
@@ -384,6 +442,23 @@ A Sandbox reutiliza o PCH do Anvil (`anvlpch.h` + `anvlpch.c`). Isso evita dupli
 
 O Premake resolve a dependência automaticamente via `links { "Anvil" }`.
 
+### 4.4 Dependências de Include
+
+```
+Sandbox/main.c
+    ├── anvlpch.h          (Core/typedefs.h, Tools/logger.h, Tools/assert.h)
+    ├── Core/application.h
+    ├── Core/layer.h
+    └── Sandbox/sandbox_layer.h
+            └── Core/layer.h (re-exportado)
+
+Sandbox/sandbox_layer.c
+    ├── anvlpch.h
+    ├── Sandbox/sandbox_layer.h
+    ├── Windowing/event.h
+    └── Tools/logger.h
+```
+
 ---
 
 ## 5. O que a Sandbox faz (e não faz)
@@ -391,9 +466,9 @@ O Premake resolve a dependência automaticamente via `links { "Anvil" }`.
 ### Faz:
 - `main()` — entry point.
 - Inicializa o engine (`anvl_application_init`).
-- Empilha a sandbox layer (demonstração do layer system).
+- Empilha a sandbox layer (autocontida: create push, destroy remove).
 - Roda o loop (`anvl_application_run`).
-- Shutdown limpo.
+- Shutdown limpo (destroy sandbox → shutdown framework).
 
 ### Não faz:
 - Renderização (Furnace não existe).
@@ -410,25 +485,30 @@ O Premake resolve a dependência automaticamente via `links { "Anvil" }`.
 
 ## 6. Plano de Implementação (Passo a Passo)
 
-### Etapa 1: Criar `Sandbox/main.c`
+### Etapa 1: Criar `Sandbox/sandbox_layer.h` + `sandbox_layer.c`
 
-Criar `Sandbox/main.c` com:
-- Includes do engine (`Core/application.h`, `Core/layer.h`, `Windowing/event.h`, `Tools/logger.h`).
-- Sandbox layer (struct + callbacks).
-- `main()` que inicializa, empilha, roda, shutdown.
+- Header com `anvl_sandbox_layer_create()` e `anvl_sandbox_layer_destroy()`.
+- Implementação: alocação, push na stack, callbacks (update + event).
+- `ANVIL_ASSERT` no destroy para verificar pointer válido.
 
-### Etapa 2: Remover `src/anvil.c`
+### Etapa 2: Criar `Sandbox/main.c`
+
+- Includes do engine.
+- `main()` que inicializa, cria sandbox, roda, destroy sandbox, shutdown.
+
+### Etapa 3: Remover `src/anvil.c`
 
 Excluir `src/anvil.c`. Não há mais entry point no Anvil.
 
-### Etapa 3: Atualizar `premake5.lua`
+### Etapa 4: Atualizar `premake5.lua`
 
 - Anvil: `kind "ConsoleApp"` → `kind "StaticLib"`.
 - Novo projeto `Sandbox`: `kind "ConsoleApp"`, `links { "Anvil" }`.
 - `startproject "Sandbox"`.
 - Ajustar `targetdir` e `objdir` para evitar colisão.
+- Remover `removefiles` do bloco Sandbox.
 
-### Etapa 4: Validação
+### Etapa 5: Validação
 
 - Rodar `premake5.lua gmake` (ou generate correspondente).
 - Compilar e verificar que `Sandbox` é gerado.
@@ -454,8 +534,8 @@ Excluir `src/anvil.c`. Não há mais entry point no Anvil.
 
 | P8 (Quality of Life) | P9 (Sandbox Executable) |
 |---|---|
-| Forward declarations em 4 arquivos | `Sandbox/main.c` precisa das forward decls? Não — a sandbox layer é self-contained |
-| Assertion system (`Tools/assert.h`) | Sandbox usa `ANVL_ASSERT` via PCH |
+| Forward declarations em 4 arquivos | `sandbox_layer.c` tem forward decls internas (`_sandbox_on_update`, `_sandbox_on_event`) |
+| Assertion system (`Tools/assert.h`) | Sandbox usa `ANVL_ASSERT` via PCH (no `anvl_sandbox_layer_destroy`) |
 
 **P8 e P9 são independentes:** P8 cuida da qualidade interna do engine (forward declarations + assertions). P9 cuida da separação de módulos (sandbox como executável consumer). A sandbox layer existe apenas na P9.
 
@@ -465,12 +545,12 @@ Excluir `src/anvil.c`. Não há mais entry point no Anvil.
 
 | Item | Detalhe |
 |------|---------|
-| **Arquivos novos** | 1 (`Sandbox/main.c`) |
+| **Arquivos novos** | 3 (`Sandbox/main.c`, `Sandbox/sandbox_layer.h`, `Sandbox/sandbox_layer.c`) |
 | **Arquivos removidos** | 1 (`src/anvil.c`) |
 | **Arquivos modificados** | 1 (`premake5.lua`) |
 | **Novas dependências** | Nenhuma |
 | **Novos links** | `Sandbox` linka contra `Anvil` (static lib) |
 | **PCH alterado** | Não (Sandbox reutiliza o PCH do Anvil) |
-| **API pública** | Nenhuma mudança |
+| **API pública** | Nenhuma mudança no engine (sandbox layer é consumer code) |
 | **Módulos afetados** | Novo: `Sandbox/`; Anvil vira static lib |
 | **Build** | 2 targets: `Anvil` (StaticLib) + `Sandbox` (ConsoleApp) |
