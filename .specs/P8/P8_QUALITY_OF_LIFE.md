@@ -22,15 +22,15 @@
 | `src/anvlpch.c` | N/A (sem funções estáticas) | 0 |
 | `src/Core/application.c` | ✅ | `_on_application_event`, `_on_application_window_close` |
 | `src/Core/layer.c` | ❌ | 0 (apenas variáveis estáticas) |
-| `src/FileIO/Linux/posix_file.c` | ❌ | `_filemode_to_stdio` |
-| `src/FileIO/Windows/win32_fileio.c` | ❌ | `_filemode_to_desired_access`, `_filemode_to_creation_disposition` |
+| `src/FileIO/Linux/posix_file.c` | ✅ | `_filemode_to_string` (renomeado de `_filemode_to_stdio`) |
+| `src/FileIO/Windows/win32_fileio.c` | ✅ | `_filemode_to_desired_access`, `_filemode_to_creation_disposition` (já existiam) |
 | `src/Tools/logger.c` | ❌ | `_print_timestamp_label`, `_print_level_label`, `_log_message` |
 | `src/Windowing/Windows/win32_window.c` | ❌ | `_dispatch_win32_event`, `_native_window_proc`, `_peek_and_dispatch_win32_messages` |
 | `src/Windowing/Linux/linux_window.c` | ✅ | `_window_backend_create`, `_window_backend_detect` |
 | `src/Windowing/Linux/X11/x11_backend.c` | ✅ | 8 funções (todas declaradas) |
 | `src/Windowing/Linux/Wayland/wayland_backend.c` | ✅ | ~20 funções (todas declaradas) |
 
-**4 arquivos precisam de forward declarations.**
+**2 arquivos precisam de forward declarations.**
 
 ### 1.2 Sistema de Assertions
 
@@ -178,16 +178,14 @@ static ReturnType _function_name(Type1 arg1, Type2 arg2);
 
 `anvlpch.h` ganha `#include "Tools/assert.h"`.
 
-### 3.3 Forward Declarations (4 arquivos)
+### 3.3 Forward Declarations (3 arquivos)
 
 | Arquivo | Adicionar |
 |---------|-----------|
-| `src/FileIO/Linux/posix_file.c` | `static const char* _filemode_to_stdio(FileMode mode);` |
-| `src/FileIO/Windows/win32_fileio.c` | `static uint32 _filemode_to_desired_access(FileMode mode);` + `static uint8 _filemode_to_creation_disposition(FileMode mode);` |
 | `src/Tools/logger.c` | `static void _print_timestamp_label();` + `static void _print_level_label(LogLevel level);` + `static void _log_message(LogLevel level, const char* call_module, const char* msg_format, va_list args);` |
 | `src/Windowing/Windows/win32_window.c` | `static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wparam, LPARAM lparam);` + `static LRESULT CALLBACK _native_window_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam);` + `static void _peek_and_dispatch_win32_messages(NativeWindow* window);` |
 
-**Nota:** `src/Core/layer.c` não tem funções estáticas (apenas variáveis estáticas), então não precisa de forward declarations.
+**Nota:** `src/FileIO/Linux/posix_file.c` já tinha forward declaration (só renomeada de `_filemode_to_stdio` → `_filemode_to_string`). `src/FileIO/Windows/win32_fileio.c` já tinha forward declarations (embora sem `static`). `src/Core/layer.c` não tem funções estáticas (apenas variáveis estáticas), então não precisa de forward declarations.
 
 ---
 
@@ -206,8 +204,6 @@ src/
 | Arquivo | Mudança |
 |---------|---------|
 | `src/anvlpch.h` | Adicionar `#include "Tools/assert.h"` |
-| `src/FileIO/Linux/posix_file.c` | Adicionar forward declaration de `_filemode_to_stdio` |
-| `src/FileIO/Windows/win32_fileio.c` | Adicionar forward declarations de `_filemode_to_desired_access`, `_filemode_to_creation_disposition` |
 | `src/Tools/logger.c` | Adicionar forward declarations de `_print_timestamp_label`, `_print_level_label`, `_log_message` |
 | `src/Windowing/Windows/win32_window.c` | Adicionar forward declarations de `_dispatch_win32_event`, `_native_window_proc`, `_peek_and_dispatch_win32_messages` |
 
@@ -242,35 +238,7 @@ Header puro com macros. Não precisa de `.c`. Inclui `Tools/logger.h` para usar 
 #endif // !ANVL_PRECOMPILED_HEADER
 ```
 
-### 5.3 `src/FileIO/Linux/posix_file.c` — Forward Declaration
-
-```c
-#include "anvlpch.h"
-#include "FileIO/fileio.h"
-#include <stdio.h>
-
-typedef struct FileHandle { ... } FileHandle;
-
-// Forward declarations
-static const char* _filemode_to_stdio(FileMode mode);  // ← ADICIONAR
-
-const char* _filemode_to_stdio(FileMode mode)
-{
-    // ...
-}
-```
-
-### 5.4 `src/FileIO/Windows/win32_fileio.c` — Forward Declarations
-
-```c
-// ... após typedef ...
-
-// Forward declarations
-static uint32 _filemode_to_desired_access(FileMode mode);
-static uint8  _filemode_to_creation_disposition(FileMode mode);
-```
-
-### 5.5 `src/Tools/logger.c` — Forward Declarations
+### 5.3 `src/Tools/logger.c` — Forward Declarations
 
 ```c
 #include "anvlpch.h"
@@ -288,7 +256,7 @@ static void _log_message(LogLevel level, const char* call_module,
                          const char* msg_format, va_list args);
 ```
 
-### 5.6 `src/Windowing/Windows/win32_window.c` — Forward Declarations
+### 5.4 `src/Windowing/Windows/win32_window.c` — Forward Declarations
 
 ```c
 #include "anvlpch.h"
@@ -381,12 +349,10 @@ void process_data(int* data, int size)
 2. Adicionar `#include "Tools/assert.h"` ao `anvlpch.h`.
 3. Validar: compilar e verificar que `ANVL_ASSERT(1 == 1)` não faz nada e `ANVL_ASSERT(1 == 2)` aborta em debug.
 
-### Etapa 2: Forward Declarations (4 arquivos)
+### Etapa 2: Forward Declarations (2 arquivos)
 
-1. `src/FileIO/Linux/posix_file.c` — adicionar `_filemode_to_stdio`.
-2. `src/FileIO/Windows/win32_fileio.c` — adicionar `_filemode_to_desired_access`, `_filemode_to_creation_disposition`.
-3. `src/Tools/logger.c` — adicionar `_print_timestamp_label`, `_print_level_label`, `_log_message`.
-4. `src/Windowing/Windows/win32_window.c` — adicionar `_dispatch_win32_event`, `_native_window_proc`, `_peek_and_dispatch_win32_messages`.
+1. `src/Tools/logger.c` — adicionar `_print_timestamp_label`, `_print_level_label`, `_log_message`.
+2. `src/Windowing/Windows/win32_window.c` — adicionar `_dispatch_win32_event`, `_native_window_proc`, `_peek_and_dispatch_win32_messages`.
 
 ### Etapa 3: Validação
 
@@ -413,9 +379,9 @@ void process_data(int* data, int size)
 | Item | Detalhe |
 |------|---------|
 | **Arquivos novos** | 1 (`Tools/assert.h`) |
-| **Arquivos modificados** | 5 (`anvlpch.h`, `posix_file.c`, `win32_fileio.c`, `logger.c`, `win32_window.c`) |
+| **Arquivos modificados** | 3 (`anvlpch.h`, `logger.c`, `win32_window.c`) |
 | **Novas dependências** | Nenhuma |
 | **Novos links** | Nenhum |
 | **PCH alterado** | Sim (`assert.h` adicionado) |
 | **Macros novas** | `ANVL_ASSERT`, `ANVL_ASSERT_MSG` |
-| **Forward declarations** | 6 funções em 4 arquivos |
+| **Forward declarations** | 6 funções em 2 arquivos |
