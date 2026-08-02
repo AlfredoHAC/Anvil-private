@@ -6,8 +6,10 @@
 **Tarefas principais:**
 
 **1. Gerenciamento de Janelas:**
-- [ ] Criação, redimensionamento e fechamento de janelas.
-- [ ] Integração com os sistemas operacionais Windows e Linux.
+- [x] Criação, redimensionamento e fechamento de janelas.
+- [x] Integração com os sistemas operacionais Windows e Linux.
+
+> Backends Win32 (Windows), X11/XCB (Linux), Wayland (Linux) completos. Opaque pointer em `window.h`, vtable `WindowBackend` validada em runtime.
 
 **2. Eventos de Entrada:**
 - [x] Captura de teclado, mouse e eventos de janela.
@@ -16,14 +18,20 @@
 - [x] Criar um sistema de log com níveis (INFO, WARNING, ERROR, DEBUG).
 
 **4. I/O de Arquivos:**
-- [ ] Ler e gravar arquivos, abstraindo os detalhes do sistema de arquivos.
+- [x] Ler e gravar arquivos, abstraindo os detalhes do sistema de arquivos.
+
+> `FileIO/fileio.h` com 6 funções + backends Win32/POSIX. Seleção compile-time via `removefiles` do Premake.
 
 **5. Propagação de eventos:**
-- [ ] Adicionar/Remover camadas do Layer System.
-- [ ] Lidar com eventos capturados ou propagar as camadas existentes.
+- [x] Adicionar/Remover camadas do Layer System.
+- [x] Lidar com eventos capturados ou propagar as camadas existentes.
+
+> `Core/layer.h` + `layer.c` — stack LIFO (32 slots), callbacks opcionais (`on_update`, `on_event`), propagação com `event->handled`. Callback de janela alterado para pass-by-pointer (`Event*`).
 
 **Produtos Esperados:**
-- [ ] Uma biblioteca estática ou dinâmica reutilizável que encapsule as interações específicas do sistema operacional.
+- [x] Uma biblioteca estática reutilizável que encapsule as interações específicas do sistema operacional.
+
+> Anvil compilado como `StaticLib` (`.lib`/`.a`). Consumido pela Sandbox (`ConsoleApp`).
 
 ---
 

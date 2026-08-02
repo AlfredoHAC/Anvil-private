@@ -1,7 +1,7 @@
 # Próximos Passos Imediatos — Forge Engine (Estado Real da Codebase)
 
 > Baseado na análise do `FORGE_CORE_ROADMAP.md` + inspeção direta dos arquivos em `src/`.  
-**Status real:** 7 tarefas concluídas (P1–P7), ~32 não iniciadas (seções 2–8 do roadmap).
+**Status real:** 7 tarefas concluídas (P1–P7), P8 e P9 planejadas, ~32 não iniciadas (seções 2–8 do roadmap).
 
 ---
 
@@ -56,7 +56,7 @@ src/
 | **1.3 Logging** | Sistema com níveis | ✅ Concluída | `logger.h/c` (6 níveis + macros core/client) |
 | **1.1 Gerenciamento de Janelas** | Criação/redimensionamento/fechamento | ✅ Concluída | Backends Win32/X11/Wayland completos; opaque pointer em `window.h`; vtable `WindowBackend` validada em runtime |
 | 1.4 I/O de Arquivos | Abstração FileIO | ✅ Concluída | `FileIO/fileio.h` + backends Win32/POSIX |
-| 1.5 Propagação de Eventos | Layer System | ✅ Concluída | `Core/layer.h` + `layer.c` (stack LIFO, 32 slots); `application.c` usa `anvl_layer_stack_dispatch_event` |
+| 1.5 Propagação de Eventos | Layer System | ✅ Concluída | `Core/layer.h` + `layer.c` (stack LIFO, 32 slots); `application.c` usa `anvl_layer_stack_dispatch_event`; callback alterado para pass-by-pointer (`Event*`) |
 
 ### Seções 2–8 do Roadmap
 **Nenhum arquivo existe** na codebase atual. Renderização, Assets, Física, Áudio, ECS, Editor e Otimizações estão em branco.
@@ -239,6 +239,34 @@ void anvl_layer_stack_clear();
 - [x] `window_backend.h` NÃO alterado (vtable não muda)
 - [x] Validação: compila e funciona no Windows (Win32) e verificado no Linux (X11/Wayland)
 
+### P8 — Forward Declarations e Assertions
+
+**Estado atual:** ❌ Não iniciada (ver `P8/P8_QUALITY_OF_LIFE.md`).
+
+**Duas melhorias independentes:**
+
+1. **Forward declarations** — 4 arquivos `.c` sem forward declaration de funções `static`.
+2. **Assertion system** — Novo header `Tools/assert.h` com `ANVL_ASSERT` e `ANVL_ASSERT_MSG`.
+
+- [ ] Criar `src/Tools/assert.h` (macros `ANVL_ASSERT`, `ANVL_ASSERT_MSG`)
+- [ ] Adicionar `#include "Tools/assert.h"` ao `anvlpch.h`
+- [ ] Forward declaration em `src/FileIO/Linux/posix_file.c` (`_filemode_to_stdio`)
+- [ ] Forward declarations em `src/FileIO/Windows/win32_fileio.c` (`_filemode_to_desired_access`, `_filemode_to_creation_disposition`)
+- [ ] Forward declarations em `src/Tools/logger.c` (`_print_timestamp_label`, `_print_level_label`, `_log_message`)
+- [ ] Forward declarations em `src/Windowing/Windows/win32_window.c` (`_dispatch_win32_event`, `_native_window_proc`, `_peek_and_dispatch_win32_messages`)
+- [ ] Validação: compila em Windows e Linux
+
+### P9 — Sandbox Executable (Consumer Application)
+
+**Estado atual:** ❌ Não iniciada (ver `P9/P9_SANDBOX_EXECUTABLE.md`).
+
+**Separação de módulos:** mover `main()` de `src/anvil.c` para `Sandbox/main.c`, Anvil vira StaticLib.
+
+- [ ] Criar `Sandbox/main.c` (entry point + sandbox layer como consumer code)
+- [ ] Remover `src/anvil.c`
+- [ ] Atualizar `premake5.lua` (Anvil → StaticLib, novo projeto Sandbox → ConsoleApp)
+- [ ] Validação: compila e executa Sandbox.exe/Sandbox
+
 ---
 
 ## 📊 Resumo Executivo (Baseado na Codebase Real)
@@ -252,3 +280,5 @@ void anvl_layer_stack_clear();
 | ~~**P5**~~ | ~~I/O de Arquivos abstrato~~ | ~~`src/FileIO/fileio.h` + backends por plataforma~~ | ✅ Concluída |
 | ~~**P6**~~ | ~~Layer System / Update Loop~~ | ~~`src/Core/layer.h` + `layer.c`~~ | ✅ Concluída |
 | ~~**P7**~~ | ~~Callback: `(Event)` → `(Event*)` — pass by pointer~~ | ~~`Windowing/window.h`, `Core/layer.h`, `application.c`, backends~~ | ✅ Concluída |
+| **P8** | Forward declarations + Assertions | `Tools/assert.h`, 4 backends, `anvlpch.h` | Refatoração |
+| **P9** | Sandbox Executable (consumer) | `Sandbox/main.c`, `src/anvil.c` (remover), `premake5.lua` | Novo módulo + Build |
