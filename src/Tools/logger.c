@@ -1,7 +1,7 @@
 #include "anvlpch.h"
 
 #include "Platform/platform_detection.h"
-#include "logger.h"
+#include "Tools/logger.h"
 
 #include <time.h>
 
@@ -19,6 +19,8 @@ static LogLevel current_level;
 // clang-format off
 void anvl_logger_set_level(LogLevel level)
 {
+    ANVIL_ASSERT(level >= ANVL_LOG_LEVEL_NONE && level <= ANVL_LOG_LEVEL_TRACE);
+
     current_level = level;
 }
 // clang-format on
@@ -147,11 +149,18 @@ static void _log_message(LogLevel    level,
                          const char* msg_format,
                          va_list     args)
 {
-    if ((uint16)level > (uint16)current_level) { return; }
+    ANVIL_ASSERT(level >= ANVL_LOG_LEVEL_NONE && level <= ANVL_LOG_LEVEL_TRACE);
+
+    if (level > current_level) { return; }
 
     _print_timestamp_label();
     _print_level_label(level);
+
+    ANVIL_ASSERT(call_module != NULL);
+
     fprintf(stderr, "%s: ", call_module);
+
+    ANVIL_ASSERT(msg_format != NULL);
 
     vfprintf(stderr, msg_format, args);
     fprintf(stderr, "\n");

@@ -5,6 +5,7 @@
 #include "Core/typedefs.h"
 
 #include "Tools/logger.h"
+#include "Tools/assert.h"
 
 #include <stdarg.h>
 #include <stdio.h>

@@ -38,6 +38,7 @@
 #        error OS platform not supported!
 #    endif
 #else
+#    define ANVIL_BREAK()      ((void)0)
 #    define ANVIL_CONFIG_DEBUG 0
 #endif
 

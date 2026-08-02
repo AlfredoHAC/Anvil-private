@@ -1,3 +1,4 @@
+#include "Tools/assert.h"
 #include "anvlpch.h"
 
 #include "Tools/logger.h"
@@ -81,7 +82,7 @@ void* x11_backend_init()
 
 void x11_backend_shutdown(void* backend)
 {
-    if (!backend) { return; }
+    ANVIL_ASSERT(backend != NULL);
 
     X11Backend* b_end = (X11Backend*)backend;
     xcb_disconnect(b_end->display);

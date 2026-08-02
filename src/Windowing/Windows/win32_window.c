@@ -24,7 +24,7 @@ NativeWindow* anvl_platform_window_create(const char* window_title,
 {
     NativeWindow* window = malloc(sizeof(NativeWindow));
     memset(window, 0, sizeof(NativeWindow));
-    if (!window) { return NULL; }
+    ANVIL_ASSERT(window != NULL);
 
     WNDCLASSEXA window_class   = {0};
     window_class.style         = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
@@ -99,7 +99,7 @@ void anvl_platform_window_destroy(NativeWindow* window)
 
 void anvl_platform_window_set_event_callback(NativeWindow* window, EventCallbackFn event_callback)
 {
-    if (!event_callback) { return; }
+    ANVIL_ASSERT(event_callback != NULL);
 
     window->event_callback = event_callback;
 }

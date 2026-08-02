@@ -23,6 +23,7 @@ FileHandle* anvl_file_open(const char* path, FileMode mode)
     FileHandle* file = malloc(sizeof(FileHandle));
     if (!file) { return NULL; }
 
+    ANVIL_ASSERT(path != NULL);
     file->mode        = _filemode_to_desired_access(mode);
     file->disposition = _filemode_to_creation_disposition(mode);
     file->path        = _strdup(path);
@@ -57,7 +58,7 @@ FileHandle* anvl_file_open(const char* path, FileMode mode)
 
 uint64 anvl_file_read(FileHandle* file, void* buffer, uint64 size)
 {
-    if (!file || file->pointer == INVALID_HANDLE_VALUE) { return 0; }
+    ANVIL_ASSERT(file != NULL && file->pointer != INVALID_HANDLE_VALUE);
 
     DWORD bytes_read = 0;
     BOOL  result     = ReadFile(file->pointer, buffer, size, &bytes_read, NULL);
@@ -71,7 +72,7 @@ uint64 anvl_file_read(FileHandle* file, void* buffer, uint64 size)
 
 uint64 anvl_file_write(FileHandle* file, const void* buffer, uint64 size)
 {
-    if (!file || file->pointer == INVALID_HANDLE_VALUE) { return 0; }
+    ANVIL_ASSERT(file != NULL && file->pointer != INVALID_HANDLE_VALUE);
 
     DWORD bytes_written = 0;
     BOOL  result        = WriteFile(file->pointer, buffer, size, &bytes_written, NULL);
@@ -107,7 +108,7 @@ bool anvl_file_exists(const char* path)
 
 uint64 anvl_file_get_size(FileHandle* file)
 {
-    if (!file || file->pointer == INVALID_HANDLE_VALUE) { return 0; }
+    ANVIL_ASSERT(file != NULL && file->pointer != INVALID_HANDLE_VALUE);
 
     LARGE_INTEGER file_size;
     BOOL          result = GetFileSizeEx(file->pointer, &file_size);
@@ -127,7 +128,7 @@ uint32 _filemode_to_desired_access(FileMode mode)
         case ANVL_FILE_MODE_APPEND: return GENERIC_WRITE; break;
     }
 
-    return 0;
+    ANVIL_ASSERT_MSG(0, "Invalid FileMode: %d", mode);
 }
 
 uint8 _filemode_to_creation_disposition(FileMode mode)
@@ -139,5 +140,5 @@ uint8 _filemode_to_creation_disposition(FileMode mode)
         case ANVL_FILE_MODE_APPEND: return OPEN_EXISTING; break;
     }
 
-    return 0;
+    ANVIL_ASSERT_MSG(0, "Invalid FileMode: %d", mode);
 }

@@ -51,7 +51,7 @@ Application* anvl_application_init(const ApplicationOptions opts)
 
 void anvl_application_run(Application* app)
 {
-    if (!app) { return; }
+    ANVIL_ASSERT(app != NULL);
 
     while (app_running)
     {
@@ -62,7 +62,7 @@ void anvl_application_run(Application* app)
 
 void anvl_application_shutdown(Application* app)
 {
-    if (!app) { return; }
+    ANVIL_ASSERT(app != NULL);
 
     anvl_layer_stack_clear();
     anvl_platform_window_unset_event_callback(app->window);

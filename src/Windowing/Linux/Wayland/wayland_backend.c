@@ -260,7 +260,7 @@ void* wayland_backend_init()
 
 void wayland_backend_shutdown(void* backend)
 {
-    if (!backend) { return; }
+    ANVIL_ASSERT(backend != NULL);
 
     WaylandBackend* b_end = (WaylandBackend*)backend;
 
