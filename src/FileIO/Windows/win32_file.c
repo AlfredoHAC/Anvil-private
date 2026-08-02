@@ -61,7 +61,7 @@ uint64 anvl_file_read(FileHandle* file, void* buffer, uint64 size)
     ANVIL_ASSERT(file != NULL && file->pointer != INVALID_HANDLE_VALUE);
 
     DWORD bytes_read = 0;
-    BOOL  result     = ReadFile(file->pointer, buffer, size, &bytes_read, NULL);
+    BOOL  result     = ReadFile(file->pointer, buffer, (DWORD)size, &bytes_read, NULL);
 
     if (!result) { return 0; }
 
@@ -75,7 +75,7 @@ uint64 anvl_file_write(FileHandle* file, const void* buffer, uint64 size)
     ANVIL_ASSERT(file != NULL && file->pointer != INVALID_HANDLE_VALUE);
 
     DWORD bytes_written = 0;
-    BOOL  result        = WriteFile(file->pointer, buffer, size, &bytes_written, NULL);
+    BOOL  result        = WriteFile(file->pointer, buffer, (DWORD)size, &bytes_written, NULL);
 
     if (!result) { return 0; }
 
@@ -129,6 +129,7 @@ uint32 _filemode_to_desired_access(FileMode mode)
     }
 
     ANVIL_ASSERT_MSG(0, "Invalid FileMode: %d", mode);
+    return 0;
 }
 
 uint8 _filemode_to_creation_disposition(FileMode mode)
@@ -141,4 +142,5 @@ uint8 _filemode_to_creation_disposition(FileMode mode)
     }
 
     ANVIL_ASSERT_MSG(0, "Invalid FileMode: %d", mode);
+    return 0;
 }
