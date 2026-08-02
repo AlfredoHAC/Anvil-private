@@ -1,7 +1,7 @@
 # Próximos Passos Imediatos — Forge Engine (Estado Real da Codebase)
 
 > Baseado na análise do `FORGE_CORE_ROADMAP.md` + inspeção direta dos arquivos em `src/`.  
-**Status real:** 5 tarefas concluídas (1.1–1.5), ~32 não iniciadas (seções 2–8).
+**Status real:** 7 tarefas concluídas (P1–P7), ~32 não iniciadas (seções 2–8 do roadmap).
 
 ---
 
@@ -211,7 +211,7 @@ typedef struct Layer {
 void anvl_layer_stack_push(Layer* layer);
 void anvl_layer_stack_pop();
 void anvl_layer_stack_remove(Layer* layer);
-void anvl_layer_stack_dispatch_event(Event event);
+void anvl_layer_stack_dispatch_event(Event* event);
 void anvl_layer_stack_call_update();
 uint32 anvl_layer_stack_length();
 void anvl_layer_stack_clear();
@@ -249,6 +249,6 @@ void anvl_layer_stack_clear();
 | ~~**P2**~~ | ~~Isolar detecção de platform do PCH~~ | ~~`anvlpch.h`, `Tools/logger.c`~~ | ✅ Concluída |
 | ~~**P3**~~ | ~~Backend Linux (stub ou mínimo)~~ | ~~`Windowing/Linux/linux_window.c`, `X11/*`, `Wayland/*`~~ | ✅ Concluída |
 | ~~**P4**~~ | ~~Refatoração de Arquitetura (separação por responsabilidades)~~ | ~~Move: `window.h`, `event.h`, backends → `Windowing/`~~ | ✅ Concluída |
-| **P5** | I/O de Arquivos abstrato | `src/FileIO/fileio.h` + backends por plataforma | ✅ Concluída |
-| **P6** | Layer System / Update Loop | `src/Core/layer.h` + `layer.c` | ✅ Concluída |
+| ~~**P5**~~ | ~~I/O de Arquivos abstrato~~ | ~~`src/FileIO/fileio.h` + backends por plataforma~~ | ✅ Concluída |
+| ~~**P6**~~ | ~~Layer System / Update Loop~~ | ~~`src/Core/layer.h` + `layer.c`~~ | ✅ Concluída |
 | ~~**P7**~~ | ~~Callback: `(Event)` → `(Event*)` — pass by pointer~~ | ~~`Windowing/window.h`, `Core/layer.h`, `application.c`, backends~~ | ✅ Concluída |
