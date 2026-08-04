@@ -67,9 +67,18 @@ endif()
 # ─────────────────────────────────────────────
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(Anvil PRIVATE
-        $<$<CONFIG:Debug>:-fsanitize=address,fuzzer>
+        $<$<CONFIG:Debug>:-fsanitize=address>
     )
     target_link_options(Anvil PRIVATE
-        $<$<CONFIG:Debug>:-fsanitize=address,fuzzer>
+        $<$<CONFIG:Debug>:-fsanitize=address>
+    )
+endif()
+
+if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    target_compile_options(Anvil PRIVATE
+        $<$<CONFIG:Debug>:-fsanitize=fuzzer>
+    )
+    target_link_options(Anvil PRIVATE
+        $<$<CONFIG:Debug>:-fsanitize=fuzzer>
     )
 endif()
