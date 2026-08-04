@@ -5,7 +5,6 @@ project(Anvil LANGUAGES C)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_library(Anvil STATIC
-    src/anvil.c
     src/anvlpch.c
     src/Core/application.c
     src/Core/layer.c
