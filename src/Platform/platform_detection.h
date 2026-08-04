@@ -1,6 +1,8 @@
 #ifndef ANVL_PLATFORM_DETECTION_HEADER
 #define ANVL_PLATFORM_DETECTION_HEADER
 
+#include <signal.h>
+
 // Compiler/Platform detection
 // Compiler macros (MSVC, GCC, etc.)
 #if defined(_MSC_VER)
