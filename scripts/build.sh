@@ -101,7 +101,7 @@ echo -e "${YELLOW}[2/2] 📦 Compilando Anvil...${RESET}"
 
 mkdir -p build
 cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE="${CONFIG}"
-cmake --build build --config "${CONFIG}" --parallel
+cmake --build build --parallel
 
 echo ""
 divider
