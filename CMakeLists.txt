@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 project(Anvil LANGUAGES C)
 
+# Export compile_commands.json for linters
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_library(Anvil STATIC
     src/anvil.c
     src/anvlpch.c
@@ -56,9 +59,13 @@ if(UNIX AND NOT APPLE)
     if(X11_FOUND)
         target_link_libraries(Anvil PRIVATE X11 xcb)
     endif()
-    find_package(WaylandClient QUIET)
-    if(WaylandClient_FOUND)
-        target_link_libraries(Anvil PRIVATE wayland-client)
+
+    # Wayland client library
+    find_library(WAYLAND_CLIENT_LIBRARY wayland-client)
+    find_path(WAYLAND_CLIENT_INCLUDE_DIR wayland-client.h)
+    if(WAYLAND_CLIENT_LIBRARY AND WAYLAND_CLIENT_INCLUDE_DIR)
+        target_link_libraries(Anvil PRIVATE ${WAYLAND_CLIENT_LIBRARY})
+        target_include_directories(Anvil PRIVATE ${WAYLAND_CLIENT_INCLUDE_DIR})
     endif()
 endif()
 
