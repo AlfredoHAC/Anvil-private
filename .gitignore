@@ -1,6 +1,7 @@
 # --- Anvil Framework .gitignore ---
 
 # Build Artifacts
+build/
 bin/
 obj/
 Debug/
