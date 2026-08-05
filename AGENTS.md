@@ -218,7 +218,15 @@ When making changes:
 
 Do not introduce new third-party dependencies without explicit approval.
 
-When adding source files, update the corresponding Premake configuration.
+When adding source files, update the corresponding CMake configuration.
+
+## Build System
+
+Build scripts live in `scripts/` at each module root (e.g. `Anvil/scripts/build.bat`, `Anvil/scripts/build.sh`).
+
+ForgeCore's orchestration script lives in `scripts/` at the ForgeCore root (e.g. `scripts/build.bat`).
+
+Each module's build script handles only its own compilation. The ForgeCore script calls each module's script in order.
 
 ---
 

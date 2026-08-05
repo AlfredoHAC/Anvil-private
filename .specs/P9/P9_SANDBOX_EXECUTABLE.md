@@ -1,8 +1,8 @@
 # P9 — Sandbox Executable (Consumer Application)
 
-> **Status:** ❌ Não iniciada  
+> **Status:** ✅ Concluída  
 > **Dependência:** P8 (forward declarations + assertions)  
-> **Módulo:** Novo — `Sandbox/` (fora de `src/`)  
+> **Módulo:** Novo — `example/Sandbox/` (dentro do ForgeCore)  
 > **Tipo:** Novo executável + refatoração do build
 
 ---
@@ -11,7 +11,7 @@
 
 ### O problema atual
 
-O entry point do engine é `src/anvil.c` — um arquivo dentro do módulo Anvil que contém `main()`. Isso viola a separação de módulos:
+O entry point do engine era `src/anvil.c` — um arquivo dentro do módulo Anvil que continha `main()`. Isso violava a separação de módulos:
 
 ```
 src/
@@ -29,7 +29,7 @@ O roadmap define **Sandbox** como o executável separado:
 
 ### Por que Sandbox como executável separado?
 
-| Como `src/anvil.c` (atual) | Como `Sandbox/main.c` (separado) |
+| Como `src/anvil.c` (antigo) | Como `Sandbox/` (separado) |
 |---|---|
 | `main()` dentro do engine | `main()` fora do engine |
 | Viola dependência: engine não deve saber de consumers | Respeita: Sandbox **depende** de Anvil |
@@ -45,136 +45,177 @@ Pense no Anvil como uma **biblioteca** (como `libpthread` ou `libcurl`). Você n
 
 ## 2. Design
 
-### 2.1 Estrutura de Diretórios
+### 2.1 Estrutura de Diretórios (Implementada)
 
 ```
-Sandbox/
-└── main.c              ← entry point: main() + engine init + sandbox layer
+example/Sandbox/
+├── src/
+│   ├── main.c                      ← entry point: main() + engine init + shutdown
+│   └── Layer/
+│       ├── sandbox_layer.h          ← API pública: sndbx_attach_layer / sndbx_detach_layer
+│       └── sandbox_layer.c          ← layer: state + callbacks + attach/detach
+├── scripts/
+│   ├── build.bat                    ← Windows build script
+│   └── build.sh                     ← Linux build script
+├── CMakeLists.txt
+└── .gitignore
 ```
 
-**Um único arquivo.** A Sandbox é simples: cria a aplicação, empilha a sandbox layer, roda o loop. Quando o Furnace chegar, a Sandbox ganhará uma `FurnaceLayer`.
+A Sandbox layer é **autocontida**: ela se adiciona e se remove da layer stack. O `main()` não gerencia a stack manualmente.
 
-### 2.2 `Sandbox/main.c`
+**Princípio:** Assim como a `Application` gerencia sua própria janela (criação, callback, destroy), a Sandbox layer gerencia seu próprio ciclo de vida na stack.
+
+### 2.2 `example/Sandbox/src/Layer/sandbox_layer.h` — API Pública
 
 ```c
-#include "anvlpch.h"
-#include "Core/application.h"
-#include "Core/layer.h"
-#include "Windowing/event.h"
-#include "Tools/logger.h"
+#ifndef SANDBOX_LAYER_HEADER
+#define SANDBOX_LAYER_HEADER
 
-// ---------------------------------------------------------------------------
-// Sandbox Layer — demonstração do layer system
-// ---------------------------------------------------------------------------
+#include <Core/typedefs.h>
 
-typedef struct SandboxLayer
+void sndbx_attach_layer();
+void sndbx_detach_layer();
+
+#endif // SANDBOX_LAYER_HEADER
+```
+
+- `sndbx_attach_layer()` — empilha a sandbox na stack.
+- `sndbx_detach_layer()` — remove da stack.
+
+### 2.3 `example/Sandbox/src/Layer/sandbox_layer.c` — Layer Implementation
+
+```c
+#include <anvlpch.h>
+
+#include "Layer/sandbox_layer.h"
+
+#include <Core/layer.h>
+#include <Windowing/event.h>
+
+static void _on_sndbx_update(Layer* layer);
+static void _on_sndbx_event(Layer* layer, Event* event);
+
+static Layer sndbx_layer = {
+    .name      = "Sandbox_Layer",
+    .on_update = _on_sndbx_update,
+    .on_event  = _on_sndbx_event,
+};
+
+void sndbx_attach_layer()
 {
-    Layer  base;
-    uint32 frame_count;
-} SandboxLayer;
-
-static void _sandbox_on_update(Layer* layer);
-static void _sandbox_on_event(Layer* layer, Event* event);
-
-static Layer* _sandbox_layer_create()
-{
-    SandboxLayer* self = malloc(sizeof(SandboxLayer));
-    if (!self) { return NULL; }
-
-    self->frame_count = 0;
-    self->base = (Layer){
-        .name      = "Sandbox_Layer",
-        .on_update = _sandbox_on_update,
-        .on_event  = _sandbox_on_event,
-    };
-
-    return &self->base;
+    ANVIL_DEBUG("SANDBOX", "Layer Attached.\n -> Stack length: %u", anvl_layer_stack_length());
+    anvl_layer_stack_push(&sndbx_layer);
 }
 
-static void _sandbox_on_update(Layer* layer)
+void sndbx_detach_layer()
 {
-    SandboxLayer* self = (SandboxLayer*)layer;
-    self->frame_count++;
-
-    if (self->frame_count % 60 == 0)
-    {
-        ANVIL_CORE_DEBUG("Sandbox: frame %u", self->frame_count);
-    }
+    anvl_layer_stack_remove(&sndbx_layer);
+    ANVIL_DEBUG("SANDBOX", "Layer Detached.\n -> Stack length: %u", anvl_layer_stack_length());
 }
 
-static void _sandbox_on_event(Layer* layer, Event* event)
+static void _on_sndbx_update(Layer* layer)
 {
-    (void)layer;
+    // TODO: game logic
+}
+
+static void _on_sndbx_event(Layer* layer, Event* event)
+{
+    ANVIL_DEBUG("SANDBOX", "Event captured!");
 
     switch (event->type)
     {
-        case ANVL_EVENT_TYPE_KEY_PRESS:
-            switch (event->key_press.key_code)
-            {
-                case 41: // ESC
-                    ANVIL_CORE_INFO("Sandbox: ESC pressed, exiting.");
-                    event->handled = true;
-                    break;
-                case 19: // R
-                    ANVIL_CORE_INFO("Sandbox: R pressed, reset.");
-                    break;
-                default: break;
-            }
-            break;
         case ANVL_EVENT_TYPE_WINDOW_RESIZE:
-            ANVIL_CORE_DEBUG("Sandbox: resize %ux%u",
-                             event->window_resize.width,
-                             event->window_resize.height);
+            ANVIL_DEBUG("SANDBOX", "Window resize: %dx%d",
+                        event->window_resize.width, event->window_resize.height);
             break;
-        default: break;
+        case ANVL_EVENT_TYPE_KEY_PRESS:
+            ANVIL_DEBUG("SANDBOX", "Key press: %d (Mod: %d)",
+                        event->key_press.key_code, event->key_press.modifier_set);
+            break;
+        case ANVL_EVENT_TYPE_KEY_RELEASE:
+            ANVIL_DEBUG("SANDBOX", "Key release: %d (Mod: %d)",
+                        event->key_release.key_code, event->key_release.modifier_set);
+            break;
+        case ANVL_EVENT_TYPE_MOUSE_MOVE:
+            ANVIL_DEBUG("SANDBOX", "Mouse move: (%.1f,%.1f)",
+                        event->mouse_move.x, event->mouse_move.y);
+            break;
+        case ANVL_EVENT_TYPE_MOUSE_BUTTON_CLICK:
+            ANVIL_DEBUG("SANDBOX", "Mouse button click: %d (%.1f,%.1f)",
+                        event->mouse_button_click.button_code,
+                        event->mouse_button_click.x, event->mouse_button_click.y);
+            break;
+        case ANVL_EVENT_TYPE_MOUSE_BUTTON_RELEASE:
+            ANVIL_DEBUG("SANDBOX", "Mouse button release: %d (%.1f,%.1f)",
+                        event->mouse_button_release.button_code,
+                        event->mouse_button_release.x, event->mouse_button_release.y);
+            break;
+        case ANVL_EVENT_TYPE_MOUSE_SCROLL:
+            ANVIL_DEBUG("SANDBOX", "Mouse scroll: (%.1f,%.1f)",
+                        event->mouse_scroll.x_offset, event->mouse_scroll.y_offset);
+            break;
+        default: return; break;
     }
-}
 
-// ---------------------------------------------------------------------------
-// main()
-// ---------------------------------------------------------------------------
+    event->handled = true;
+}
+```
+
+**Por que `sandbox_layer.c` e não tudo em `main.c`?**
+
+- Separação de responsabilidades: `main.c` orquestra o engine, `sandbox_layer.c` implementa a layer.
+- Padrão consistente com `Core/application.c` (application orquestra, mas a lógica interna fica no `.c`).
+- Facilita testes futuros: a layer pode ser testada independentemente do `main()`.
+
+### 2.4 `example/Sandbox/src/main.c` — Entry Point
+
+```c
+#include <anvlpch.h>
+
+#include "Layer/sandbox_layer.h"
+
+#include <Core/application.h>
 
 int main()
 {
     const ApplicationOptions opts = {
-        .name     = "Forge Sandbox",
-        .width    = 1280,
-        .height   = 720,
+        .name   = "AnvilFramework",
+        .width  = 1280,
+        .height = 720,
     };
 
     Application* app = anvl_application_init(opts);
     if (!app) { return 1; }
 
-    // Empilhar sandbox layer como demonstração do layer system.
-    Layer* sandbox = _sandbox_layer_create();
-    if (sandbox)
-    {
-        anvl_layer_stack_push(sandbox);
-    }
+    sndbx_attach_layer();
 
     anvl_application_run(app);
 
-    // Shutdown: remover sandbox, depois framework limpa o resto.
-    if (sandbox)
-    {
-        anvl_layer_stack_remove(sandbox);
-        free(sandbox);
-    }
-
+    sndbx_detach_layer();
     anvl_application_shutdown(app);
+    app = NULL;
 
     return 0;
 }
 ```
 
-### 2.3 Remoção de `src/anvil.c`
+**Fluxo:**
+1. `anvl_application_init` — cria janela, empilha a application layer interna.
+2. `sndbx_attach_layer` — empilha a sandbox **acima** da application layer.
+3. `anvl_application_run` — loop de update + events (LIFO: sandbox primeiro).
+4. `sndbx_detach_layer` — remove sandbox da stack.
+5. `anvl_application_shutdown` — remove application layer, destroy janela, free.
 
-`src/anvil.c` é removido. Não há mais entry point dentro do Anvil.
+**Nota:** A ordem de shutdown é importante. A sandbox é removida **antes** do shutdown do framework, para que a application layer (interna) processe eventos finais antes do destroy da janela.
+
+### 2.5 Remoção de `src/anvil.c`
+
+`src/anvil.c` foi removido. Não há mais entry point dentro do Anvil.
 
 **Antes:**
 ```
 src/
-├── anvil.c              ← main() — REMOVER
+├── anvil.c              ← main() — REMOVIDO
 ├── anvlpch.h
 ├── anvlpch.c
 └── ...
@@ -187,146 +228,104 @@ src/
 ├── anvlpch.c
 └── ...
 
-Sandbox/
-└── main.c              ← main() — NOVO
+example/Sandbox/src/
+├── main.c                  ← main() — NOVO
+└── Layer/
+    ├── sandbox_layer.h     ← API pública — NOVO
+    └── sandbox_layer.c     ← layer implementation — NOVO
 ```
 
-### 2.4 Build System (premake5.lua)
+### 2.6 Build System (CMakeLists.txt)
 
-O Anvil vira uma **static library**. A Sandbox é um **console app** que linka contra ela.
+O Anvil é uma **static library**. A Sandbox é um **console app** que linka contra ela.
 
-```lua
-workspace "ForgeCore"
+#### ForgeCore/CMakeLists.txt
 
-    architecture "x86_64"
-    startproject "Sandbox"
+```cmake
+cmake_minimum_required(VERSION 3.20)
+project(ForgeCore LANGUAGES C)
 
-    configurations {
-        "Debug",
-        "Optimized",
-        "Release"
-    }
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
--- ---------------------------------------------------------------------------
--- Anvil: static library
--- ---------------------------------------------------------------------------
-project "Anvil"
-    kind "StaticLib"
-    language "C"
-
-    pchheader "anvlpch.h"
-    pchsource "./src/anvlpch.c"
-
-    targetdir "./bin/%{cfg.buildcfg}/lib/"
-    objdir "./bin/obj/%{cfg.buildcfg}/anvil/"
-
-    files {
-        "./src/**.h",
-        "./src/**.c"
-    }
-
-    includedirs {
-        "./src/",
-        "./src/**"
-    }
-
-    filter "system:windows"
-        systemversion "latest"
-        cdialect "C11"
-        links { "user32", "gdi32", "opengl32" }
-        defines { "_CRT_SECURE_NO_WARNINGS" }
-        removefiles { "./**/Linux/**" }
-
-    filter "system:linux"
-        systemversion "latest"
-        cdialect "gnu11"
-        links { "X11", "xcb", "wayland-client" }
-        defines { "_GNU_SOURCE" }
-        removefiles { "./**/Windows/**" }
-
-    filter "configurations:Debug"
-        defines "ANVIL_CONFIG_DEBUG"
-        runtime "Debug"
-        symbols "On"
-        sanitize { "Address", "Fuzzer" }
-        editandcontinue "Off"
-        incrementallink "Off"
-        runtimechecks "Off"
-
-    filter "configurations:Optimized"
-        defines "ANVIL_CONFIG_OPTIMIZED"
-        runtime "Release"
-        optimize "On"
-
-    filter "configurations:Release"
-        defines "ANVIL_CONFIG_RELEASE"
-        runtime "Release"
-        optimize "Full"
-
--- ---------------------------------------------------------------------------
--- Sandbox: console application (consumer of Anvil)
--- ---------------------------------------------------------------------------
-project "Sandbox"
-    kind "ConsoleApp"
-    language "C"
-
-    pchheader "anvlpch.h"
-    pchsource "./src/anvlpch.c"
-
-    targetdir "./bin/%{cfg.buildcfg}/"
-    objdir "./bin/obj/%{cfg.buildcfg}/sandbox/"
-
-    files {
-        "./Sandbox/**.h",
-        "./Sandbox/**.c"
-    }
-
-    includedirs {
-        "./src/",
-        "./src/**",
-        "./Sandbox/"
-    }
-
-    links { "Anvil" }
-
-    filter "system:windows"
-        systemversion "latest"
-        cdialect "C11"
-        links { "user32", "gdi32", "opengl32" }
-        defines { "_CRT_SECURE_NO_WARNINGS" }
-        removefiles { "./**/Linux/**" }
-
-    filter "system:linux"
-        systemversion "latest"
-        cdialect "gnu11"
-        links { "X11", "xcb", "wayland-client" }
-        defines { "_GNU_SOURCE" }
-        removefiles { "./**/Windows/**" }
-
-    filter "configurations:Debug"
-        defines "ANVIL_CONFIG_DEBUG"
-        runtime "Debug"
-        symbols "On"
-
-    filter "configurations:Optimized"
-        defines "ANVIL_CONFIG_OPTIMIZED"
-        runtime "Release"
-        optimize "On"
-
-    filter "configurations:Release"
-        defines "ANVIL_CONFIG_RELEASE"
-        runtime "Release"
-        optimize "Full"
+add_subdirectory(Anvil)
+add_subdirectory(example/Sandbox)
 ```
 
-**Mudanças no premake:**
-- `startproject` muda de `"Anvil"` para `"Sandbox"`.
-- `Anvil`: `kind "ConsoleApp"` → `kind "StaticLib"`.
-- Novo projeto `Sandbox`: `kind "ConsoleApp"`, `links { "Anvil" }`.
-- `targetdir` do Anvil muda para `./bin/%{cfg.buildcfg}/lib/` (padrão de libs).
-- `objdir` do Sandbox muda para `./bin/obj/%{cfg.buildcfg}/sandbox/` (evita colisão com Anvil).
-- `files` do Sandbox aponta para `./Sandbox/**` (não `./src/**`).
-- `includedirs` do Sandbox inclui `./Sandbox/` além de `./src/`.
+#### example/Sandbox/CMakeLists.txt
+
+```cmake
+cmake_minimum_required(VERSION 3.20)
+project(Sandbox LANGUAGES C)
+
+# Export compile_commands.json for linters
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Try to find Anvil, or build it from source if not found
+if(NOT TARGET Anvil)
+    set(ANVIL_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../Anvil")
+    if(EXISTS "${ANVIL_ROOT}/CMakeLists.txt")
+        add_subdirectory("${ANVIL_ROOT}" Anvil)
+    else()
+        message(FATAL_ERROR "Anvil not found at ${ANVIL_ROOT}")
+    endif()
+endif()
+
+add_executable(Sandbox
+    src/main.c
+    src/Layer/sandbox_layer.c
+)
+
+target_link_libraries(Sandbox PRIVATE Anvil)
+target_include_directories(Sandbox PRIVATE src)
+
+target_compile_definitions(Sandbox PRIVATE
+    $<$<CONFIG:Debug>:ANVIL_CONFIG_DEBUG>
+    $<$<CONFIG:RelWithDebInfo>:ANVIL_CONFIG_OPTIMIZED>
+    $<$<CONFIG:Release>:ANVIL_CONFIG_RELEASE>
+)
+
+# Windows
+if(WIN32)
+    target_compile_definitions(Sandbox PRIVATE _CRT_SECURE_NO_WARNINGS)
+    target_link_libraries(Sandbox PRIVATE user32 gdi32 opengl32)
+    target_compile_options(Sandbox PRIVATE /wd4201)
+endif()
+
+# Linux
+if(UNIX AND NOT APPLE)
+    target_compile_definitions(Sandbox PRIVATE _GNU_SOURCE)
+    find_package(X11)
+    if(X11_FOUND)
+        target_link_libraries(Sandbox PRIVATE X11 xcb)
+    endif()
+
+    # Wayland client library
+    find_library(WAYLAND_CLIENT_LIBRARY wayland-client)
+    find_path(WAYLAND_CLIENT_INCLUDE_DIR wayland-client.h)
+    if(WAYLAND_CLIENT_LIBRARY AND WAYLAND_CLIENT_INCLUDE_DIR)
+        target_link_libraries(Sandbox PRIVATE ${WAYLAND_CLIENT_LIBRARY})
+        target_include_directories(Sandbox PRIVATE ${WAYLAND_CLIENT_INCLUDE_DIR})
+    endif()
+endif()
+
+# Sanitizers (Debug only)
+if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(Sandbox PRIVATE
+        $<$<CONFIG:Debug>:-fsanitize=address>
+    )
+    target_link_options(Sandbox PRIVATE
+        $<$<CONFIG:Debug>:-fsanitize=address>
+    )
+endif()
+```
+
+**Notas:**
+- O Anvil é compilado como `StaticLib` (`.lib`/`.a`).
+- A Sandbox é um `ConsoleApp` que linka contra o Anvil.
+- O fallback `add_subdirectory` permite build standalone do Sandbox.
+- `target_include_directories(Sandbox PRIVATE src)` permite includes como `"Layer/sandbox_layer.h"`.
+- Scripts de build em `example/Sandbox/scripts/` usam `build-script-builder` skill.
 
 ---
 
@@ -335,8 +334,17 @@ project "Sandbox"
 ### 3.1 Novos Arquivos
 
 ```
-Sandbox/
-└── main.c              ← entry point + sandbox layer (consumer code)
+example/Sandbox/
+├── src/
+│   ├── main.c                      ← entry point: main() + engine init + shutdown
+│   └── Layer/
+│       ├── sandbox_layer.h          ← API pública: sndbx_attach_layer / sndbx_detach_layer
+│       └── sandbox_layer.c          ← layer: state + callbacks + attach/detach
+├── scripts/
+│   ├── build.bat                    ← Windows build script
+│   └── build.sh                     ← Linux build script
+├── CMakeLists.txt
+└── .gitignore
 ```
 
 ### 3.2 Arquivos Removidos
@@ -349,7 +357,8 @@ src/anvil.c              ← main() removido (Sandbox assume)
 
 | Arquivo | Mudança |
 |---------|---------|
-| `premake5.lua` | Anvil vira StaticLib; novo projeto Sandbox; startproject muda |
+| `ForgeCore/CMakeLists.txt` | Adicionado `add_subdirectory(example/Sandbox)` |
+| `Anvil/CMakeLists.txt` | Removido `src/anvil.c` das fontes |
 
 ---
 
@@ -358,12 +367,12 @@ src/anvil.c              ← main() removido (Sandbox assume)
 ### 4.1 Dependências de Link
 
 **Anvil (static lib):**
-- Linux: `X11`, `xcb`, `wayland-client` (já linkados no premake).
-- Windows: `user32`, `gdi32`, `opengl32` (já linkados no premake).
+- Linux: `X11`, `xcb`, `wayland-client` (via `find_library`/`find_path`).
+- Windows: `user32`, `gdi32`, `opengl32`.
 
 **Sandbox (console app):**
 - Linka contra `Anvil` (a static lib).
-- Herda as dependências de link do Anvil via `links { "Anvil" }`.
+- Herda as dependências de link do Anvil via `target_link_libraries(Sandbox PRIVATE Anvil)`.
 - Linux: `X11`, `xcb`, `wayland-client` (via Anvil).
 - Windows: `user32`, `gdi32`, `opengl32` (via Anvil).
 
@@ -371,29 +380,45 @@ src/anvil.c              ← main() removido (Sandbox assume)
 
 A Sandbox reutiliza o PCH do Anvil (`anvlpch.h` + `anvlpch.c`). Isso evita duplicação e garante que a Sandbox tenha acesso a todos os tipos e macros do engine.
 
-**Nota:** A Sandbox **não** é parte do Anvil. Ela usa o PCH do Anvil como referência, mas compila separadamente.
+**Nota:** A Sandbox **não** é parte do Anvil. Ela usa o PCH do Anvil como referência, mas compila separadamente. O CMake gera o PCH uma vez e ambos os projetos o reutilizam.
 
 ### 4.3 Ordem de Build
 
 ```
-1. Anvil (StaticLib)  → bin/Debug/lib/Anvil.lib (Windows)
-                                             bin/Debug/lib/libAnvil.a (Linux)
-2. Sandbox (ConsoleApp) → bin/Debug/Sandbox.exe (Windows)
-                                       Sandbox (Linux)
+1. Anvil (StaticLib)  → build/Debug/Anvil.lib (Windows)
+                                   build/Debug/libAnvil.a (Linux)
+2. Sandbox (ConsoleApp) → build/Debug/Sandbox.exe (Windows)
+                                   build/Debug/Sandbox (Linux)
 ```
 
-O Premake resolve a dependência automaticamente via `links { "Anvil" }`.
+O CMake resolve a dependência automaticamente via `add_subdirectory` e `target_link_libraries`.
+
+### 4.4 Dependências de Include
+
+```
+example/Sandbox/src/main.c
+    ├── anvlpch.h              (Core/typedefs.h, Tools/logger.h, Tools/assert.h)
+    ├── Layer/sandbox_layer.h  (Core/typedefs.h)
+    └── Core/application.h
+
+example/Sandbox/src/Layer/sandbox_layer.c
+    ├── anvlpch.h
+    ├── Layer/sandbox_layer.h
+    ├── Core/layer.h
+    └── Windowing/event.h
+```
 
 ---
 
 ## 5. O que a Sandbox faz (e não faz)
 
 ### Faz:
-- `main()` — entry point.
+- `main()` — entry point em `src/main.c`.
 - Inicializa o engine (`anvl_application_init`).
-- Empilha a sandbox layer (demonstração do layer system).
+- Empilha a sandbox layer (autocontida: attach push, detach remove).
 - Roda o loop (`anvl_application_run`).
-- Shutdown limpo.
+- Shutdown limpo (detach sandbox → shutdown framework).
+- Log de eventos de input (mouse, teclado, resize, scroll).
 
 ### Não faz:
 - Renderização (Furnace não existe).
@@ -410,30 +435,43 @@ O Premake resolve a dependência automaticamente via `links { "Anvil" }`.
 
 ## 6. Plano de Implementação (Passo a Passo)
 
-### Etapa 1: Criar `Sandbox/main.c`
+### ✅ Etapa 1: Criar `example/Sandbox/src/Layer/sandbox_layer.h` + `sandbox_layer.c`
 
-Criar `Sandbox/main.c` com:
-- Includes do engine (`Core/application.h`, `Core/layer.h`, `Windowing/event.h`, `Tools/logger.h`).
-- Sandbox layer (struct + callbacks).
-- `main()` que inicializa, empilha, roda, shutdown.
+- `sandbox_layer.h`: API pública `sndbx_attach_layer()` e `sndbx_detach_layer()`.
+- `sandbox_layer.c`: state da layer, forward declarations, callbacks (update + event), attach/detach.
 
-### Etapa 2: Remover `src/anvil.c`
+### ✅ Etapa 2: Criar `example/Sandbox/src/main.c`
 
-Excluir `src/anvil.c`. Não há mais entry point no Anvil.
+- `main()` que inicializa, attach sandbox, roda, detach, shutdown.
 
-### Etapa 3: Atualizar `premake5.lua`
+### ✅ Etapa 3: Remover `src/anvil.c`
 
-- Anvil: `kind "ConsoleApp"` → `kind "StaticLib"`.
-- Novo projeto `Sandbox`: `kind "ConsoleApp"`, `links { "Anvil" }`.
-- `startproject "Sandbox"`.
-- Ajustar `targetdir` e `objdir` para evitar colisão.
+`src/anvil.c` removido. Não há mais entry point no Anvil.
 
-### Etapa 4: Validação
+### ✅ Etapa 4: Criar `example/Sandbox/CMakeLists.txt`
 
-- Rodar `premake5.lua gmake` (ou generate correspondente).
-- Compilar e verificar que `Sandbox` é gerado.
-- Executar: janela abre, log de frames aparece, ESC fecha.
-- Verificar que `Anvil` é gerado como `.lib`/`.a`.
+- Configurar projeto Sandbox como executável.
+- Linkar contra Anvil (`target_link_libraries(Sandbox PRIVATE Anvil)`).
+- Adicionar fallback para build do Anvil se não encontrado.
+- `target_include_directories(Sandbox PRIVATE src)`.
+
+### ✅ Etapa 5: Atualizar `ForgeCore/CMakeLists.txt`
+
+Adicionado `add_subdirectory(example/Sandbox)`.
+
+### ✅ Etapa 6: Criar scripts de build
+
+Criados `example/Sandbox/scripts/build.bat` e `build.sh` com:
+- Seleção de configuração (debug/optimized/release/clean).
+- Verificação de dependências (cmake, ninja).
+- Build com Ninja (Linux) ou Visual Studio (Windows).
+- Sanitizers (Address Sanitizer em debug).
+
+### ✅ Etapa 7: Validação
+
+- Build bem-sucedido em Linux (Ninja) e Windows (Visual Studio).
+- Execução: janela abre, logs de eventos aparecem, ESC fecha.
+- `Anvil.lib`/`libAnvil.a` gerado corretamente.
 
 ---
 
@@ -454,8 +492,8 @@ Excluir `src/anvil.c`. Não há mais entry point no Anvil.
 
 | P8 (Quality of Life) | P9 (Sandbox Executable) |
 |---|---|
-| Forward declarations em 4 arquivos | `Sandbox/main.c` precisa das forward decls? Não — a sandbox layer é self-contained |
-| Assertion system (`Tools/assert.h`) | Sandbox usa `ANVL_ASSERT` via PCH |
+| Forward declarations em 4 arquivos | `sandbox_layer.c` tem forward decls internas (`_on_sndbx_update`, `_on_sndbx_event`) |
+| Assertion system (`Tools/assert.h`) | Sandbox usa `ANVIL_DEBUG`/`ANVIL_CORE_*` via PCH |
 
 **P8 e P9 são independentes:** P8 cuida da qualidade interna do engine (forward declarations + assertions). P9 cuida da separação de módulos (sandbox como executável consumer). A sandbox layer existe apenas na P9.
 
@@ -465,12 +503,13 @@ Excluir `src/anvil.c`. Não há mais entry point no Anvil.
 
 | Item | Detalhe |
 |------|---------|
-| **Arquivos novos** | 1 (`Sandbox/main.c`) |
+| **Arquivos novos** | 6 (`src/main.c`, `src/Layer/sandbox_layer.h`, `src/Layer/sandbox_layer.c`, `CMakeLists.txt`, `.gitignore`, 2 scripts) |
 | **Arquivos removidos** | 1 (`src/anvil.c`) |
-| **Arquivos modificados** | 1 (`premake5.lua`) |
+| **Arquivos modificados** | 2 (`ForgeCore/CMakeLists.txt`, `Anvil/CMakeLists.txt`) |
 | **Novas dependências** | Nenhuma |
 | **Novos links** | `Sandbox` linka contra `Anvil` (static lib) |
 | **PCH alterado** | Não (Sandbox reutiliza o PCH do Anvil) |
-| **API pública** | Nenhuma mudança |
+| **API pública** | Nenhuma mudança no engine (sandbox layer é consumer code) |
 | **Módulos afetados** | Novo: `Sandbox/`; Anvil vira static lib |
 | **Build** | 2 targets: `Anvil` (StaticLib) + `Sandbox` (ConsoleApp) |
+| **Validação** | ✅ Build funciona, janela abre, eventos de input processados |

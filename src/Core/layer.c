@@ -5,7 +5,7 @@
 #define LAYER_STACK_MAX_LENGTH 32
 
 static Layer* layer_stack[LAYER_STACK_MAX_LENGTH] = {0};
-static uint32 layer_stack_length                  = 0;
+static uint8  layer_stack_length                  = 0;
 
 void anvl_layer_stack_push(Layer* layer)
 {
@@ -39,7 +39,7 @@ void anvl_layer_stack_remove(Layer* layer)
         }
     }
 
-    for (int8 i = layer_index; i < layer_stack_length; ++i)
+    for (int8 i = layer_index; i < (int8)layer_stack_length; ++i)
     {
         layer_stack[i] = layer_stack[i + 1];
     }
