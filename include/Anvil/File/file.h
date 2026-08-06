@@ -1,7 +1,7 @@
-#ifndef ANVL_FILEIO_HEADER
-#define ANVL_FILEIO_HEADER
+#ifndef ANVIL_FILE_HEADER
+#define ANVIL_FILE_HEADER
 
-#include "Core/typedefs.h"
+#include "Anvil/Core/types.h"
 
 typedef struct FileHandle FileHandle;
 
@@ -19,4 +19,4 @@ bool        anvl_file_close(FileHandle* file);
 bool        anvl_file_exists(const char* path);
 uint64      anvl_file_get_size(FileHandle* file);
 
-#endif // ANVL_FILEIO_HEADER
+#endif // !ANVIL_FILE_HEADER

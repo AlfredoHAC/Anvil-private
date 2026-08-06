@@ -1,8 +1,8 @@
-#ifndef ANVL_WINDOW_HEADER
-#define ANVL_WINDOW_HEADER
+#ifndef ANVIL_WINDOW_HEADER
+#define ANVIL_WINDOW_HEADER
 
-#include "Core/typedefs.h"
-#include "Windowing/event.h"
+#include "Anvil/Core/types.h"
+#include "Anvil/Window/event.h"
 
 // Platform native window
 typedef struct NativeWindow NativeWindow;
@@ -20,4 +20,4 @@ void          anvl_platform_window_destroy(NativeWindow* window);
 void anvl_platform_window_set_event_callback(NativeWindow* window, EventCallbackFn event_callback);
 void anvl_platform_window_unset_event_callback(NativeWindow* window);
 
-#endif // !ANVL_WINDOW_HEADER
+#endif // !ANVIL_WINDOW_HEADER

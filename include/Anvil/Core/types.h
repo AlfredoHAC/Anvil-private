@@ -1,5 +1,5 @@
-#ifndef ANVL_TYPEDEFS_HEADER
-#define ANVL_TYPEDEFS_HEADER
+#ifndef ANVIL_TYPES_HEADER
+#define ANVIL_TYPES_HEADER
 
 #include <inttypes.h>
 #include <stdbool.h>
@@ -19,4 +19,4 @@ typedef int64_t int64;
 typedef float  float32;
 typedef double float64;
 
-#endif // !ANVL_TYPEDEFS_HEADER
+#endif // !ANVIL_TYPES_HEADER

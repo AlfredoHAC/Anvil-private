@@ -1,7 +1,7 @@
-#ifndef ANVL_APPLICATION_HEADER
-#define ANVL_APPLICATION_HEADER
+#ifndef ANVIL_APPLICATION_HEADER
+#define ANVIL_APPLICATION_HEADER
 
-#include "Core/typedefs.h"
+#include "Anvil/Core/types.h"
 
 typedef struct Application Application;
 typedef struct
@@ -15,4 +15,4 @@ Application* anvl_application_init(const ApplicationOptions opts);
 void         anvl_application_run(Application* app);
 void         anvl_application_shutdown(Application* app);
 
-#endif // !ANVL_APPLICATION_HEADER
+#endif // !ANVIL_APPLICATION_HEADER
