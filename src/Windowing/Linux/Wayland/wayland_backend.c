@@ -371,7 +371,10 @@ static void wayland_events_poll_and_dispatch(void* backend)
     poll(&poll_fd, 1, 0);
 
     if (poll_fd.revents & POLLIN) { wl_display_read_events(b_end->display); }
-    else { wl_display_cancel_read(b_end->display); }
+    else
+    {
+        wl_display_cancel_read(b_end->display);
+    }
 
     wl_display_dispatch_pending(b_end->display);
 }

@@ -68,10 +68,12 @@ void anvl_platform_window_set_event_callback(NativeWindow* window, EventCallback
     window->backend->window_set_event_callback(window->backend_data, event_callback);
 }
 
+// clang-format off
 void anvl_platform_window_unset_event_callback(NativeWindow* window)
 {
     window->backend->window_set_event_callback(window->backend_data, NULL);
 }
+// clang-format on
 
 static const WindowBackend* _window_backend_create(NativeWindow* window)
 {
