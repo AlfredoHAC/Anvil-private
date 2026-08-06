@@ -1,7 +1,7 @@
-#ifndef ANVL_WINDOW_BACKEND_HEADER
-#define ANVL_WINDOW_BACKEND_HEADER
+#ifndef ANVIL_WINDOW_BACKEND_HEADER
+#define ANVIL_WINDOW_BACKEND_HEADER
 
-#include "Windowing/window.h"
+#include "Window/window.h"
 
 // clang-format off
 typedef struct

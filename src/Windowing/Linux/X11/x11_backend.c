@@ -2,8 +2,8 @@
 #include "anvlpch.h"
 
 #include "Tools/logger.h"
+#include "Window/event.h"
 #include "Windowing/Linux/X11/x11_backend.h"
-#include "Windowing/event.h"
 
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
