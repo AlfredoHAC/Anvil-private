@@ -45,7 +45,7 @@ _install_cmake() {
 # ─────────────────────────────────────────────
 #  Selecionar Configuração
 # ─────────────────────────────────────────────
-CONFIG="debug"
+CONFIG="Debug"
 if [[ $# -gt 0 ]]; then
     case "${1,,}" in
         clean)
@@ -56,9 +56,9 @@ if [[ $# -gt 0 ]]; then
             success "Build limpo com sucesso!"
             exit 0
             ;;
-        debug)     CONFIG="debug" ;;
-        optimized) CONFIG="relwithdebinfo" ;;
-        release)   CONFIG="release" ;;
+        debug)     CONFIG="Debug" ;;
+        optimized) CONFIG="RelWithDebInfo" ;;
+        release)   CONFIG="Release" ;;
         *)
             echo "Uso: $0 {debug|optimized|release|clean}"
             exit 1
