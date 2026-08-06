@@ -1,8 +1,8 @@
 #ifndef ANVIL_ASSERT_HEADER
 #define ANVIL_ASSERT_HEADER
 
-#include "Platform/platform_detection.h"
-#include "Tools/logger.h"
+#include "Anvil/Platform/platform_detection.h"
+#include "Anvil/Tools/logger.h"
 
 #ifdef ANVIL_CONFIG_DEBUG
 #    define ANVIL_ASSERT(expression)                                                               \
@@ -22,7 +22,7 @@
 #    define ANVIL_ASSERT_MSG(expression, msg, ...)                                                 \
         do                                                                                         \
         {                                                                                          \
-            if (!expression)                                                                       \
+            if (!(expression))                                                                       \
             {                                                                                      \
                 ANVIL_CORE_FATAL("Assertion failed: %s\n %s\n at %s:%d in %s",                     \
                                  #expression,                                                      \
@@ -39,4 +39,4 @@
 #    define ANVIL_ASSERT_MSG(expression, msg, ...) ((void)0)
 #endif
 
-#endif // ANVIL_ASSERT_HEADER
+#endif // !ANVIL_ASSERT_HEADER

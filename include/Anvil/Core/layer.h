@@ -1,7 +1,7 @@
 #ifndef ANVIL_LAYER_HEADER
 #define ANVIL_LAYER_HEADER
 
-#include "Windowing/event.h"
+#include "Anvil/Window/event.h"
 
 typedef struct Layer Layer;
 
@@ -23,4 +23,4 @@ void   anvl_layer_stack_clear();
 void   anvl_layer_stack_dispatch_event(Event* event);
 void   anvl_layer_stack_call_update();
 
-#endif // ANVIL_LAYER_HEADER
+#endif // !ANVIL_LAYER_HEADER

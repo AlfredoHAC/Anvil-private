@@ -1,5 +1,5 @@
-#ifndef ANVL_LOGGER_HEADER
-#define ANVL_LOGGER_HEADER
+#ifndef ANVIL_LOGGER_HEADER
+#define ANVIL_LOGGER_HEADER
 
 typedef enum LogLevel
 {

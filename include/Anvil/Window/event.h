@@ -1,7 +1,7 @@
-#ifndef ANVL_EVENT_HEADER
-#define ANVL_EVENT_HEADER
+#ifndef ANVIL_EVENT_HEADER
+#define ANVIL_EVENT_HEADER
 
-#include "Core/typedefs.h"
+#include "Anvil/Core/types.h"
 
 typedef enum EventType
 {
@@ -86,4 +86,4 @@ typedef struct Event
     };
 } Event;
 
-#endif // !ANVL_EVENT_HEADER
+#endif // !ANVIL_EVENT_HEADER

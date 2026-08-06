@@ -2,7 +2,7 @@
 
 #include "Core/application.h"
 #include "Core/layer.h"
-#include "Windowing/window.h"
+#include "Window/window.h"
 
 #include "Tools/logger.h"
 

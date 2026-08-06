@@ -30,7 +30,11 @@ elseif(UNIX AND NOT APPLE)
     )
 endif()
 
-target_include_directories(Anvil PUBLIC src)
+target_include_directories(Anvil PUBLIC include)
+target_include_directories(Anvil PRIVATE
+    src
+    include/Anvil
+)
 
 target_precompile_headers(Anvil PRIVATE src/anvlpch.h)
 
