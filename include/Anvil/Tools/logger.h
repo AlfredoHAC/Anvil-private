@@ -1,7 +1,7 @@
 #ifndef ANVIL_LOGGER_HEADER
 #define ANVIL_LOGGER_HEADER
 
-typedef enum LogLevel
+typedef enum AnvlLogLevel
 {
     ANVL_LOG_LEVEL_NONE = 0,
     ANVL_LOG_LEVEL_FATAL,
@@ -10,9 +10,9 @@ typedef enum LogLevel
     ANVL_LOG_LEVEL_INFO,
     ANVL_LOG_LEVEL_DEBUG,
     ANVL_LOG_LEVEL_TRACE,
-} LogLevel;
+} AnvlLogLevel;
 
-void anvl_logger_set_level(LogLevel level);
+void anvl_logger_set_level(AnvlLogLevel level);
 void anvl_logger_fatal(const char* call_module, const char* msg_format, ...);
 void anvl_logger_error(const char* call_module, const char* msg_format, ...);
 void anvl_logger_warn(const char* call_module, const char* msg_format, ...);

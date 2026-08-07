@@ -8,16 +8,16 @@
 #define MAX_LOG_MSG_LENGTH 256
 
 static void _print_timestamp_label();
-static void _print_level_label(LogLevel level);
-static void _log_message(LogLevel    level,
+static void _print_level_label(AnvlLogLevel level);
+static void _log_message(AnvlLogLevel    level,
                          const char* call_module,
                          const char* msg_format,
                          va_list     args);
 
-static LogLevel current_level;
+static AnvlLogLevel current_level;
 
 // clang-format off
-void anvl_logger_set_level(LogLevel level)
+void anvl_logger_set_level(AnvlLogLevel level)
 {
     ANVIL_ASSERT(level >= ANVL_LOG_LEVEL_NONE && level <= ANVL_LOG_LEVEL_TRACE);
 
@@ -106,7 +106,7 @@ static void _print_timestamp_label()
             current_localtime.tm_sec);
 }
 
-static void _print_level_label(LogLevel level)
+static void _print_level_label(AnvlLogLevel level)
 {
     char*       level_label_format = "%s(%s)%s ";
     const char* level_str          = "";
@@ -144,7 +144,7 @@ static void _print_level_label(LogLevel level)
     fprintf(stderr, level_label_format, color, level_str, "\033[0m");
 }
 
-static void _log_message(LogLevel    level,
+static void _log_message(AnvlLogLevel    level,
                          const char* call_module,
                          const char* msg_format,
                          va_list     args)

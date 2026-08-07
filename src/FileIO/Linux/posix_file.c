@@ -3,18 +3,18 @@
 #include "File/file.h"
 #include <stdio.h>
 
-typedef struct FileHandle
+typedef struct AnvlFile
 {
     FILE*       pointer;
     const char* path;
     const char* mode;
-} FileHandle;
+} AnvlFile;
 
-const char* _filemode_to_string(FileMode mode);
+const char* _filemode_to_string(AnvlFileMode mode);
 
-FileHandle* anvl_file_open(const char* path, FileMode mode)
+AnvlFile* anvl_file_open(const char* path, AnvlFileMode mode)
 {
-    FileHandle* file = malloc(sizeof(FileHandle));
+    AnvlFile* file = malloc(sizeof(AnvlFile));
     if (!file) { return NULL; }
 
     ANVIL_ASSERT(path != NULL);
@@ -31,7 +31,7 @@ FileHandle* anvl_file_open(const char* path, FileMode mode)
     return file;
 }
 
-uint64 anvl_file_read(FileHandle* file, void* buffer, uint64 size)
+uint64 anvl_file_read(AnvlFile* file, void* buffer, uint64 size)
 {
     ANVIL_ASSERT(file != NULL && file->pointer != NULL);
 
@@ -42,7 +42,7 @@ uint64 anvl_file_read(FileHandle* file, void* buffer, uint64 size)
     return (uint64)result;
 }
 
-uint64 anvl_file_write(FileHandle* file, const void* buffer, uint64 size)
+uint64 anvl_file_write(AnvlFile* file, const void* buffer, uint64 size)
 {
     ANVIL_ASSERT(file != NULL && file->pointer != NULL);
 
@@ -53,7 +53,7 @@ uint64 anvl_file_write(FileHandle* file, const void* buffer, uint64 size)
     return (uint64)result;
 }
 
-bool anvl_file_close(FileHandle* file)
+bool anvl_file_close(AnvlFile* file)
 {
     if (!file || !file->pointer) { return false; }
 
@@ -77,7 +77,7 @@ bool anvl_file_exists(const char* path)
     return true;
 }
 
-uint64 anvl_file_get_size(FileHandle* file)
+uint64 anvl_file_get_size(AnvlFile* file)
 {
     ANVIL_ASSERT(file != NULL && file->pointer != NULL);
 
@@ -91,7 +91,7 @@ uint64 anvl_file_get_size(FileHandle* file)
     return (uint64)file_size;
 }
 
-const char* _filemode_to_string(FileMode mode)
+const char* _filemode_to_string(AnvlFileMode mode)
 {
     switch (mode)
     {
@@ -100,5 +100,5 @@ const char* _filemode_to_string(FileMode mode)
         case ANVL_FILE_MODE_APPEND: return "a"; break;
     }
 
-    ANVIL_ASSERT_MSG(0, "Invalid FileMode: %d", mode);
+    ANVIL_ASSERT_MSG(0, "Invalid AnvlFileMode: %d", mode);
 }

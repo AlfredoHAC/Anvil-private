@@ -7,20 +7,20 @@
 #include <fileapi.h>
 // clang-format on
 
-typedef struct FileHandle
+typedef struct AnvlFile
 {
     HANDLE      pointer;
     const char* path;
     uint32      mode;
     uint8       disposition;
-} FileHandle;
+} AnvlFile;
 
-uint32 _filemode_to_desired_access(FileMode mode);
-uint8  _filemode_to_creation_disposition(FileMode mode);
+uint32 _filemode_to_desired_access(AnvlFileMode mode);
+uint8  _filemode_to_creation_disposition(AnvlFileMode mode);
 
-FileHandle* anvl_file_open(const char* path, FileMode mode)
+AnvlFile* anvl_file_open(const char* path, AnvlFileMode mode)
 {
-    FileHandle* file = malloc(sizeof(FileHandle));
+    AnvlFile* file = malloc(sizeof(AnvlFile));
     if (!file) { return NULL; }
 
     ANVIL_ASSERT(path != NULL);
@@ -56,7 +56,7 @@ FileHandle* anvl_file_open(const char* path, FileMode mode)
     return file;
 }
 
-uint64 anvl_file_read(FileHandle* file, void* buffer, uint64 size)
+uint64 anvl_file_read(AnvlFile* file, void* buffer, uint64 size)
 {
     ANVIL_ASSERT(file != NULL && file->pointer != INVALID_HANDLE_VALUE);
 
@@ -70,7 +70,7 @@ uint64 anvl_file_read(FileHandle* file, void* buffer, uint64 size)
     return (uint64)bytes_read;
 }
 
-uint64 anvl_file_write(FileHandle* file, const void* buffer, uint64 size)
+uint64 anvl_file_write(AnvlFile* file, const void* buffer, uint64 size)
 {
     ANVIL_ASSERT(file != NULL && file->pointer != INVALID_HANDLE_VALUE);
 
@@ -84,7 +84,7 @@ uint64 anvl_file_write(FileHandle* file, const void* buffer, uint64 size)
     return (uint64)bytes_written;
 }
 
-bool anvl_file_close(FileHandle* file)
+bool anvl_file_close(AnvlFile* file)
 {
     if (!file || file->pointer == INVALID_HANDLE_VALUE) { return false; }
 
@@ -106,7 +106,7 @@ bool anvl_file_exists(const char* path)
     return true;
 }
 
-uint64 anvl_file_get_size(FileHandle* file)
+uint64 anvl_file_get_size(AnvlFile* file)
 {
     ANVIL_ASSERT(file != NULL && file->pointer != INVALID_HANDLE_VALUE);
 
@@ -119,7 +119,7 @@ uint64 anvl_file_get_size(FileHandle* file)
     return (uint64)file_size.QuadPart;
 }
 
-uint32 _filemode_to_desired_access(FileMode mode)
+uint32 _filemode_to_desired_access(AnvlFileMode mode)
 {
     switch (mode)
     {
@@ -128,11 +128,11 @@ uint32 _filemode_to_desired_access(FileMode mode)
         case ANVL_FILE_MODE_APPEND: return GENERIC_WRITE; break;
     }
 
-    ANVIL_ASSERT_MSG(0, "Invalid FileMode: %d", mode);
+    ANVIL_ASSERT_MSG(0, "Invalid AnvlFileMode: %d", mode);
     return 0;
 }
 
-uint8 _filemode_to_creation_disposition(FileMode mode)
+uint8 _filemode_to_creation_disposition(AnvlFileMode mode)
 {
     switch (mode)
     {
@@ -141,6 +141,6 @@ uint8 _filemode_to_creation_disposition(FileMode mode)
         case ANVL_FILE_MODE_APPEND: return OPEN_EXISTING; break;
     }
 
-    ANVIL_ASSERT_MSG(0, "Invalid FileMode: %d", mode);
+    ANVIL_ASSERT_MSG(0, "Invalid AnvlFileMode: %d", mode);
     return 0;
 }
