@@ -5,21 +5,21 @@
 #include "Anvil/Window/event.h"
 
 // Platform native window
-typedef struct NativeWindow NativeWindow;
+typedef struct AnvlWindow AnvlWindow;
 
-// Event callback function pointer type
-typedef void (*EventCallbackFn)(Event* event);
+// AnvlEvent callback function pointer type
+typedef void (*EventCallbackFn)(AnvlEvent* event);
 
-typedef struct WindowOptions
+typedef struct AnvlWindowOptions
 {
     const char* title;
     uint16      width;
     uint16      height;
-} WindowOptions;
+} AnvlWindowOptions;
 
-NativeWindow* anvl_window_create(const WindowOptions window_options);
-void          anvl_window_show(NativeWindow* window);
-void          anvl_window_update(NativeWindow* window);
-void          anvl_window_destroy(NativeWindow* window);
+AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options);
+void        anvl_window_show(AnvlWindow* window);
+void        anvl_window_update(AnvlWindow* window);
+void        anvl_window_destroy(AnvlWindow* window);
 
 #endif // !ANVIL_WINDOW_HEADER

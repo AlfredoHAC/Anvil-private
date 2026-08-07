@@ -48,19 +48,19 @@ typedef struct WaylandBackend
     // Decoration data
     struct zxdg_toplevel_decoration_v1* dc_object;
 
-    // Event devices
+    // AnvlEvent devices
     struct wl_keyboard* keyboard;
     struct wl_pointer*  pointer;
 
-    // Event devices data
+    // AnvlEvent devices data
     uint32  modifier_state;
     float32 pointer_x;
     float32 pointer_y;
 
-    // Event capturing data
+    // AnvlEvent capturing data
     uint32 capabilities;
 
-    // Event callback
+    // AnvlEvent callback
     EventCallbackFn event_callback;
 } WaylandBackend;
 
@@ -523,7 +523,7 @@ static void _on_xdg_toplevel_close(void* data, struct xdg_toplevel* xdg_toplevel
 {
     WaylandBackend* b_end = (WaylandBackend*)data;
 
-    Event event = {
+    AnvlEvent event = {
         .type         = ANVL_EVENT_TYPE_WINDOW_CLOSE,
         .handled      = false,
         .window_close = {0},
@@ -544,7 +544,7 @@ static void _on_xdg_toplevel_configure(void*                data,
         b_end->width  = width;
         b_end->height = height;
 
-        Event event = {
+        AnvlEvent event = {
             .type          = ANVL_EVENT_TYPE_WINDOW_RESIZE,
             .handled       = false,
             .window_resize = {.width = width, .height = height},
@@ -595,7 +595,7 @@ static void _on_wl_keyboard_key(void*               data,
 {
     WaylandBackend* b_end = (WaylandBackend*)data;
 
-    Event event   = {0};
+    AnvlEvent event   = {0};
     event.handled = false;
     if (state == WL_KEYBOARD_KEY_STATE_PRESSED)
     {
@@ -660,7 +660,7 @@ static void _on_wl_pointer_motion(void*              data,
     b_end->pointer_x = (float32)wl_fixed_to_double(surface_x);
     b_end->pointer_y = (float32)wl_fixed_to_double(surface_y);
 
-    Event event = {
+    AnvlEvent event = {
         .type    = ANVL_EVENT_TYPE_MOUSE_MOVE,
         .handled = false,
         .mouse_move =
@@ -681,7 +681,7 @@ static void _on_wl_pointer_button(void*              data,
 {
     WaylandBackend* b_end = (WaylandBackend*)data;
 
-    Event event   = {0};
+    AnvlEvent event   = {0};
     event.handled = false;
 
     uint8 mouse_button_code = 0;
@@ -716,7 +716,7 @@ static void _on_wl_pointer_axis(
 {
     WaylandBackend* b_end = (WaylandBackend*)data;
 
-    Event event   = {0};
+    AnvlEvent event   = {0};
     event.handled = false;
     event.type    = ANVL_EVENT_TYPE_MOUSE_SCROLL;
 

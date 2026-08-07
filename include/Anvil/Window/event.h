@@ -3,7 +3,7 @@
 
 #include "Anvil/Core/types.h"
 
-typedef enum EventType
+typedef enum AnvlEventType
 {
     ANVL_EVENT_TYPE_NONE = 0,
     ANVL_EVENT_TYPE_WINDOW_CLOSE,
@@ -14,7 +14,7 @@ typedef enum EventType
     ANVL_EVENT_TYPE_MOUSE_BUTTON_CLICK,
     ANVL_EVENT_TYPE_MOUSE_BUTTON_RELEASE,
     ANVL_EVENT_TYPE_MOUSE_SCROLL,
-} EventType;
+} AnvlEventType;
 
 typedef struct WindowCloseEvent
 {
@@ -68,9 +68,9 @@ typedef struct MouseScrollEvent
     float32 y_offset;
 } MouseScrollEvent;
 
-typedef struct Event
+typedef struct AnvlEvent
 {
-    EventType type;
+    AnvlEventType type;
     bool      handled;
 
     union
@@ -84,6 +84,6 @@ typedef struct Event
         MouseButtonReleaseEvent mouse_button_release;
         MouseScrollEvent        mouse_scroll;
     };
-} Event;
+} AnvlEvent;
 
 #endif // !ANVIL_EVENT_HEADER

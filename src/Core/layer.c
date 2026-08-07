@@ -4,10 +4,10 @@
 
 #define LAYER_STACK_MAX_LENGTH 32
 
-static Layer* layer_stack[LAYER_STACK_MAX_LENGTH] = {0};
+static AnvlLayer* layer_stack[LAYER_STACK_MAX_LENGTH] = {0};
 static uint8  layer_stack_length                  = 0;
 
-void anvl_layer_stack_push(Layer* layer)
+void anvl_layer_stack_push(AnvlLayer* layer)
 {
     ANVIL_ASSERT(layer != NULL);
     ANVIL_ASSERT(layer_stack_length + 1 <= LAYER_STACK_MAX_LENGTH);
@@ -24,7 +24,7 @@ void anvl_layer_stack_pop()
     layer_stack_length -= 1;
 }
 
-void anvl_layer_stack_remove(Layer* layer)
+void anvl_layer_stack_remove(AnvlLayer* layer)
 {
     ANVIL_ASSERT(layer != NULL);
     ANVIL_ASSERT(layer_stack_length > 0);
@@ -59,7 +59,7 @@ void anvl_layer_stack_clear()
 }
 // clang-format on
 
-void anvl_layer_stack_dispatch_event(Event* event)
+void anvl_layer_stack_dispatch_event(AnvlEvent* event)
 {
     for (int8 i = layer_stack_length - 1; i >= 0; --i)
     {
