@@ -3,12 +3,12 @@
 
 #include "Anvil/Window/window.h"
 
-typedef struct Application Application;
+typedef struct AnvlApplication AnvlApplication;
 
-Application* anvl_application_init(NativeWindow* window);
-void         anvl_application_run(Application* app);
-void         anvl_application_shutdown(Application* app);
+AnvlApplication* anvl_application_init(AnvlWindow* window);
+void         anvl_application_run(AnvlApplication* app);
+void         anvl_application_shutdown(AnvlApplication* app);
 
-void anvl_application_window_set(Application* app, NativeWindow* window);
+void anvl_application_window_set(AnvlApplication* app, AnvlWindow* window);
 
 #endif // !ANVIL_APPLICATION_HEADER

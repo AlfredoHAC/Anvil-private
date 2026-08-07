@@ -5,28 +5,28 @@
 
 #include "Tools/logger.h"
 
-typedef struct Application
+typedef struct AnvlApplication
 {
-    NativeWindow* window;
-} Application;
+    AnvlWindow* window;
+} AnvlApplication;
 
-static void _on_application_event(Layer* layer, Event* event);
+static void _on_application_event(AnvlLayer* layer, AnvlEvent* event);
 static void _on_application_window_close();
 
 static bool  app_running = false;
-static Layer app_layer   = {
+static AnvlLayer app_layer   = {
     .name      = "Application_Layer",
     .on_update = NULL,
     .on_event  = _on_application_event,
 };
 
-Application* anvl_application_init(NativeWindow* window)
+AnvlApplication* anvl_application_init(AnvlWindow* window)
 {
     ANVIL_CORE_INFO("Starting application.");
 
-    Application* app = malloc(sizeof(Application));
+    AnvlApplication* app = malloc(sizeof(AnvlApplication));
     if (!app) { return NULL; }
-    memset(app, 0, sizeof(Application));
+    memset(app, 0, sizeof(AnvlApplication));
 
     anvl_logger_set_level(ANVL_LOG_LEVEL_TRACE);
 
@@ -38,13 +38,13 @@ Application* anvl_application_init(NativeWindow* window)
     return app;
 }
 
-void anvl_application_run(Application* app)
+void anvl_application_run(AnvlApplication* app)
 {
     ANVIL_ASSERT(app != NULL);
 
     if (!app->window)
     {
-        ANVIL_CORE_ERROR("Application can not run without a window.");
+        ANVIL_CORE_ERROR("AnvlApplication can not run without a window.");
         return;
     }
 
@@ -55,7 +55,7 @@ void anvl_application_run(Application* app)
     }
 }
 
-void anvl_application_shutdown(Application* app)
+void anvl_application_shutdown(AnvlApplication* app)
 {
     ANVIL_ASSERT(app != NULL);
 
@@ -64,14 +64,14 @@ void anvl_application_shutdown(Application* app)
     free(app);
 }
 
-void anvl_application_window_set(Application* app, NativeWindow* window)
+void anvl_application_window_set(AnvlApplication* app, AnvlWindow* window)
 {
     ANVIL_ASSERT(app != NULL && window != NULL);
 
     app->window = window;
 }
 
-static void _on_application_event(Layer* layer, Event* event)
+static void _on_application_event(AnvlLayer* layer, AnvlEvent* event)
 {
     if (event->type == ANVL_EVENT_TYPE_WINDOW_CLOSE)
     {

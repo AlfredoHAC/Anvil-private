@@ -7,7 +7,7 @@
 #include <windowsx.h>
 #include <winuser.h>
 
-struct NativeWindow
+struct AnvlWindow
 {
     HWND      handle;
     HINSTANCE instance;
@@ -15,16 +15,16 @@ struct NativeWindow
     EventCallbackFn event_callback;
 };
 
-static void    _set_event_callback(NativeWindow* window, EventCallbackFn event_callback);
-static void    _unset_event_callback(NativeWindow* window);
-static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wparam, LPARAM lparam);
+static void    _set_event_callback(AnvlWindow* window, EventCallbackFn event_callback);
+static void    _unset_event_callback(AnvlWindow* window);
+static LRESULT _dispatch_win32_event(AnvlWindow* window, UINT umsg, WPARAM wparam, LPARAM lparam);
 static LRESULT CALLBACK _native_window_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam);
-static void             _peek_and_dispatch_win32_messages(NativeWindow* window);
+static void             _peek_and_dispatch_win32_messages(AnvlWindow* window);
 
-NativeWindow* anvl_window_create(const WindowOptions window_options)
+AnvlWindow* anvl_window_create(const WindowOptions window_options)
 {
-    NativeWindow* window = malloc(sizeof(NativeWindow));
-    memset(window, 0, sizeof(NativeWindow));
+    AnvlWindow* window = malloc(sizeof(AnvlWindow));
+    memset(window, 0, sizeof(AnvlWindow));
     ANVIL_ASSERT(window != NULL);
 
     WNDCLASSEXA window_class   = {0};
@@ -68,18 +68,18 @@ NativeWindow* anvl_window_create(const WindowOptions window_options)
 }
 
 // clang-format off
-void anvl_window_show(NativeWindow* window)
+void anvl_window_show(AnvlWindow* window)
 {
     ShowWindow(window->handle, SW_SHOWNORMAL);
 }
 
-void anvl_window_update(NativeWindow* window)
+void anvl_window_update(AnvlWindow* window)
 {
     _peek_and_dispatch_win32_messages(window);
 }
 // clang-format on
 
-void anvl_window_destroy(NativeWindow* window)
+void anvl_window_destroy(AnvlWindow* window)
 {
     if (window)
     {
@@ -101,7 +101,7 @@ void anvl_window_destroy(NativeWindow* window)
     }
 }
 
-void _set_event_callback(NativeWindow* window, EventCallbackFn event_callback)
+void _set_event_callback(AnvlWindow* window, EventCallbackFn event_callback)
 {
     ANVIL_ASSERT(event_callback != NULL);
 
@@ -109,20 +109,20 @@ void _set_event_callback(NativeWindow* window, EventCallbackFn event_callback)
 }
 
 // clang-format off
-void _unset_event_callback(NativeWindow* window)
+void _unset_event_callback(AnvlWindow* window)
 {
     window->event_callback = NULL;
 }
 // clang-format on
 
-static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wparam, LPARAM lparam)
+static LRESULT _dispatch_win32_event(AnvlWindow* window, UINT umsg, WPARAM wparam, LPARAM lparam)
 {
 
     switch (umsg)
     {
         case WM_CLOSE:
         {
-            Event event = {
+            AnvlEvent event = {
                 .type         = ANVL_EVENT_TYPE_WINDOW_CLOSE,
                 .handled      = false,
                 .window_close = {0},
@@ -138,7 +138,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
             if (wparam != SIZE_MINIMIZED)
             {
 
-                Event event = {
+                AnvlEvent event = {
                     .type    = ANVL_EVENT_TYPE_WINDOW_RESIZE,
                     .handled = false,
                     .window_resize =
@@ -155,7 +155,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         case WM_KEYDOWN:
         case WM_SYSKEYDOWN:
         {
-            Event event = {
+            AnvlEvent event = {
                 .type      = ANVL_EVENT_TYPE_KEY_PRESS,
                 .handled   = false,
                 .key_press = {.key_code = (uint16)wparam, .modifier_set = 0},
@@ -167,7 +167,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         case WM_KEYUP:
         case WM_SYSKEYUP:
         {
-            Event event = {
+            AnvlEvent event = {
                 .type        = ANVL_EVENT_TYPE_KEY_RELEASE,
                 .handled     = false,
                 .key_release = {.key_code = (uint16)wparam, .modifier_set = 0},
@@ -178,7 +178,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         }
         case WM_MOUSEMOVE:
         {
-            Event event = {
+            AnvlEvent event = {
                 .type       = ANVL_EVENT_TYPE_MOUSE_MOVE,
                 .handled    = false,
                 .mouse_move = {.x = (float32)GET_X_LPARAM(lparam),
@@ -190,7 +190,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         }
         case WM_LBUTTONDOWN:
         {
-            Event event = {
+            AnvlEvent event = {
                 .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_CLICK,
                 .handled = false,
                 .mouse_button_click =
@@ -207,7 +207,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         }
         case WM_MBUTTONDOWN:
         {
-            Event event = {
+            AnvlEvent event = {
                 .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_CLICK,
                 .handled = false,
                 .mouse_button_click =
@@ -224,7 +224,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         }
         case WM_RBUTTONDOWN:
         {
-            Event event = {
+            AnvlEvent event = {
                 .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_CLICK,
                 .handled = false,
                 .mouse_button_click =
@@ -241,7 +241,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         }
         case WM_XBUTTONDOWN:
         {
-            Event event = {
+            AnvlEvent event = {
                 .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_CLICK,
                 .handled = false,
                 .mouse_button_click =
@@ -258,7 +258,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         }
         case WM_LBUTTONUP:
         {
-            Event event = {
+            AnvlEvent event = {
                 .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_RELEASE,
                 .handled = false,
                 .mouse_button_release =
@@ -275,7 +275,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         }
         case WM_MBUTTONUP:
         {
-            Event event = {
+            AnvlEvent event = {
                 .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_RELEASE,
                 .handled = false,
                 .mouse_button_release =
@@ -292,7 +292,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         }
         case WM_RBUTTONUP:
         {
-            Event event = {
+            AnvlEvent event = {
                 .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_RELEASE,
                 .handled = false,
                 .mouse_button_release =
@@ -309,7 +309,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         }
         case WM_XBUTTONUP:
         {
-            Event event = {
+            AnvlEvent event = {
                 .type    = ANVL_EVENT_TYPE_MOUSE_BUTTON_RELEASE,
                 .handled = false,
                 .mouse_button_release =
@@ -326,7 +326,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         }
         case WM_MOUSEWHEEL:
         {
-            Event event = {
+            AnvlEvent event = {
                 .type    = ANVL_EVENT_TYPE_MOUSE_SCROLL,
                 .handled = false,
                 .mouse_scroll =
@@ -341,7 +341,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
         }
         case WM_MOUSEHWHEEL:
         {
-            Event event = {
+            AnvlEvent event = {
                 .type    = ANVL_EVENT_TYPE_MOUSE_SCROLL,
                 .handled = false,
                 .mouse_scroll =
@@ -361,7 +361,7 @@ static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wpa
 
 static LRESULT CALLBACK _native_window_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 {
-    NativeWindow* window = (NativeWindow*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    AnvlWindow* window = (AnvlWindow*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
     if (window != 0 && window->handle == hwnd)
     {
@@ -371,7 +371,7 @@ static LRESULT CALLBACK _native_window_proc(HWND hwnd, UINT umsg, WPARAM wparam,
     return DefWindowProcA(hwnd, umsg, wparam, lparam);
 }
 
-static void _peek_and_dispatch_win32_messages(NativeWindow* window)
+static void _peek_and_dispatch_win32_messages(AnvlWindow* window)
 {
     MSG msg;
     while ((int32)PeekMessageA(&msg, window->handle, 0, 0, PM_REMOVE) != 0)
