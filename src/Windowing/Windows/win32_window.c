@@ -1,5 +1,6 @@
 #include "anvlpch.h"
 
+#include "Core/layer.h"
 #include "Window/window.h"
 
 #include <windows.h>
@@ -14,13 +15,13 @@ struct NativeWindow
     EventCallbackFn event_callback;
 };
 
+static void    _set_event_callback(NativeWindow* window, EventCallbackFn event_callback);
+static void    _unset_event_callback(NativeWindow* window);
 static LRESULT _dispatch_win32_event(NativeWindow* window, UINT umsg, WPARAM wparam, LPARAM lparam);
 static LRESULT CALLBACK _native_window_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam);
 static void             _peek_and_dispatch_win32_messages(NativeWindow* window);
 
-NativeWindow* anvl_platform_window_create(const char* window_title,
-                                          uint16      window_width,
-                                          uint16      window_height)
+NativeWindow* anvl_window_create(const WindowOptions window_options)
 {
     NativeWindow* window = malloc(sizeof(NativeWindow));
     memset(window, 0, sizeof(NativeWindow));
@@ -43,12 +44,12 @@ NativeWindow* anvl_platform_window_create(const char* window_title,
 
     window->handle = CreateWindowExA(WS_EX_APPWINDOW | WS_EX_ACCEPTFILES,
                                      window_class.lpszClassName,
-                                     window_title,
+                                     window_options.title,
                                      WS_OVERLAPPEDWINDOW,
                                      CW_USEDEFAULT,
                                      CW_USEDEFAULT,
-                                     window_width,
-                                     window_height,
+                                     window_options.width,
+                                     window_options.height,
                                      NULL,
                                      NULL,
                                      window->instance,
@@ -61,26 +62,29 @@ NativeWindow* anvl_platform_window_create(const char* window_title,
     }
 
     SetWindowLongPtrA(window->handle, GWLP_USERDATA, (LONG_PTR)window);
+    _set_event_callback(window, anvl_layer_stack_dispatch_event);
 
     return window;
 }
 
 // clang-format off
-void anvl_platform_window_show(NativeWindow* window)
+void anvl_window_show(NativeWindow* window)
 {
     ShowWindow(window->handle, SW_SHOWNORMAL);
 }
 
-void anvl_platform_window_update(NativeWindow* window)
+void anvl_window_update(NativeWindow* window)
 {
     _peek_and_dispatch_win32_messages(window);
 }
 // clang-format on
 
-void anvl_platform_window_destroy(NativeWindow* window)
+void anvl_window_destroy(NativeWindow* window)
 {
     if (window)
     {
+        _unset_event_callback(window);
+
         if (window->instance)
         {
             UnregisterClassA("ANVL Main Window", window->instance);
@@ -97,7 +101,7 @@ void anvl_platform_window_destroy(NativeWindow* window)
     }
 }
 
-void anvl_platform_window_set_event_callback(NativeWindow* window, EventCallbackFn event_callback)
+void _set_event_callback(NativeWindow* window, EventCallbackFn event_callback)
 {
     ANVIL_ASSERT(event_callback != NULL);
 
@@ -105,7 +109,7 @@ void anvl_platform_window_set_event_callback(NativeWindow* window, EventCallback
 }
 
 // clang-format off
-void anvl_platform_window_unset_event_callback(NativeWindow* window)
+void _unset_event_callback(NativeWindow* window)
 {
     window->event_callback = NULL;
 }

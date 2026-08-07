@@ -10,14 +10,16 @@ typedef struct NativeWindow NativeWindow;
 // Event callback function pointer type
 typedef void (*EventCallbackFn)(Event* event);
 
-NativeWindow* anvl_platform_window_create(const char* window_title,
-                                          uint16      window_width,
-                                          uint16      window_height);
-void          anvl_platform_window_show(NativeWindow* window);
-void          anvl_platform_window_update(NativeWindow* window);
-void          anvl_platform_window_destroy(NativeWindow* window);
+typedef struct WindowOptions
+{
+    const char* title;
+    uint16      width;
+    uint16      height;
+} WindowOptions;
 
-void anvl_platform_window_set_event_callback(NativeWindow* window, EventCallbackFn event_callback);
-void anvl_platform_window_unset_event_callback(NativeWindow* window);
+NativeWindow* anvl_window_create(const WindowOptions window_options);
+void          anvl_window_show(NativeWindow* window);
+void          anvl_window_update(NativeWindow* window);
+void          anvl_window_destroy(NativeWindow* window);
 
 #endif // !ANVIL_WINDOW_HEADER

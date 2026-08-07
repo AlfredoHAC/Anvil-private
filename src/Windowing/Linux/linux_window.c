@@ -1,5 +1,6 @@
 #include "anvlpch.h"
 
+#include "Core/layer.h"
 #include "Window/window.h"
 #include "Windowing/Linux/Wayland/wayland_backend.h"
 #include "Windowing/Linux/X11/x11_backend.h"
@@ -18,12 +19,12 @@ typedef enum WindowBackendType
     ANVL_WINDOW_BACKEND_WAYLAND,
 } WindowBackendType;
 
+static void _set_event_callback(NativeWindow* window, EventCallbackFn event_callback);
+static void _unset_event_callback(NativeWindow* window);
 static const WindowBackend* _window_backend_create(NativeWindow* window);
 static uint32               _window_backend_detect();
 
-NativeWindow* anvl_platform_window_create(const char* window_title,
-                                          uint16      window_width,
-                                          uint16      window_height)
+NativeWindow* anvl_window_create(const WindowOptions window_options)
 {
     NativeWindow* window = malloc(sizeof(NativeWindow));
     ANVIL_ASSERT(window != NULL);
@@ -34,26 +35,31 @@ NativeWindow* anvl_platform_window_create(const char* window_title,
     window->backend_data = window->backend->backend_init();
     ANVIL_ASSERT(window->backend_data != NULL);
 
-    window->backend->window_create(window->backend_data, window_title, window_width, window_height);
+    window->backend->window_create(
+        window->backend_data, window_options.title, window_options.width, window_options.height);
+
+    _set_event_callback(window, anvl_layer_stack_dispatch_event);
 
     return window;
 }
 
 // clang-format off
-void anvl_platform_window_show(NativeWindow* window)
+void anvl_window_show(NativeWindow* window)
 {
     window->backend->window_show(window->backend_data);
 }
 
-void anvl_platform_window_update(NativeWindow* window)
+void anvl_window_update(NativeWindow* window)
 {
     window->backend->window_events_poll_and_dispatch(window->backend_data);
 }
 // clang-format on
 
-void anvl_platform_window_destroy(NativeWindow* window)
+void anvl_window_destroy(NativeWindow* window)
 {
     ANVIL_ASSERT(window != NULL);
+
+    _unset_event_callback(window);
 
     window->backend->window_destroy(window->backend_data);
     window->backend->backend_shutdown(window->backend_data);
@@ -61,7 +67,7 @@ void anvl_platform_window_destroy(NativeWindow* window)
     free(window);
 }
 
-void anvl_platform_window_set_event_callback(NativeWindow* window, EventCallbackFn event_callback)
+void _set_event_callback(NativeWindow* window, EventCallbackFn event_callback)
 {
     ANVIL_ASSERT(event_callback != NULL);
 
@@ -69,7 +75,7 @@ void anvl_platform_window_set_event_callback(NativeWindow* window, EventCallback
 }
 
 // clang-format off
-void anvl_platform_window_unset_event_callback(NativeWindow* window)
+void _unset_event_callback(NativeWindow* window)
 {
     window->backend->window_set_event_callback(window->backend_data, NULL);
 }
