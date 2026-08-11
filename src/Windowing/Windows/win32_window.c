@@ -101,6 +101,11 @@ void anvl_window_destroy(AnvlWindow* window)
     }
 }
 
+void* anvl_window_get_handle(const AnvlWindow* window)
+{
+    return (void*)window->handle;
+}
+
 void _set_event_callback(AnvlWindow* window, EventCallbackFn event_callback)
 {
     ANVIL_ASSERT(event_callback != NULL);
