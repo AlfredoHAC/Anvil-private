@@ -34,6 +34,7 @@ static void  x11_window_show(void* backend);
 static void  x11_window_destroy(void* backend);
 static void  x11_window_set_event_callback(void* backend, EventCallbackFn event_callback);
 static void  x11_events_poll_and_dispatch(void* backend);
+static void* x11_window_get_handle(void* backend);
 // clang-format on
 
 static const WindowBackend X11_BACKEND = {
@@ -44,6 +45,7 @@ static const WindowBackend X11_BACKEND = {
     .window_destroy                  = x11_window_destroy,
     .window_set_event_callback       = x11_window_set_event_callback,
     .window_events_poll_and_dispatch = x11_events_poll_and_dispatch,
+    .window_get_handle               = x11_window_get_handle,
 };
 
 const WindowBackend* x11_backend()
@@ -191,6 +193,13 @@ void x11_window_destroy(void* backend)
     xcb_destroy_window(b_end->display, b_end->window_id);
     xcb_flush(b_end->display);
     b_end->window_id = 0;
+}
+
+void* x11_window_get_handle(void* backend)
+{
+    X11Backend* b_end = (X11Backend*)backend;
+
+    return (void*)&(b_end->window_id);
 }
 
 void x11_window_set_event_callback(void* backend, EventCallbackFn event_callback)

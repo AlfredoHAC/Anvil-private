@@ -13,6 +13,7 @@ typedef struct
     void  (*window_destroy)(void *);
     void  (*window_set_event_callback)(void*, EventCallbackFn);
     void  (*window_events_poll_and_dispatch)(void *);
+    void* (*window_get_handle)(void *);
 } WindowBackend;
 // clang-format on
 

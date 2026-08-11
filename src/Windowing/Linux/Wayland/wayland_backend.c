@@ -74,6 +74,7 @@ static void  wayland_window_show(void* backend);
 static void  wayland_window_destroy(void* backend);
 static void  wayland_window_set_event_callback(void* backend, EventCallbackFn event_callback);
 static void  wayland_events_poll_and_dispatch(void* backend);
+static void* wayland_window_get_handle(void* backend);
 
 static void _shm_buffer_create(WaylandBackend* b_end, int32 width, int32 height);
 static void _shm_buffer_destroy(WaylandBackend* b_end);
@@ -170,6 +171,7 @@ static const WindowBackend WAYLAND_BACKEND = {
     .window_destroy                  = wayland_window_destroy,
     .window_set_event_callback       = wayland_window_set_event_callback,
     .window_events_poll_and_dispatch = wayland_events_poll_and_dispatch,
+    .window_get_handle               = wayland_window_get_handle,
 };
 
 static const struct wl_registry_listener REGISTRY_LISTENER = {
@@ -364,19 +366,23 @@ static void wayland_events_poll_and_dispatch(void* backend)
 
     int32         wl_display_fd = wl_display_get_fd(b_end->display);
     struct pollfd poll_fd       = {
-        .fd     = wl_display_fd,
-        .events = POLLIN,
+              .fd     = wl_display_fd,
+              .events = POLLIN,
     };
 
     poll(&poll_fd, 1, 0);
 
     if (poll_fd.revents & POLLIN) { wl_display_read_events(b_end->display); }
-    else
-    {
-        wl_display_cancel_read(b_end->display);
-    }
+    else { wl_display_cancel_read(b_end->display); }
 
     wl_display_dispatch_pending(b_end->display);
+}
+
+static void* wayland_window_get_handle(void* backend)
+{
+    WaylandBackend* b_end = (WaylandBackend*)backend;
+
+    return (void*)b_end->surface;
 }
 
 static void _shm_buffer_create(WaylandBackend* b_end, int32 width, int32 height)
@@ -595,8 +601,8 @@ static void _on_wl_keyboard_key(void*               data,
 {
     WaylandBackend* b_end = (WaylandBackend*)data;
 
-    AnvlEvent event   = {0};
-    event.handled = false;
+    AnvlEvent event = {0};
+    event.handled   = false;
     if (state == WL_KEYBOARD_KEY_STATE_PRESSED)
     {
         event.type                   = ANVL_EVENT_TYPE_KEY_PRESS;
@@ -681,8 +687,8 @@ static void _on_wl_pointer_button(void*              data,
 {
     WaylandBackend* b_end = (WaylandBackend*)data;
 
-    AnvlEvent event   = {0};
-    event.handled = false;
+    AnvlEvent event = {0};
+    event.handled   = false;
 
     uint8 mouse_button_code = 0;
     switch (button)
@@ -716,9 +722,9 @@ static void _on_wl_pointer_axis(
 {
     WaylandBackend* b_end = (WaylandBackend*)data;
 
-    AnvlEvent event   = {0};
-    event.handled = false;
-    event.type    = ANVL_EVENT_TYPE_MOUSE_SCROLL;
+    AnvlEvent event = {0};
+    event.handled   = false;
+    event.type      = ANVL_EVENT_TYPE_MOUSE_SCROLL;
 
     if (axis == WL_POINTER_AXIS_VERTICAL_SCROLL)
     {
