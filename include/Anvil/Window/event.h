@@ -71,7 +71,7 @@ typedef struct MouseScrollEvent
 typedef struct AnvlEvent
 {
     AnvlEventType type;
-    bool      handled;
+    bool          handled;
 
     union
     {

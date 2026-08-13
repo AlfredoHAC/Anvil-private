@@ -28,12 +28,12 @@ AnvlFile* anvl_file_open(const char* path, AnvlFileMode mode)
     file->disposition = _filemode_to_creation_disposition(mode);
     file->path        = _strdup(path);
     file->pointer     = CreateFileA(file->path,
-                                    file->mode,
-                                    FILE_SHARE_READ,
-                                    NULL,
-                                    file->disposition,
-                                    FILE_ATTRIBUTE_NORMAL,
-                                    NULL);
+                                file->mode,
+                                FILE_SHARE_READ,
+                                NULL,
+                                file->disposition,
+                                FILE_ATTRIBUTE_NORMAL,
+                                NULL);
     if (file->pointer == INVALID_HANDLE_VALUE)
     {
         DWORD err = GetLastError();
@@ -44,7 +44,8 @@ AnvlFile* anvl_file_open(const char* path, AnvlFileMode mode)
 
     if (mode == ANVL_FILE_MODE_APPEND)
     {
-        BOOL result = SetFilePointerEx(file->pointer, (LARGE_INTEGER){0}, NULL, FILE_END);
+        BOOL result =
+            SetFilePointerEx(file->pointer, (LARGE_INTEGER){0}, NULL, FILE_END);
         if (!result)
         {
             CloseHandle(file->pointer);
@@ -61,7 +62,8 @@ uint64 anvl_file_read(AnvlFile* file, void* buffer, uint64 size)
     ANVIL_ASSERT(file != NULL && file->pointer != INVALID_HANDLE_VALUE);
 
     DWORD bytes_read = 0;
-    BOOL  result     = ReadFile(file->pointer, buffer, (DWORD)size, &bytes_read, NULL);
+    BOOL  result =
+        ReadFile(file->pointer, buffer, (DWORD)size, &bytes_read, NULL);
 
     if (!result) { return 0; }
 
@@ -75,7 +77,8 @@ uint64 anvl_file_write(AnvlFile* file, const void* buffer, uint64 size)
     ANVIL_ASSERT(file != NULL && file->pointer != INVALID_HANDLE_VALUE);
 
     DWORD bytes_written = 0;
-    BOOL  result        = WriteFile(file->pointer, buffer, (DWORD)size, &bytes_written, NULL);
+    BOOL  result =
+        WriteFile(file->pointer, buffer, (DWORD)size, &bytes_written, NULL);
 
     if (!result) { return 0; }
 

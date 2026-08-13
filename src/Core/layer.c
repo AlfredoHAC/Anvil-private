@@ -5,23 +5,23 @@
 #define LAYER_STACK_MAX_LENGTH 32
 
 static AnvlLayer* layer_stack[LAYER_STACK_MAX_LENGTH] = {0};
-static uint8  layer_stack_length                  = 0;
+static uint8      layer_stack_length                  = 0;
 
 void anvl_layer_stack_push(AnvlLayer* layer)
 {
     ANVIL_ASSERT(layer != NULL);
     ANVIL_ASSERT(layer_stack_length + 1 <= LAYER_STACK_MAX_LENGTH);
 
-    layer_stack[layer_stack_length] = layer;
-    layer_stack_length += 1;
+    layer_stack[layer_stack_length]  = layer;
+    layer_stack_length              += 1;
 }
 
 void anvl_layer_stack_pop()
 {
     ANVIL_ASSERT(layer_stack_length > 0);
 
-    layer_stack[layer_stack_length] = NULL;
-    layer_stack_length -= 1;
+    layer_stack[layer_stack_length]  = NULL;
+    layer_stack_length              -= 1;
 }
 
 void anvl_layer_stack_remove(AnvlLayer* layer)
@@ -63,7 +63,10 @@ void anvl_layer_stack_dispatch_event(AnvlEvent* event)
 {
     for (int8 i = layer_stack_length - 1; i >= 0; --i)
     {
-        if (layer_stack[i] == NULL || layer_stack[i]->on_event == NULL) { continue; }
+        if (layer_stack[i] == NULL || layer_stack[i]->on_event == NULL)
+        {
+            continue;
+        }
 
         layer_stack[i]->on_event(layer_stack[i], event);
 
@@ -75,7 +78,10 @@ void anvl_layer_stack_call_update()
 {
     for (int8 i = layer_stack_length - 1; i >= 0; --i)
     {
-        if (layer_stack[i] == NULL || layer_stack[i]->on_update == NULL) { continue; }
+        if (layer_stack[i] == NULL || layer_stack[i]->on_update == NULL)
+        {
+            continue;
+        }
 
         layer_stack[i]->on_update(layer_stack[i]);
     }

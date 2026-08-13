@@ -24,7 +24,9 @@ AnvlFile* anvl_file_open(const char* path, AnvlFileMode mode)
     if (!file->pointer)
     {
         free(file);
-        ANVIL_CORE_ERROR("Failed to open file: %s (mode: %s)", path, file->mode);
+        ANVIL_CORE_ERROR("Failed to open file: %s (mode: %s)",
+                         path,
+                         file->mode);
         return NULL;
     }
 

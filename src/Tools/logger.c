@@ -9,10 +9,10 @@
 
 static void _print_timestamp_label();
 static void _print_level_label(AnvlLogLevel level);
-static void _log_message(AnvlLogLevel    level,
-                         const char* call_module,
-                         const char* msg_format,
-                         va_list     args);
+static void _log_message(AnvlLogLevel level,
+                         const char*  call_module,
+                         const char*  msg_format,
+                         va_list      args);
 
 static AnvlLogLevel current_level;
 
@@ -144,10 +144,10 @@ static void _print_level_label(AnvlLogLevel level)
     fprintf(stderr, level_label_format, color, level_str, "\033[0m");
 }
 
-static void _log_message(AnvlLogLevel    level,
-                         const char* call_module,
-                         const char* msg_format,
-                         va_list     args)
+static void _log_message(AnvlLogLevel level,
+                         const char*  call_module,
+                         const char*  msg_format,
+                         va_list      args)
 {
     ANVIL_ASSERT(level >= ANVL_LOG_LEVEL_NONE && level <= ANVL_LOG_LEVEL_TRACE);
 

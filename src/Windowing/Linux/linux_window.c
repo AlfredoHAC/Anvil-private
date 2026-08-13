@@ -19,7 +19,8 @@ typedef enum WindowBackendType
     ANVL_WINDOW_BACKEND_WAYLAND,
 } WindowBackendType;
 
-static void                 _set_event_callback(AnvlWindow* window, EventCallbackFn event_callback);
+static void                 _set_event_callback(AnvlWindow*     window,
+                                                EventCallbackFn event_callback);
 static void                 _unset_event_callback(AnvlWindow* window);
 static const WindowBackend* _window_backend_create(AnvlWindow* window);
 static uint32               _window_backend_detect();
@@ -35,8 +36,10 @@ AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options)
     window->backend_data = window->backend->backend_init();
     ANVIL_ASSERT(window->backend_data != NULL);
 
-    window->backend->window_create(
-        window->backend_data, window_options.title, window_options.width, window_options.height);
+    window->backend->window_create(window->backend_data,
+                                   window_options.title,
+                                   window_options.width,
+                                   window_options.height);
 
     _set_event_callback(window, anvl_layer_stack_dispatch_event);
 
@@ -76,7 +79,8 @@ void _set_event_callback(AnvlWindow* window, EventCallbackFn event_callback)
 {
     ANVIL_ASSERT(event_callback != NULL);
 
-    window->backend->window_set_event_callback(window->backend_data, event_callback);
+    window->backend->window_set_event_callback(window->backend_data,
+                                               event_callback);
 }
 
 // clang-format off
@@ -89,8 +93,14 @@ void _unset_event_callback(AnvlWindow* window)
 static const WindowBackend* _window_backend_create(AnvlWindow* window)
 {
     WindowBackendType window_backend_type = _window_backend_detect();
-    if (window_backend_type == ANVL_WINDOW_BACKEND_WAYLAND) { return wayland_backend(); }
-    else if (window_backend_type == ANVL_WINDOW_BACKEND_X11) { return x11_backend(); }
+    if (window_backend_type == ANVL_WINDOW_BACKEND_WAYLAND)
+    {
+        return wayland_backend();
+    }
+    else if (window_backend_type == ANVL_WINDOW_BACKEND_X11)
+    {
+        return x11_backend();
+    }
     else { return NULL; }
 }
 

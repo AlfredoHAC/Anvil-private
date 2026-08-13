@@ -66,7 +66,7 @@ void* x11_backend_init()
         return NULL;
     }
 
-    const xcb_setup_t*    setup           = xcb_get_setup(backend_data->display);
+    const xcb_setup_t*    setup = xcb_get_setup(backend_data->display);
     xcb_screen_iterator_t screen_iterator = xcb_setup_roots_iterator(setup);
     backend_data->screen                  = screen_iterator.data;
     if (!backend_data->screen)
@@ -95,7 +95,10 @@ void x11_backend_shutdown(void* backend)
 static void _register_wm_delete_window_message(X11Backend* b_end)
 {
     xcb_intern_atom_cookie_t protocols_cookie =
-        xcb_intern_atom(b_end->display, 0, strlen("WM_PROTOCOLS"), "WM_PROTOCOLS");
+        xcb_intern_atom(b_end->display,
+                        0,
+                        strlen("WM_PROTOCOLS"),
+                        "WM_PROTOCOLS");
     xcb_intern_atom_reply_t* protocols_reply =
         xcb_intern_atom_reply(b_end->display, protocols_cookie, NULL);
 
@@ -106,7 +109,10 @@ static void _register_wm_delete_window_message(X11Backend* b_end)
     }
 
     xcb_intern_atom_cookie_t wm_del_cookie =
-        xcb_intern_atom(b_end->display, 0, strlen("WM_DELETE_WINDOW"), "WM_DELETE_WINDOW");
+        xcb_intern_atom(b_end->display,
+                        0,
+                        strlen("WM_DELETE_WINDOW"),
+                        "WM_DELETE_WINDOW");
     xcb_intern_atom_reply_t* wm_del_reply =
         xcb_intern_atom_reply(b_end->display, wm_del_cookie, NULL);
 
@@ -132,19 +138,23 @@ static void _register_wm_delete_window_message(X11Backend* b_end)
     free(protocols_reply);
 }
 
-void x11_window_create(void* backend, const char* window_title, uint16 width, uint16 height)
+void x11_window_create(void*       backend,
+                       const char* window_title,
+                       uint16      width,
+                       uint16      height)
 {
     X11Backend* b_end = (X11Backend*)backend;
 
     b_end->window_id = xcb_generate_id(b_end->display);
 
-    uint32 mask          = XCB_CW_BACK_PIXEL | XCB_CW_BORDER_PIXEL | XCB_CW_EVENT_MASK;
+    uint32 mask = XCB_CW_BACK_PIXEL | XCB_CW_BORDER_PIXEL | XCB_CW_EVENT_MASK;
     uint32 mask_values[] = {
         b_end->screen->black_pixel,
         b_end->screen->white_pixel,
-        XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE |
-            XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_PRESS |
-            XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_BUTTON_MOTION,
+        XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_KEY_PRESS |
+            XCB_EVENT_MASK_KEY_RELEASE | XCB_EVENT_MASK_POINTER_MOTION |
+            XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
+            XCB_EVENT_MASK_BUTTON_MOTION,
     };
 
     xcb_create_window(b_end->display,                // XCB connection
@@ -202,20 +212,23 @@ void* x11_window_get_handle(void* backend)
     return (void*)&(b_end->window_id);
 }
 
-void x11_window_set_event_callback(void* backend, EventCallbackFn event_callback)
+void x11_window_set_event_callback(void*           backend,
+                                   EventCallbackFn event_callback)
 {
     X11Backend* b_end = (X11Backend*)backend;
 
     b_end->event_callback = event_callback;
 }
 
-static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_event)
+static void _dispatch_x11_messages(X11Backend*          b_end,
+                                   xcb_generic_event_t* xcb_event)
 {
     switch (xcb_event->response_type & ~0x80)
     {
         case XCB_CLIENT_MESSAGE:
         {
-            xcb_client_message_event_t* client_msg = (xcb_client_message_event_t*)xcb_event;
+            xcb_client_message_event_t* client_msg =
+                (xcb_client_message_event_t*)xcb_event;
             if (b_end->wm_delete_window_atom == 0) { break; }
 
             if (client_msg->data.data32[0] == b_end->wm_delete_window_atom)
@@ -237,14 +250,16 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
         }
         case XCB_CONFIGURE_NOTIFY:
         {
-            xcb_configure_notify_event_t* cfg_notify = (xcb_configure_notify_event_t*)xcb_event;
+            xcb_configure_notify_event_t* cfg_notify =
+                (xcb_configure_notify_event_t*)xcb_event;
 
             if (!(cfg_notify->width == 0) || !(cfg_notify->height == 0))
             {
                 AnvlEvent event = {
                     .type          = ANVL_EVENT_TYPE_WINDOW_RESIZE,
                     .handled       = false,
-                    .window_resize = {.width = cfg_notify->width, .height = cfg_notify->height},
+                    .window_resize = {.width  = cfg_notify->width,
+                                      .height = cfg_notify->height},
                 };
                 b_end->event_callback(&event);
             }
@@ -253,7 +268,8 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
         }
         case XCB_KEY_PRESS:
         {
-            xcb_key_press_event_t* key_press = (xcb_key_press_event_t*)xcb_event;
+            xcb_key_press_event_t* key_press =
+                (xcb_key_press_event_t*)xcb_event;
 
             AnvlEvent event = {
                 .type      = ANVL_EVENT_TYPE_KEY_PRESS,
@@ -266,12 +282,14 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
         }
         case XCB_KEY_RELEASE:
         {
-            xcb_key_release_event_t* key_press = (xcb_key_release_event_t*)xcb_event;
+            xcb_key_release_event_t* key_press =
+                (xcb_key_release_event_t*)xcb_event;
 
             AnvlEvent event = {
                 .type        = ANVL_EVENT_TYPE_KEY_RELEASE,
                 .handled     = false,
-                .key_release = {.key_code = key_press->detail, .modifier_set = 0},
+                .key_release = {.key_code     = key_press->detail,
+                                .modifier_set = 0},
             };
             b_end->event_callback(&event);
 
@@ -279,12 +297,14 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
         }
         case XCB_MOTION_NOTIFY:
         {
-            xcb_motion_notify_event_t* motion_notify = (xcb_motion_notify_event_t*)xcb_event;
+            xcb_motion_notify_event_t* motion_notify =
+                (xcb_motion_notify_event_t*)xcb_event;
 
             AnvlEvent event = {
                 .type       = ANVL_EVENT_TYPE_MOUSE_MOVE,
                 .handled    = false,
-                .mouse_move = {.x = motion_notify->event_x, .y = motion_notify->event_y},
+                .mouse_move = {.x = motion_notify->event_x,
+                               .y = motion_notify->event_y},
             };
             b_end->event_callback(&event);
 
@@ -292,7 +312,8 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
         }
         case XCB_BUTTON_PRESS:
         {
-            xcb_button_press_event_t* button_press = (xcb_button_press_event_t*)xcb_event;
+            xcb_button_press_event_t* button_press =
+                (xcb_button_press_event_t*)xcb_event;
 
             xcb_button_t button = button_press->detail;
             if (button <= XCB_BUTTON_INDEX_3)
@@ -344,7 +365,8 @@ static void _dispatch_x11_messages(X11Backend* b_end, xcb_generic_event_t* xcb_e
         }
         case XCB_BUTTON_RELEASE:
         {
-            xcb_button_release_event_t* button_release = (xcb_button_release_event_t*)xcb_event;
+            xcb_button_release_event_t* button_release =
+                (xcb_button_release_event_t*)xcb_event;
             if (button_release->detail > XCB_BUTTON_INDEX_3) { break; }
 
             AnvlEvent event = {

@@ -15,10 +15,17 @@ struct AnvlWindow
     EventCallbackFn event_callback;
 };
 
-static void    _set_event_callback(AnvlWindow* window, EventCallbackFn event_callback);
-static void    _unset_event_callback(AnvlWindow* window);
-static LRESULT _dispatch_win32_event(AnvlWindow* window, UINT umsg, WPARAM wparam, LPARAM lparam);
-static LRESULT CALLBACK _native_window_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam);
+static void             _set_event_callback(AnvlWindow*     window,
+                                            EventCallbackFn event_callback);
+static void             _unset_event_callback(AnvlWindow* window);
+static LRESULT          _dispatch_win32_event(AnvlWindow* window,
+                                              UINT        umsg,
+                                              WPARAM      wparam,
+                                              LPARAM      lparam);
+static LRESULT CALLBACK _native_window_proc(HWND   hwnd,
+                                            UINT   umsg,
+                                            WPARAM wparam,
+                                            LPARAM lparam);
 static void             _peek_and_dispatch_win32_messages(AnvlWindow* window);
 
 AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options)
@@ -120,7 +127,10 @@ void _unset_event_callback(AnvlWindow* window)
 }
 // clang-format on
 
-static LRESULT _dispatch_win32_event(AnvlWindow* window, UINT umsg, WPARAM wparam, LPARAM lparam)
+static LRESULT _dispatch_win32_event(AnvlWindow* window,
+                                     UINT        umsg,
+                                     WPARAM      wparam,
+                                     LPARAM      lparam)
 {
 
     switch (umsg)
@@ -337,7 +347,9 @@ static LRESULT _dispatch_win32_event(AnvlWindow* window, UINT umsg, WPARAM wpara
                 .mouse_scroll =
                     {
                         .x_offset = 0,
-                        .y_offset = (float32)GET_WHEEL_DELTA_WPARAM(wparam) > 0 ? 1.0f : -1.0f,
+                        .y_offset = (float32)GET_WHEEL_DELTA_WPARAM(wparam) > 0
+                                        ? 1.0f
+                                        : -1.0f,
                     },
             };
             window->event_callback(&event);
@@ -351,7 +363,9 @@ static LRESULT _dispatch_win32_event(AnvlWindow* window, UINT umsg, WPARAM wpara
                 .handled = false,
                 .mouse_scroll =
                     {
-                        .x_offset = (float32)GET_WHEEL_DELTA_WPARAM(wparam) > 0 ? 1.0f : -1.0f,
+                        .x_offset = (float32)GET_WHEEL_DELTA_WPARAM(wparam) > 0
+                                        ? 1.0f
+                                        : -1.0f,
                         .y_offset = 0,
                     },
             };
@@ -364,7 +378,10 @@ static LRESULT _dispatch_win32_event(AnvlWindow* window, UINT umsg, WPARAM wpara
     return DefWindowProcA(window->handle, umsg, wparam, lparam);
 }
 
-static LRESULT CALLBACK _native_window_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
+static LRESULT CALLBACK _native_window_proc(HWND   hwnd,
+                                            UINT   umsg,
+                                            WPARAM wparam,
+                                            LPARAM lparam)
 {
     AnvlWindow* window = (AnvlWindow*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 

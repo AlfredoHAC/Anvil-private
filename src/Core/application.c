@@ -13,11 +13,11 @@ typedef struct AnvlApplication
 static void _on_application_event(AnvlLayer* layer, AnvlEvent* event);
 static void _on_application_window_close();
 
-static bool  app_running = false;
+static bool      app_running = false;
 static AnvlLayer app_layer   = {
-    .name      = "Application_Layer",
-    .on_update = NULL,
-    .on_event  = _on_application_event,
+      .name      = "Application_Layer",
+      .on_update = NULL,
+      .on_event  = _on_application_event,
 };
 
 AnvlApplication* anvl_application_init(AnvlWindow* window)
