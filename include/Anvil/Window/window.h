@@ -2,6 +2,7 @@
 #define ANVIL_WINDOW_HEADER
 
 #include "Anvil/Core/types.h"
+#include "Anvil/Graphics/requirements.h"
 #include "Anvil/Window/event.h"
 
 // Platform native window
@@ -12,9 +13,10 @@ typedef void (*EventCallbackFn)(AnvlEvent* event);
 
 typedef struct AnvlWindowOptions
 {
-    const char* title;
-    uint16      width;
-    uint16      height;
+    const char*             title;
+    uint16                  width;
+    uint16                  height;
+    AnvlGraphicRequirements requirements;
 } AnvlWindowOptions;
 
 AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options);
