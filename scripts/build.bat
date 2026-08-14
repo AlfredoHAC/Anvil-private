@@ -29,6 +29,18 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+where ninja >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Ninja nao encontrado. Instalando via Winget...
+    winget install --id Ninja-build.Ninja --force --exact --silent --accept-package-agreements --accept-source-agreements
+    if !errorlevel! neq 0 (
+        echo Erro ao instalar Ninja via Winget.
+        echo Instale manualmente: winget install Ninja-build.Ninja
+        exit /b 1
+    )
+    echo Ninja instalado com sucesso!
+)
+
 :: -----------------------------------------------------------------------------
 :: Compilar
 :: -----------------------------------------------------------------------------
@@ -39,12 +51,12 @@ if "%CMAKE_CFG%"=="RelWithDebInfo" (
 )
 echo Compilando Anvil (%DISPLAY_CFG%)...
 if not exist "build" mkdir "build"
-cmake -S . -B "build" -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=%CMAKE_CFG%
+cmake -S . -B "build" -G Ninja -DCMAKE_BUILD_TYPE=%CMAKE_CFG%
 if %errorlevel% neq 0 (
     echo Erro ao configurar.
     exit /b %errorlevel%
 )
-cmake --build "build" --config %CMAKE_CFG% --parallel
+cmake --build "build" --parallel
 if %errorlevel% neq 0 (
     echo Erro ao compilar.
     exit /b %errorlevel%
@@ -57,8 +69,8 @@ set "ASAN_DLL_PATH="
 for /f "delims=" %%g in ('where clang_rt.asan_dynamic-x86_64.dll 2^>nul') do set "ASAN_DLL_PATH=%%g"
 
 if defined ASAN_DLL_PATH (
-    if exist "build\%CMAKE_CFG%\" (
-        copy /Y "%ASAN_DLL_PATH%" "build\%CMAKE_CFG%\" >nul
+    if exist "build\" (
+        copy /Y "%ASAN_DLL_PATH%" "build\" >nul
     )
 )
 
