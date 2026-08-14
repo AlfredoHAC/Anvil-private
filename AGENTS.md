@@ -222,11 +222,25 @@ When adding source files, update the corresponding CMake configuration.
 
 ## Build System
 
+**⚠️ SEMPRE use os scripts de build fornecidos. NUNCA chame `cmake` ou `ninja` diretamente.**
+
 Build scripts live in `scripts/` at each module root (e.g. `Anvil/scripts/build.bat`, `Anvil/scripts/build.sh`).
 
 ForgeCore's orchestration script lives in `scripts/` at the ForgeCore root (e.g. `scripts/build.bat`).
 
 Each module's build script handles only its own compilation. The ForgeCore script calls each module's script in order.
+
+### Scripts de Build
+
+| Script | Descrição |
+|--------|-----------|
+| `scripts/build.bat debug` | Build completo (Windows) |
+| `scripts/build.bat clean` | Limpa todos os builds |
+| `Anvil/scripts/build.bat debug` | Build apenas do Anvil |
+| `Furnace/scripts/build.bat debug` | Build apenas do Furnace |
+| `example/Sandbox/scripts/build.bat debug` | Build apenas do Sandbox |
+
+Os scripts configuram o ambiente corretamente (MSVC, CMake, Ninja) e usam Ninja como generator. Build direto com MSBuild ou sem a configuração adequada pode causar erros de include e linkagem.
 
 ---
 
