@@ -4,6 +4,11 @@ project(Anvil LANGUAGES C)
 # Export compile_commands.json for linters
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Include ThirdParty (glad, glm, stb_image, WGLExt)
+if(NOT TARGET glad)
+    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty" ThirdParty)
+endif()
+
 add_library(Anvil STATIC
     src/anvlpch.c
     src/Core/application.c
@@ -18,6 +23,7 @@ if(WIN32)
     target_sources(Anvil PRIVATE
         src/FileIO/Windows/win32_file.c
         src/Windowing/Windows/win32_window.c
+        src/Graphics/Windows/wgl_context.c
     )
 elseif(UNIX AND NOT APPLE)
     target_sources(Anvil PRIVATE
@@ -30,6 +36,7 @@ elseif(UNIX AND NOT APPLE)
     )
 endif()
 
+target_link_libraries(Anvil PUBLIC glad)
 target_include_directories(Anvil PUBLIC include)
 target_include_directories(Anvil PRIVATE
     src
