@@ -181,7 +181,7 @@ void anvl_window_destroy(AnvlWindow* window)
 
     _unset_event_callback(window);
 
-    if (!window->context.handle)
+    if (window->context.handle)
     {
         wgl_context_destroy(window->context.handle);
     }
