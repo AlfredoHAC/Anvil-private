@@ -9,14 +9,16 @@
 
 static bool wgl_extensions_loaded = false;
 
-HGLRC wgl_context_create(HDC device_context_handle)
+HGLRC wgl_context_create(HDC   device_context_handle,
+                         int32 major_version,
+                         int32 minor_version)
 {
     ANVIL_ASSERT(device_context_handle != NULL);
 
     // clang-format off
     int32 context_attributes_list[] = {
-        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
-        WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+        WGL_CONTEXT_MAJOR_VERSION_ARB, major_version,
+        WGL_CONTEXT_MINOR_VERSION_ARB, minor_version,
         WGL_CONTEXT_PROFILE_MASK_ARB,  WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
         #ifdef ANVIL_CONFIG_DEBUG
         WGL_CONTEXT_FLAGS_ARB,         WGL_CONTEXT_DEBUG_BIT_ARB,
@@ -52,7 +54,7 @@ HGLRC wgl_context_create(HDC device_context_handle)
     return graphics_context_handle;
 }
 
-void  wgl_context_destroy(HGLRC graphics_context_handle)
+void wgl_context_destroy(HGLRC graphics_context_handle)
 {
     ANVIL_ASSERT(graphics_context_handle != NULL);
 

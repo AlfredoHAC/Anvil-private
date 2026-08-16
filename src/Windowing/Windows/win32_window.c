@@ -146,8 +146,10 @@ AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options)
             return NULL;
         }
 
-        window->context.handle =
-            wgl_context_create(window->context.device_context);
+        window->context.handle = wgl_context_create(
+            window->context.device_context,
+            window_options.graphics_requirements.major_version,
+            window_options.graphics_requirements.minor_version);
         if (!window->context.handle)
         {
             ReleaseDC(window->handle, window->context.device_context);
@@ -181,10 +183,7 @@ void anvl_window_destroy(AnvlWindow* window)
 
     _unset_event_callback(window);
 
-    if (window->context.handle)
-    {
-        wgl_context_destroy(window->context.handle);
-    }
+    if (window->context.handle) { wgl_context_destroy(window->context.handle); }
 
     if (window->context.device_context)
     {

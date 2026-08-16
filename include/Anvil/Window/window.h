@@ -32,6 +32,9 @@ typedef struct AnvlWindowOptions
         int32 depth_bits;
         int32 stencil_bits;
         int32 sample_count;
+
+        int32 major_version;
+        int32 minor_version;
     } graphics_requirements;
 } AnvlWindowOptions;
 
