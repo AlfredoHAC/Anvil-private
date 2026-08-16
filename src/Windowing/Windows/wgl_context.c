@@ -7,6 +7,8 @@
 #include <wingdi.h>
 #include <winuser.h>
 
+static bool wgl_extensions_loaded = false;
+
 HGLRC wgl_context_create(HDC device_context_handle)
 {
     ANVIL_ASSERT(device_context_handle != NULL);
@@ -60,6 +62,8 @@ void  wgl_context_destroy(HGLRC graphics_context_handle)
 
 void wgl_context_load_extensions()
 {
+    if (wgl_extensions_loaded) { return; }
+
     WNDCLASSEX dummy_window_class = {
         .hInstance     = GetModuleHandle(NULL),
         .cbSize        = sizeof(WNDCLASSEX),
@@ -111,6 +115,8 @@ void wgl_context_load_extensions()
     int version =
         gladLoadWGL(dummy_device_context, (GLADloadfunc)wglGetProcAddress);
     ANVIL_ASSERT(version >= GLAD_MAKE_VERSION(1, 0));
+
+    wgl_extensions_loaded = true;
 
     wglMakeCurrent(NULL, NULL);
     wglDeleteContext(dummy_context);
