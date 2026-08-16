@@ -7,4 +7,4 @@ HGLRC wgl_context_create(HDC device_context_handle);
 void  wgl_context_destroy(HGLRC graphics_context_handle);
 void  wgl_context_load_extensions();
 
-#endif // !ANVIL_GRAPHICS_CONTEXT_HEADER
+#endif // !ANVIL_WGL_CONTEXT_HEADER
