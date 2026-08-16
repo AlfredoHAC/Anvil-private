@@ -23,7 +23,7 @@ if(WIN32)
     target_sources(Anvil PRIVATE
         src/FileIO/Windows/win32_file.c
         src/Windowing/Windows/win32_window.c
-        src/Graphics/Windows/wgl_context.c
+        src/Windowing/Windows/wgl_context.c
     )
 elseif(UNIX AND NOT APPLE)
     target_sources(Anvil PRIVATE
