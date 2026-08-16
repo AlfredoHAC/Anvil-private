@@ -40,8 +40,8 @@ static const char* window_class_name = "anvl_main_window_class";
 AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options)
 {
     AnvlWindow* window = malloc(sizeof(AnvlWindow));
-    memset(window, 0, sizeof(AnvlWindow));
     ANVIL_ASSERT(window != NULL);
+    memset(window, 0, sizeof(AnvlWindow));
 
     window->instance = GetModuleHandle(NULL);
 
