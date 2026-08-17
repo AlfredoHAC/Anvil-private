@@ -5,6 +5,6 @@
 
 typedef struct X11Backend X11Backend;
 
-const WindowBackend* x11_backend();
+const AnvlWindowBackend* x11_backend();
 
 #endif // !ANVL_WINDOW_BACKEND_X11_HEADER

@@ -1,6 +1,7 @@
 #include "anvlpch.h"
 
 #include "Window/event.h"
+#include "Windowing/Linux/Wayland/egl_context.h"
 #include "Windowing/Linux/Wayland/wayland_backend.h"
 #include "Windowing/Linux/Wayland/xdg_shell_client_protocol.h"
 #include "Windowing/Linux/Wayland/xdg_shell_decoration_protocol.h"
@@ -15,7 +16,7 @@
 #include <wayland-client.h>
 #include <wayland-util.h>
 
-typedef struct WaylandBackend
+typedef struct AnvlWaylandBackend
 {
     // Wayland connection
     struct wl_display* display;
@@ -60,16 +61,17 @@ typedef struct WaylandBackend
     // AnvlEvent capturing data
     uint32 capabilities;
 
+    // Graphics Context data
+    AnvlGraphicsContext context;
+
     // AnvlEvent callback
     EventCallbackFn event_callback;
-} WaylandBackend;
+} AnvlWaylandBackend;
 
 static void* wayland_backend_init();
 static void  wayland_backend_shutdown(void* backend);
-static void  wayland_window_create(void*       backend,
-                                   const char* window_title,
-                                   uint16      width,
-                                   uint16      height);
+static void  wayland_window_create(void*                   backend,
+                                   const AnvlWindowOptions window_options);
 static void  wayland_window_show(void* backend);
 static void  wayland_window_destroy(void* backend);
 static void  wayland_window_set_event_callback(void*           backend,
@@ -77,10 +79,10 @@ static void  wayland_window_set_event_callback(void*           backend,
 static void  wayland_events_poll_and_dispatch(void* backend);
 static void* wayland_window_get_handle(void* backend);
 
-static void _shm_buffer_create(WaylandBackend* b_end,
-                               int32           width,
-                               int32           height);
-static void _shm_buffer_destroy(WaylandBackend* b_end);
+static void _shm_buffer_create(AnvlWaylandBackend* b_end,
+                               int32               width,
+                               int32               height);
+static void _shm_buffer_destroy(AnvlWaylandBackend* b_end);
 
 static void _on_wl_registry_global_notify(void*               data,
                                           struct wl_registry* registry,
@@ -188,7 +190,7 @@ static void _on_wl_pointer_axis_relative_direction_noop(
     uint32             axis,
     uint32             direction);
 
-static const WindowBackend WAYLAND_BACKEND = {
+static const AnvlWindowBackend WAYLAND_BACKEND = {
     .backend_init                    = wayland_backend_init,
     .backend_shutdown                = wayland_backend_shutdown,
     .window_create                   = wayland_window_create,
@@ -245,7 +247,7 @@ static const struct wl_pointer_listener WL_POINTER_LISTENER = {
 };
 
 // clang-format off
-const WindowBackend* wayland_backend()
+const AnvlWindowBackend* wayland_backend()
 {
     return &WAYLAND_BACKEND;
 }
@@ -253,8 +255,8 @@ const WindowBackend* wayland_backend()
 
 void* wayland_backend_init()
 {
-    WaylandBackend* backend_data = malloc(sizeof(WaylandBackend));
-    memset(backend_data, 0, sizeof(WaylandBackend));
+    AnvlWaylandBackend* backend_data = malloc(sizeof(AnvlWaylandBackend));
+    memset(backend_data, 0, sizeof(AnvlWaylandBackend));
     backend_data->shm_fd = -1;
 
     backend_data->display = wl_display_connect(NULL);
@@ -294,7 +296,7 @@ void wayland_backend_shutdown(void* backend)
 {
     ANVIL_ASSERT(backend != NULL);
 
-    WaylandBackend* b_end = (WaylandBackend*)backend;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
 
     wl_keyboard_destroy(b_end->keyboard);
     wl_pointer_destroy(b_end->pointer);
@@ -310,14 +312,12 @@ void wayland_backend_shutdown(void* backend)
     free(b_end);
 }
 
-void wayland_window_create(void*       backend,
-                           const char* window_title,
-                           uint16      width,
-                           uint16      height)
+static void wayland_window_create(void*                   backend,
+                                  const AnvlWindowOptions window_options)
 {
-    WaylandBackend* b_end = (WaylandBackend*)backend;
-    b_end->height         = height;
-    b_end->width          = width;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
+    b_end->height             = window_options.height;
+    b_end->width              = window_options.width;
 
     b_end->surface = wl_compositor_create_surface(b_end->compositor);
     b_end->xdg_surface =
@@ -327,9 +327,11 @@ void wayland_window_create(void*       backend,
                              (void*)b_end);
 
     b_end->top_level = xdg_surface_get_toplevel(b_end->xdg_surface);
-    xdg_toplevel_set_app_id(b_end->top_level, window_title);
-    xdg_toplevel_set_title(b_end->top_level, window_title);
-    xdg_toplevel_set_min_size(b_end->top_level, width, height);
+    xdg_toplevel_set_app_id(b_end->top_level, window_options.title);
+    xdg_toplevel_set_title(b_end->top_level, window_options.title);
+    xdg_toplevel_set_min_size(b_end->top_level,
+                              window_options.width,
+                              window_options.height);
     xdg_toplevel_add_listener(b_end->top_level,
                               &XDG_TOPLEVEL_LISTENER,
                               (void*)b_end);
@@ -350,11 +352,17 @@ void wayland_window_create(void*       backend,
 
     wl_surface_commit(b_end->surface);
     wl_display_roundtrip(b_end->display);
+
+    if (window_options.graphics_mode == ANVL_WINDOW_GRAPHICS_MODE_OPENGL)
+    {
+        b_end->context =
+            egl_context_create(b_end->display, b_end->surface, window_options);
+    }
 }
 
 void wayland_window_show(void* backend)
 {
-    WaylandBackend* b_end = (WaylandBackend*)backend;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
 
     _shm_buffer_create(b_end, b_end->width, b_end->height);
     if (!b_end->shm_buffer) { return; }
@@ -369,7 +377,14 @@ void wayland_window_show(void* backend)
 
 void wayland_window_destroy(void* backend)
 {
-    WaylandBackend* b_end = (WaylandBackend*)backend;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
+
+    if (memcmp(&b_end->context,
+               &(AnvlGraphicsContext){0},
+               sizeof(AnvlGraphicsContext)) != 0)
+    {
+        egl_context_destroy(b_end->context);
+    }
 
     if (b_end->dc_object)
     {
@@ -391,14 +406,14 @@ void wayland_window_destroy(void* backend)
 void wayland_window_set_event_callback(void*           backend,
                                        EventCallbackFn event_callback)
 {
-    WaylandBackend* b_end = (WaylandBackend*)backend;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
 
     b_end->event_callback = event_callback;
 }
 
 static void wayland_events_poll_and_dispatch(void* backend)
 {
-    WaylandBackend* b_end = (WaylandBackend*)backend;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
 
     while (wl_display_prepare_read(b_end->display) != 0)
     {
@@ -423,12 +438,14 @@ static void wayland_events_poll_and_dispatch(void* backend)
 
 static void* wayland_window_get_handle(void* backend)
 {
-    WaylandBackend* b_end = (WaylandBackend*)backend;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
 
     return (void*)b_end->surface;
 }
 
-static void _shm_buffer_create(WaylandBackend* b_end, int32 width, int32 height)
+static void _shm_buffer_create(AnvlWaylandBackend* b_end,
+                               int32               width,
+                               int32               height)
 {
     if (b_end->shm_data && b_end->shm_fd >= 0) { return; }
 
@@ -481,7 +498,7 @@ static void _shm_buffer_create(WaylandBackend* b_end, int32 width, int32 height)
     wl_shm_pool_destroy(shm_pool);
 }
 
-static void _shm_buffer_destroy(WaylandBackend* b_end)
+static void _shm_buffer_destroy(AnvlWaylandBackend* b_end)
 {
     uint64 buffer_size =
         b_end->buffer_width * b_end->buffer_height * sizeof(uint32);
@@ -507,7 +524,7 @@ static void _on_wl_registry_global_notify(void*               data,
                                           const char*         interface,
                                           uint32              version)
 {
-    WaylandBackend* b_end = (WaylandBackend*)data;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)data;
 
     if (strcmp(interface, wl_compositor_interface.name) == 0)
     {
@@ -555,7 +572,7 @@ static void _on_xdg_surface_configure(void*               data,
                                       struct xdg_surface* xdg_surface,
                                       uint32              serial)
 {
-    WaylandBackend* b_end = (WaylandBackend*)data;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)data;
 
     xdg_surface_set_window_geometry(b_end->xdg_surface,
                                     0,
@@ -576,7 +593,7 @@ static void _on_wl_seat_capabilities(void*           data,
                                      struct wl_seat* seat,
                                      uint32          capabilities)
 {
-    WaylandBackend* b_end = (WaylandBackend*)data;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)data;
 
     if (capabilities & WL_SEAT_CAPABILITY_KEYBOARD)
     {
@@ -609,7 +626,7 @@ static void _on_wl_seat_name_noop(void*           data,
 static void _on_xdg_toplevel_close(void*                data,
                                    struct xdg_toplevel* xdg_toplevel)
 {
-    WaylandBackend* b_end = (WaylandBackend*)data;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)data;
 
     AnvlEvent event = {
         .type         = ANVL_EVENT_TYPE_WINDOW_CLOSE,
@@ -625,7 +642,7 @@ static void _on_xdg_toplevel_configure(void*                data,
                                        int32                height,
                                        struct wl_array*     states)
 {
-    WaylandBackend* b_end = (WaylandBackend*)data;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)data;
 
     if (width > 0 && height > 0)
     {
@@ -686,7 +703,7 @@ static void _on_wl_keyboard_key(void*               data,
                                 uint32              key,
                                 uint32              state)
 {
-    WaylandBackend* b_end = (WaylandBackend*)data;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)data;
 
     AnvlEvent event = {0};
     event.handled   = false;
@@ -714,7 +731,7 @@ static void _on_wl_keyboard_modifier(void*               data,
                                      uint32              mods_locked,
                                      uint32              group)
 {
-    WaylandBackend* b_end = (WaylandBackend*)data;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)data;
 
     b_end->modifier_state = mods_depressed;
 }
@@ -748,7 +765,7 @@ static void _on_wl_pointer_motion(void*              data,
                                   wl_fixed_t         surface_x,
                                   wl_fixed_t         surface_y)
 {
-    WaylandBackend* b_end = (WaylandBackend*)data;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)data;
 
     b_end->pointer_x = (float32)wl_fixed_to_double(surface_x);
     b_end->pointer_y = (float32)wl_fixed_to_double(surface_y);
@@ -772,7 +789,7 @@ static void _on_wl_pointer_button(void*              data,
                                   uint32             button,
                                   uint32             state)
 {
-    WaylandBackend* b_end = (WaylandBackend*)data;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)data;
 
     AnvlEvent event = {0};
     event.handled   = false;
@@ -810,7 +827,7 @@ static void _on_wl_pointer_axis(void*              data,
                                 uint32             axis,
                                 wl_fixed_t         value)
 {
-    WaylandBackend* b_end = (WaylandBackend*)data;
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)data;
 
     AnvlEvent event = {0};
     event.handled   = false;

@@ -33,6 +33,7 @@ elseif(UNIX AND NOT APPLE)
         src/Windowing/Linux/Wayland/wayland_backend.c
         src/Windowing/Linux/Wayland/xdg_shell_client_protocol.c
         src/Windowing/Linux/Wayland/xdg_shell_decoration_protocol.c
+        src/Windowing/Linux/Wayland/egl_context.c
     )
 endif()
 
@@ -76,6 +77,13 @@ if(UNIX AND NOT APPLE)
     if(WAYLAND_CLIENT_LIBRARY AND WAYLAND_CLIENT_INCLUDE_DIR)
         target_link_libraries(Anvil PRIVATE ${WAYLAND_CLIENT_LIBRARY})
         target_include_directories(Anvil PRIVATE ${WAYLAND_CLIENT_INCLUDE_DIR})
+    endif()
+
+    #EGL / Wayland-EGL
+    find_library(WAYLAND_EGL_LIBRARY wayland-egl)
+    find_library(EGL_LIBRARY EGL)
+    if (WAYLAND_EGL_LIBRARY AND EGL_LIBRARY)
+      target_link_libraries(Anvil PRIVATE EGL wayland-egl)
     endif()
 endif()
 

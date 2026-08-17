@@ -37,7 +37,7 @@ static void  x11_events_poll_and_dispatch(void* backend);
 static void* x11_window_get_handle(void* backend);
 // clang-format on
 
-static const WindowBackend X11_BACKEND = {
+static const AnvlWindowBackend X11_BACKEND = {
     .backend_init                    = x11_backend_init,
     .backend_shutdown                = x11_backend_shutdown,
     .window_create                   = x11_window_create,
@@ -48,7 +48,7 @@ static const WindowBackend X11_BACKEND = {
     .window_get_handle               = x11_window_get_handle,
 };
 
-const WindowBackend* x11_backend()
+const AnvlWindowBackend* x11_backend()
 {
     //
     return &X11_BACKEND;

@@ -8,8 +8,8 @@
 
 typedef struct AnvlWindow
 {
-    const WindowBackend* backend;
-    void*                backend_data;
+    const AnvlWindowBackend* backend;
+    void*                    backend_data;
 } AnvlWindow;
 
 typedef enum WindowBackendType
@@ -19,11 +19,11 @@ typedef enum WindowBackendType
     ANVL_WINDOW_BACKEND_WAYLAND,
 } WindowBackendType;
 
-static void                 _set_event_callback(AnvlWindow*     window,
-                                                EventCallbackFn event_callback);
-static void                 _unset_event_callback(AnvlWindow* window);
-static const WindowBackend* _window_backend_create(AnvlWindow* window);
-static uint32               _window_backend_detect();
+static void                     _set_event_callback(AnvlWindow*     window,
+                                                    EventCallbackFn event_callback);
+static void                     _unset_event_callback(AnvlWindow* window);
+static const AnvlWindowBackend* _window_backend_create(AnvlWindow* window);
+static uint32                   _window_backend_detect();
 
 AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options)
 {
@@ -36,10 +36,7 @@ AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options)
     window->backend_data = window->backend->backend_init();
     ANVIL_ASSERT(window->backend_data != NULL);
 
-    window->backend->window_create(window->backend_data,
-                                   window_options.title,
-                                   window_options.width,
-                                   window_options.height);
+    window->backend->window_create(window->backend_data, window_options);
 
     _set_event_callback(window, anvl_layer_stack_dispatch_event);
 
@@ -90,7 +87,7 @@ void _unset_event_callback(AnvlWindow* window)
 }
 // clang-format on
 
-static const WindowBackend* _window_backend_create(AnvlWindow* window)
+static const AnvlWindowBackend* _window_backend_create(AnvlWindow* window)
 {
     WindowBackendType window_backend_type = _window_backend_detect();
     if (window_backend_type == ANVL_WINDOW_BACKEND_WAYLAND)
