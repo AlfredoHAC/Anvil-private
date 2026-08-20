@@ -13,7 +13,7 @@ struct AnvlWindow
     HWND      handle;
     HINSTANCE instance;
 
-    struct GraphicsContext
+    struct AnvlWGLGraphicsContext
     {
         HDC   device_context;
         HGLRC handle;

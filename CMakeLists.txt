@@ -30,6 +30,7 @@ elseif(UNIX AND NOT APPLE)
         src/FileIO/Linux/posix_file.c
         src/Windowing/Linux/linux_window.c
         src/Windowing/Linux/X11/x11_backend.c
+        src/Windowing/Linux/X11/glx_context.c
         src/Windowing/Linux/Wayland/wayland_backend.c
         src/Windowing/Linux/Wayland/xdg_shell_client_protocol.c
         src/Windowing/Linux/Wayland/xdg_shell_decoration_protocol.c
@@ -68,7 +69,7 @@ if(UNIX AND NOT APPLE)
     target_compile_definitions(Anvil PRIVATE _GNU_SOURCE)
     find_package(X11)
     if(X11_FOUND)
-        target_link_libraries(Anvil PRIVATE X11 xcb)
+      target_link_libraries(Anvil PRIVATE X11 X11-xcb xcb)
     endif()
 
     # Wayland client library

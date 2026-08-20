@@ -6,15 +6,16 @@
 #include <EGL/eglext.h>
 #include <wayland-egl-core.h>
 
-#define EMPTY_EGL_CONTEXT (AnvlGraphicsContext){0}
+#define EMPTY_EGL_CONTEXT (AnvlEGLGraphicsContext){0}
 
-AnvlGraphicsContext egl_context_create(struct wl_display*      display,
-                                       struct wl_surface*      surface,
-                                       const AnvlWindowOptions window_options)
+AnvlEGLGraphicsContext egl_context_create(
+    struct wl_display*      display,
+    struct wl_surface*      surface,
+    const AnvlWindowOptions window_options)
 {
     ANVIL_ASSERT(surface != NULL);
 
-    AnvlGraphicsContext context_data = {0};
+    AnvlEGLGraphicsContext context_data = {0};
 
     context_data.display =
         eglGetPlatformDisplay(EGL_PLATFORM_WAYLAND_EXT, display, NULL);
@@ -37,8 +38,7 @@ AnvlGraphicsContext egl_context_create(struct wl_display*      display,
     result = eglBindAPI(EGL_OPENGL_API);
     if (!result)
     {
-        ANVIL_CORE_ERROR("Failed to bind OpenGL API (0x%04X).",
-                         eglGetError());
+        ANVIL_CORE_ERROR("Failed to bind OpenGL API (0x%04X).", eglGetError());
         eglTerminate(context_data.display);
         return EMPTY_EGL_CONTEXT;
     }
@@ -62,10 +62,10 @@ AnvlGraphicsContext egl_context_create(struct wl_display*      display,
     EGLConfig egl_config   = NULL;
     EGLint    config_count = 0;
     result                 = eglChooseConfig(context_data.display,
-                             config_attributes,
-                             &egl_config,
-                             1,
-                             &config_count);
+                                             config_attributes,
+                                             &egl_config,
+                                             1,
+                                             &config_count);
     if (!result || config_count == 0)
     {
         ANVIL_CORE_ERROR("Could not retrieve a valid EGL config (0x%04X).",
@@ -135,11 +135,11 @@ AnvlGraphicsContext egl_context_create(struct wl_display*      display,
     return context_data;
 }
 
-void egl_context_destroy(AnvlGraphicsContext context)
+void egl_context_destroy(AnvlEGLGraphicsContext context)
 {
     ANVIL_ASSERT(memcmp(&context,
-                        &(AnvlGraphicsContext){0},
-                        sizeof(AnvlGraphicsContext)) != 0);
+                        &(AnvlEGLGraphicsContext){0},
+                        sizeof(AnvlEGLGraphicsContext)) != 0);
 
     eglMakeCurrent(context.display,
                    EGL_NO_SURFACE,

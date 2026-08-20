@@ -62,7 +62,7 @@ typedef struct AnvlWaylandBackend
     uint32 capabilities;
 
     // Graphics Context data
-    AnvlGraphicsContext context;
+    AnvlEGLGraphicsContext context;
 
     // AnvlEvent callback
     EventCallbackFn event_callback;
@@ -380,8 +380,8 @@ void wayland_window_destroy(void* backend)
     AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
 
     if (memcmp(&b_end->context,
-               &(AnvlGraphicsContext){0},
-               sizeof(AnvlGraphicsContext)) != 0)
+               &(AnvlEGLGraphicsContext){0},
+               sizeof(AnvlEGLGraphicsContext)) != 0)
     {
         egl_context_destroy(b_end->context);
     }
@@ -424,14 +424,17 @@ static void wayland_events_poll_and_dispatch(void* backend)
 
     int32         wl_display_fd = wl_display_get_fd(b_end->display);
     struct pollfd poll_fd       = {
-              .fd     = wl_display_fd,
-              .events = POLLIN,
+        .fd     = wl_display_fd,
+        .events = POLLIN,
     };
 
     poll(&poll_fd, 1, 0);
 
     if (poll_fd.revents & POLLIN) { wl_display_read_events(b_end->display); }
-    else { wl_display_cancel_read(b_end->display); }
+    else
+    {
+        wl_display_cancel_read(b_end->display);
+    }
 
     wl_display_dispatch_pending(b_end->display);
 }

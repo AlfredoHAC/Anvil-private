@@ -10,13 +10,13 @@
 
 typedef struct AnvlWaylandBackend AnvlWaylandBackend;
 
-typedef struct AnvlGraphicsContext
+typedef struct AnvlEGLGraphicsContext
 {
     struct wl_egl_window* egl_window;
     EGLDisplay            display;
     EGLSurface            surface;
     EGLContext            handle;
-} AnvlGraphicsContext;
+} AnvlEGLGraphicsContext;
 
 const AnvlWindowBackend* wayland_backend();
 
