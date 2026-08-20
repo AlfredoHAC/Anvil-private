@@ -13,11 +13,7 @@ struct AnvlWindow
     HWND      handle;
     HINSTANCE instance;
 
-    struct AnvlWGLGraphicsContext
-    {
-        HDC   device_context;
-        HGLRC handle;
-    } context;
+    AnvlWGLGraphicsContext context;
 
     EventCallbackFn event_callback;
 };
@@ -86,76 +82,13 @@ AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options)
     {
         wgl_context_load_extensions();
 
-        window->context.device_context = GetDC(window->handle);
-        if (!window->context.device_context)
-        {
-            ANVIL_CORE_ERROR("Failed to get window device context (0x%x).",
-                             GetLastError());
-            DestroyWindow(window->handle);
-            free(window);
-            return NULL;
-        }
-
-        // clang-format off
-        int32 pixel_format_attributes[] = {
-            WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
-            WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
-            WGL_DOUBLE_BUFFER_ARB,  GL_TRUE,
-            WGL_PIXEL_TYPE_ARB,     WGL_TYPE_RGBA_ARB,
-            WGL_COLOR_BITS_ARB,     window_options.graphics_requirements.red_bits   +
-                                    window_options.graphics_requirements.green_bits +
-                                    window_options.graphics_requirements.blue_bits  +
-                                    window_options.graphics_requirements.alpha_bits,
-            WGL_DEPTH_BITS_ARB,     window_options.graphics_requirements.depth_bits,
-            WGL_STENCIL_BITS_ARB,   window_options.graphics_requirements.stencil_bits,
-            WGL_SAMPLE_BUFFERS_ARB, window_options.graphics_requirements.sample_count > 0 ? GL_TRUE : GL_FALSE,
-            WGL_SAMPLES_ARB,        window_options.graphics_requirements.sample_count,
-            0
-        };
-        // clang-format on
-
-        int32  pixel_format_id    = 0;
-        uint32 pixel_format_count = 0;
-
-        bool result = wglChoosePixelFormatARB(window->context.device_context,
-                                              pixel_format_attributes,
-                                              NULL,
-                                              1,
-                                              &pixel_format_id,
-                                              &pixel_format_count);
-        if (!result || pixel_format_id == 0 || pixel_format_count == 0)
-        {
-            ANVIL_CORE_ERROR(
-                "Could not retrieve a valid Pixel Format config (0x%x).",
-                GetLastError());
-            ReleaseDC(window->handle, window->context.device_context);
-            DestroyWindow(window->handle);
-            free(window);
-            return NULL;
-        }
-        result = SetPixelFormat(window->context.device_context,
-                                pixel_format_id,
-                                NULL);
-        if (!result)
-        {
-            ANVIL_CORE_ERROR("Failed to set Pixel Format config (0x%x).",
-                             GetLastError());
-            ReleaseDC(window->handle, window->context.device_context);
-            DestroyWindow(window->handle);
-            free(window);
-            return NULL;
-        }
-
-        window->context.handle = wgl_context_create(
-            window->context.device_context,
-            window_options.graphics_requirements.major_version,
-            window_options.graphics_requirements.minor_version);
+        window->context =
+            wgl_context_create(window->handle,
+                               window_options.graphics_requirements);
         if (!window->context.handle)
         {
-            ReleaseDC(window->handle, window->context.device_context);
-            DestroyWindow(window->handle);
-            free(window);
-            return NULL;
+            ANVIL_CORE_WARN("Failed to create Window in OpenGL graphics mode.");
+            ANVIL_CORE_WARN("-> Falling back to default Window.");
         }
     }
 
@@ -183,12 +116,7 @@ void anvl_window_destroy(AnvlWindow* window)
 
     _unset_event_callback(window);
 
-    if (window->context.handle) { wgl_context_destroy(window->context.handle); }
-
-    if (window->context.device_context)
-    {
-        ReleaseDC(window->handle, window->context.device_context);
-    }
+    wgl_context_destroy(window->handle, &window->context);
 
     DestroyWindow(window->handle);
     UnregisterClassA(window_class_name, window->instance);

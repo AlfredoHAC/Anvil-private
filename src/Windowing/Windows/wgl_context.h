@@ -1,14 +1,20 @@
 #ifndef ANVIL_WGL_CONTEXT_HEADER
 #define ANVIL_WGL_CONTEXT_HEADER
 
-#include "Anvil/Core/types.h"
+#include "Anvil/Window/window.h"
 
 #include <windows.h>
 
-HGLRC wgl_context_create(HDC   device_context_handle,
-                         int32 major_version,
-                         int32 minor_version);
-void  wgl_context_destroy(HGLRC graphics_context_handle);
-bool  wgl_context_load_extensions();
+typedef struct AnvlWGLGraphicsContext
+{
+    HDC   device_context;
+    HGLRC handle;
+} AnvlWGLGraphicsContext;
+
+AnvlWGLGraphicsContext wgl_context_create(
+    HWND                                 window,
+    const struct AnvlGraphicRequirements graphics_requirements);
+void wgl_context_destroy(HWND window, AnvlWGLGraphicsContext* context);
+bool wgl_context_load_extensions();
 
 #endif // !ANVIL_WGL_CONTEXT_HEADER

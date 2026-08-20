@@ -3,28 +3,91 @@
 #include "Windowing/Windows/wgl_context.h"
 
 #include <glad/wgl.h>
-#include <windows.h>
 #include <wingdi.h>
 #include <winuser.h>
+
+#define ANVL_EMPTY_WGL_CONTEXT (AnvlWGLGraphicsContext){0}
 
 static void _dummy_cleanup(HWND        dummy_window,
                            HDC         dummy_device_context,
                            HGLRC       dummy_context,
-                           const_char* class_name,
+                           const char* class_name,
                            HINSTANCE   instance);
+static void _wgl_context_rollback(HWND window, AnvlWGLGraphicsContext* context);
 
 static bool wgl_extensions_loaded = false;
 
-HGLRC wgl_context_create(HDC   device_context_handle,
-                         int32 major_version,
-                         int32 minor_version)
+AnvlWGLGraphicsContext wgl_context_create(
+    HWND                                 window,
+    const struct AnvlGraphicRequirements graphics_requirements)
 {
-    ANVIL_ASSERT(device_context_handle != NULL);
+    AnvlWGLGraphicsContext context = {0};
+
+    context.device_context = GetDC(window);
+    if (!context.device_context)
+    {
+        ANVIL_CORE_ERROR("WGL Context not created:");
+        ANVIL_CORE_ERROR("-> Failed to get window device context (0x%x).",
+                         GetLastError());
+
+        return ANVL_EMPTY_WGL_CONTEXT;
+    }
 
     // clang-format off
-    int32 context_attributes_list[] = {
-        WGL_CONTEXT_MAJOR_VERSION_ARB, major_version,
-        WGL_CONTEXT_MINOR_VERSION_ARB, minor_version,
+    int32 pixel_format_attributes[] = {
+        WGL_DRAW_TO_WINDOW_ARB,     GL_TRUE,
+        WGL_SUPPORT_OPENGL_ARB,     GL_TRUE,
+        WGL_DOUBLE_BUFFER_ARB,      GL_TRUE,
+        WGL_PIXEL_TYPE_ARB,         WGL_TYPE_RGBA_ARB,
+        WGL_COLOR_BITS_ARB,         graphics_requirements.red_bits   +
+                                    graphics_requirements.green_bits +
+                                    graphics_requirements.blue_bits  +
+                                    graphics_requirements.alpha_bits,
+        WGL_DEPTH_BITS_ARB,         graphics_requirements.depth_bits,
+        WGL_STENCIL_BITS_ARB,       graphics_requirements.stencil_bits,
+        WGL_SAMPLE_BUFFERS_ARB,     graphics_requirements.sample_count > 0 ? GL_TRUE : GL_FALSE,
+        WGL_SAMPLES_ARB,            graphics_requirements.sample_count,
+        0
+    };
+    // clang-format on
+
+    int32  pixel_format_id    = 0;
+    uint32 pixel_format_count = 0;
+
+    bool result = wglChoosePixelFormatARB(context.device_context,
+                                          pixel_format_attributes,
+                                          NULL,
+                                          1,
+                                          &pixel_format_id,
+                                          &pixel_format_count);
+    if (!result || pixel_format_id == 0 || pixel_format_count == 0)
+    {
+        ANVIL_CORE_ERROR("WGL Context not created:");
+        ANVIL_CORE_ERROR(
+            "-> Could not retrieve a valid Pixel Format config (0x%x).",
+            GetLastError());
+
+        _wgl_context_rollback(window, &context);
+
+        return ANVL_EMPTY_WGL_CONTEXT;
+    }
+
+    result = SetPixelFormat(context.device_context, pixel_format_id, NULL);
+    if (!result)
+    {
+        ANVIL_CORE_ERROR("WGL Context not created:");
+        ANVIL_CORE_ERROR("-> Failed to set Pixel Format config (0x%x).",
+                         GetLastError());
+
+        _wgl_context_rollback(window, &context);
+
+        return ANVL_EMPTY_WGL_CONTEXT;
+    }
+
+    // clang-format off
+    int32 context_attributes[] = {
+        WGL_CONTEXT_MAJOR_VERSION_ARB, graphics_requirements.major_version,
+        WGL_CONTEXT_MINOR_VERSION_ARB, graphics_requirements.minor_version,
         WGL_CONTEXT_PROFILE_MASK_ARB,  WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
         #ifdef ANVIL_CONFIG_DEBUG
         WGL_CONTEXT_FLAGS_ARB,         WGL_CONTEXT_DEBUG_BIT_ARB,
@@ -35,37 +98,44 @@ HGLRC wgl_context_create(HDC   device_context_handle,
     };
     // clang-format on
 
-    HGLRC graphics_context_handle =
-        wglCreateContextAttribsARB(device_context_handle,
-                                   NULL,
-                                   context_attributes_list);
-    if (!graphics_context_handle)
+    context.handle = wglCreateContextAttribsARB(context.device_context,
+                                                NULL,
+                                                context_attributes);
+    if (!context.handle)
     {
-        ANVIL_CORE_ERROR(
-            "Failed to create graphics context to the given attributes (0x%x).",
-            GetLastError());
-        return NULL;
+        ANVIL_CORE_ERROR("WGL Context not created:");
+        ANVIL_CORE_ERROR("-> Failed to create graphics context to the given "
+                         "attributes (0x%x).",
+                         GetLastError());
+
+        _wgl_context_rollback(window, &context);
+
+        return ANVL_EMPTY_WGL_CONTEXT;
     }
 
-    bool result =
-        wglMakeCurrent(device_context_handle, graphics_context_handle);
+    result = wglMakeCurrent(context.device_context, context.handle);
     if (!result)
     {
-        ANVIL_CORE_ERROR("Failed to make graphics context current (0x%x).",
+        ANVIL_CORE_ERROR("WGL Context not created:");
+        ANVIL_CORE_ERROR("-> Failed to make graphics context current (0x%x).",
                          GetLastError());
-        wglDeleteContext(graphics_context_handle);
-        return NULL;
+
+        _wgl_context_rollback(window, &context);
+
+        return ANVL_EMPTY_WGL_CONTEXT;
     }
 
-    return graphics_context_handle;
+    return context;
 }
 
-void wgl_context_destroy(HGLRC graphics_context_handle)
+void wgl_context_destroy(HWND window, AnvlWGLGraphicsContext* context)
 {
-    ANVIL_ASSERT(graphics_context_handle != NULL);
+    if (context->handle || context->device_context)
+    {
+        _wgl_context_rollback(window, context);
+    }
 
-    wglMakeCurrent(NULL, NULL);
-    wglDeleteContext((HGLRC)graphics_context_handle);
+    memset(context, 0, sizeof(AnvlWGLGraphicsContext));
 }
 
 bool wgl_context_load_extensions()
@@ -231,4 +301,15 @@ static void _dummy_cleanup(HWND        dummy_window,
     if (dummy_device_context) { ReleaseDC(dummy_window, dummy_device_context); }
     if (dummy_window) { DestroyWindow(dummy_window); }
     if (class_name && instance) { UnregisterClassA(class_name, instance); }
+}
+
+static void _wgl_context_rollback(HWND window, AnvlWGLGraphicsContext* context)
+{
+    if (context->handle)
+    {
+        wglMakeCurrent(NULL, NULL);
+        wglDeleteContext(context->handle);
+    }
+
+    if (context->device_context) { ReleaseDC(window, context->device_context); }
 }
