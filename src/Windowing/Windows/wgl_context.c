@@ -7,6 +7,12 @@
 #include <wingdi.h>
 #include <winuser.h>
 
+static void _dummy_cleanup(HWND        dummy_window,
+                           HDC         dummy_device_context,
+                           HGLRC       dummy_context,
+                           const_char* class_name,
+                           HINSTANCE   instance);
+
 static bool wgl_extensions_loaded = false;
 
 HGLRC wgl_context_create(HDC   device_context_handle,
@@ -62,22 +68,32 @@ void wgl_context_destroy(HGLRC graphics_context_handle)
     wglDeleteContext((HGLRC)graphics_context_handle);
 }
 
-void wgl_context_load_extensions()
+bool wgl_context_load_extensions()
 {
-    if (wgl_extensions_loaded) { return; }
+    if (wgl_extensions_loaded) { return true; }
+
+    const char* class_name = "anvl_dummy_window_class";
+    HINSTANCE   instance   = GetModuleHandle(NULL);
 
     WNDCLASSEX dummy_window_class = {
-        .hInstance     = GetModuleHandle(NULL),
+        .hInstance     = instance,
         .cbSize        = sizeof(WNDCLASSEX),
         .style         = CS_OWNDC,
-        .lpszClassName = "anvl_dummy_window_class",
+        .lpszClassName = class_name,
         .lpfnWndProc   = DefWindowProc,
     };
     ATOM registered = RegisterClassEx(&dummy_window_class);
-    ANVIL_ASSERT(registered != 0);
+    if (!registered)
+    {
+        ANVIL_CORE_ERROR("WGL Extensions not loaded:");
+        ANVIL_CORE_ERROR("-> Failed to register Dummy Window class (0x%04x).",
+                         GetLastError());
+
+        return false;
+    }
 
     HWND dummy_window = CreateWindowEx(0,
-                                       "anvl_dummy_window_class",
+                                       class_name,
                                        "Dummy Window",
                                        WS_OVERLAPPEDWINDOW,
                                        CW_USEDEFAULT,
@@ -88,10 +104,29 @@ void wgl_context_load_extensions()
                                        NULL,
                                        dummy_window_class.hInstance,
                                        NULL);
-    ANVIL_ASSERT(dummy_window != NULL);
+    if (!dummy_window)
+    {
+        ANVIL_CORE_ERROR("WGL Extensions not loaded:");
+        ANVIL_CORE_ERROR("-> Failed to create Dummy Window (0x%04x).",
+                         GetLastError());
+
+        _dummy_cleanup(NULL, NULL, NULL, class_name, instance);
+
+        return false;
+    }
 
     HDC dummy_device_context = GetDC(dummy_window);
-    ANVIL_ASSERT(dummy_device_context != NULL);
+    if (!dummy_device_context)
+    {
+        ANVIL_CORE_ERROR("WGL Extensions not loaded:");
+        ANVIL_CORE_ERROR(
+            "-> Failed to get Dummy Window device context (0x%04x).",
+            GetLastError());
+
+        _dummy_cleanup(dummy_window, NULL, NULL, class_name, instance);
+
+        return false;
+    }
 
     PIXELFORMATDESCRIPTOR dummy_pixel_format_descriptor = {
         .nSize    = sizeof(PIXELFORMATDESCRIPTOR),
@@ -109,21 +144,91 @@ void wgl_context_load_extensions()
     bool result = SetPixelFormat(dummy_device_context,
                                  dummy_pixel_format,
                                  &dummy_pixel_format_descriptor);
-    ANVIL_ASSERT(result);
+    if (!result)
+    {
+        ANVIL_CORE_ERROR("WGL Extensions not loaded:");
+        ANVIL_CORE_ERROR("-> Failed to set Pixel Format (0x%04x).",
+                         GetLastError());
+
+        _dummy_cleanup(dummy_window,
+                       dummy_device_context,
+                       NULL,
+                       class_name,
+                       instance);
+
+        return false;
+    }
 
     HGLRC dummy_context = wglCreateContext(dummy_device_context);
-    wglMakeCurrent(dummy_device_context, dummy_context);
+    if (!dummy_context)
+    {
+        ANVIL_CORE_ERROR("WGL Extensions not loaded:");
+        ANVIL_CORE_ERROR("-> Failed to create Dummy Context (0x%04x).",
+                         GetLastError());
 
-    int version =
-        gladLoadWGL(dummy_device_context, (GLADloadfunc)wglGetProcAddress);
-    ANVIL_ASSERT(version >= GLAD_MAKE_VERSION(1, 0));
+        _dummy_cleanup(dummy_window,
+                       dummy_device_context,
+                       NULL,
+                       class_name,
+                       instance);
+
+        return false;
+    }
+
+    result = wglMakeCurrent(dummy_device_context, dummy_context);
+    if (!result)
+    {
+        ANVIL_CORE_ERROR("WGL Extensions not loaded:");
+        ANVIL_CORE_ERROR("-> Failed to make Dummy Context current (0x%04x).",
+                         GetLastError());
+
+        _dummy_cleanup(dummy_window,
+                       dummy_device_context,
+                       dummy_context,
+                       class_name,
+                       instance);
+
+        return false;
+    }
+
+    int32 version = gladLoaderLoadWGL(dummy_device_context);
+    if (version < GLAD_MAKE_VERSION(1, 0))
+    {
+        ANVIL_CORE_ERROR("WGL Extensions not loaded:")
+        ANVIL_CORE_ERROR("-> Failed to load GLAD.");
+
+        _dummy_cleanup(dummy_window,
+                       dummy_device_context,
+                       dummy_context,
+                       class_name,
+                       instance);
+
+        return false;
+    }
 
     wgl_extensions_loaded = true;
 
-    wglMakeCurrent(NULL, NULL);
-    wglDeleteContext(dummy_context);
-    ReleaseDC(dummy_window, dummy_device_context);
-    DestroyWindow(dummy_window);
-    UnregisterClassA(dummy_window_class.lpszClassName,
-                     dummy_window_class.hInstance);
+    _dummy_cleanup(dummy_window,
+                   dummy_device_context,
+                   dummy_context,
+                   class_name,
+                   instance);
+}
+
+static void _dummy_cleanup(HWND        dummy_window,
+                           HDC         dummy_device_context,
+                           HGLRC       dummy_context,
+                           const char* class_name,
+                           HINSTANCE   instance)
+{
+
+    if (dummy_context)
+    {
+        wglMakeCurrent(NULL, NULL);
+        wglDeleteContext(dummy_context);
+    }
+
+    if (dummy_device_context) { ReleaseDC(dummy_window, dummy_device_context); }
+    if (dummy_window) { DestroyWindow(dummy_window); }
+    if (class_name && instance) { UnregisterClassA(class_name, instance); }
 }
