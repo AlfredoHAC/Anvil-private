@@ -211,6 +211,21 @@ bool wgl_context_load_extensions()
 
     int32 dummy_pixel_format =
         ChoosePixelFormat(dummy_device_context, &dummy_pixel_format_descriptor);
+    if (!dummy_pixel_format)
+    {
+        ANVIL_CORE_ERROR("WGL Extensions not loaded:");
+        ANVIL_CORE_ERROR("-> Failed to get valid Pixel Format (0x%04x).",
+                         GetLastError());
+
+        _dummy_cleanup(dummy_window,
+                       dummy_device_context,
+                       NULL,
+                       class_name,
+                       instance);
+
+        return false;
+    }
+
     bool result = SetPixelFormat(dummy_device_context,
                                  dummy_pixel_format,
                                  &dummy_pixel_format_descriptor);
