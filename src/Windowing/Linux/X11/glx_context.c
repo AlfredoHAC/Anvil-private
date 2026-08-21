@@ -2,13 +2,15 @@
 
 #include "Windowing/Linux/X11/glx_context.h"
 
-GLXContext glx_context_create(Display*    display,
-                              GLXFBConfig fbconfig,
-                              int32       major_version,
-                              int32       minor_version)
-{
-    ANVIL_ASSERT(display != NULL);
+static void _glx_context_rollback(Display*                display,
+                                  GLXWindow               glx_window,
+                                  AnvlGLXGraphicsContext* context);
 
+GLXContext glx_context_create(Display*                display,
+                              AnvlGLXGraphicsContext* context,
+                              int32                   major_version,
+                              int32                   minor_version)
+{
     // clang-format off
     int32 context_attributes[] = {
         GLX_CONTEXT_MAJOR_VERSION_ARB, major_version,
@@ -23,43 +25,51 @@ GLXContext glx_context_create(Display*    display,
     };
     // clang-format on
 
-    GLXContext context = glXCreateContextAttribsARB(display,
-                                                    fbconfig,
-                                                    NULL,
-                                                    true,
-                                                    context_attributes);
-    if (!context)
+    GLXContext glx_context = glXCreateContextAttribsARB(display,
+                                                        context->fbconfig,
+                                                        None,
+                                                        true,
+                                                        context_attributes);
+    if (!glx_context)
     {
-        ANVIL_CORE_ERROR("Failed to create GLX context.");
-        return NULL;
+        ANVIL_CORE_ERROR("GLX context not created:");
+        ANVIL_CORE_ERROR("-> Failed to create GLX context.");
+
+        _glx_context_rollback(display, None, context);
+
+        return None;
     }
 
-    return context;
+    return glx_context;
 }
 
-GLXWindow glx_context_make_current(Display*     display,
-                                   GLXFBConfig  fbconfig,
-                                   xcb_window_t window,
-                                   GLXContext   context)
+GLXWindow glx_context_make_current(Display*                display,
+                                   xcb_window_t            window,
+                                   AnvlGLXGraphicsContext* context)
 {
-    ANVIL_ASSERT(display != NULL && window != 0 && context != NULL);
-
     GLXWindow glx_window =
-        glXCreateWindow(display, fbconfig, (Window)window, NULL);
+        glXCreateWindow(display, context->fbconfig, (Window)window, NULL);
     if (!glx_window)
     {
-        ANVIL_CORE_ERROR("Failed to create GLX window.");
+        ANVIL_CORE_ERROR("GLX context not created:");
+        ANVIL_CORE_ERROR("-> Failed to create GLX window.");
+
+        _glx_context_rollback(display, None, context);
+
         return None;
     }
 
     bool result = glXMakeContextCurrent(display,
                                         (Window)glx_window,
                                         (Window)glx_window,
-                                        context);
+                                        context->handle);
     if (!result)
     {
-        ANVIL_CORE_ERROR("Failed to make GLX context current.");
-        glXDestroyWindow(display, glx_window);
+        ANVIL_CORE_ERROR("GLX context not created:");
+        ANVIL_CORE_ERROR("-> Failed to make GLX context current.");
+
+        _glx_context_rollback(display, glx_window, context);
+
         return None;
     }
 
@@ -68,13 +78,7 @@ GLXWindow glx_context_make_current(Display*     display,
 
 void glx_context_destroy(Display* display, AnvlGLXGraphicsContext* context)
 {
-    ANVIL_ASSERT(context != NULL);
-
-    glXMakeContextCurrent(display, None, None, NULL);
-    glXDestroyContext(display, context->handle);
-
-    if (context->glx_window) { glXDestroyWindow(display, context->glx_window); }
-    if (context->visual) { XFree(context->visual); }
+    _glx_context_rollback(display, None, context);
 
     memset(context, 0, sizeof(AnvlGLXGraphicsContext));
 }
@@ -133,4 +137,34 @@ XVisualInfo* glx_context_get_visual_info(Display* display, GLXFBConfig fbconfig)
     }
 
     return visual;
+}
+
+bool glx_context_load_extensions(Display* display)
+{
+    int32 version = gladLoaderLoadGLX(display, DefaultScreen(display));
+    if (version < GLAD_MAKE_VERSION(1, 3))
+    {
+        ANVIL_CORE_ERROR("GLX context not created:");
+        ANVIL_CORE_ERROR("-> Failed to load GLAD.");
+
+        return false;
+    }
+
+    return true;
+}
+
+static void _glx_context_rollback(Display*                display,
+                                  GLXWindow               glx_window,
+                                  AnvlGLXGraphicsContext* context)
+{
+    if (context->handle) { glXMakeContextCurrent(display, None, None, NULL); }
+
+    if (glx_window || context->glx_window)
+    {
+        glXDestroyWindow(display, context->glx_window);
+    }
+
+    if (context->handle) { glXDestroyContext(display, context->handle); }
+
+    if (context->visual) { XFree(context->visual); }
 }

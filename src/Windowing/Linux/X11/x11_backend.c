@@ -167,26 +167,29 @@ static void x11_window_create(void*                   backend,
 
     if (window_options.graphics_mode == ANVL_WINDOW_GRAPHICS_MODE_OPENGL)
     {
-        int32 version = gladLoaderLoadGLX(b_end->x11_display,
-                                          DefaultScreen(b_end->x11_display));
-        if (version < GLAD_MAKE_VERSION(1, 3)) { return; }
+        bool glx_extensions_loaded =
+            glx_context_load_extensions(b_end->x11_display);
 
         b_end->context.fbconfig =
             glx_context_choose_fbconfig(b_end->x11_display,
                                         window_options.graphics_requirements);
-        if (!b_end->context.fbconfig) { return; }
 
-        b_end->context.visual =
-            glx_context_get_visual_info(b_end->x11_display,
-                                        b_end->context.fbconfig);
-        if (!b_end->context.visual) { return; }
+        if (b_end->context.fbconfig)
+        {
+            b_end->context.visual =
+                glx_context_get_visual_info(b_end->x11_display,
+                                            b_end->context.fbconfig);
+        }
 
-        b_end->context.handle = glx_context_create(
-            b_end->x11_display,
-            b_end->context.fbconfig,
-            window_options.graphics_requirements.major_version,
-            window_options.graphics_requirements.minor_version);
-        if (!b_end->context.handle) { return; }
+        if (!glx_extensions_loaded || !b_end->context.fbconfig ||
+            !b_end->context.visual)
+        {
+            ANVIL_CORE_WARN("Failed to create Window in OpenGL graphics mode.");
+            ANVIL_CORE_WARN("-> Falling back to default Window.");
+
+            b_end->context.fbconfig = NULL;
+            b_end->context.visual   = NULL;
+        }
     }
 
     xcb_visualid_t window_visual = b_end->context.visual
@@ -229,21 +232,27 @@ static void x11_window_create(void*                   backend,
                       mask,                          // Bitmask list
                       mask_values);                  // Mask values (array)
 
-    if (b_end->context.handle &&
+    if (b_end->context.fbconfig && b_end->context.visual &&
         window_options.graphics_mode == ANVL_WINDOW_GRAPHICS_MODE_OPENGL)
     {
-        b_end->context.glx_window =
-            glx_context_make_current(b_end->x11_display,
-                                     b_end->context.fbconfig,
-                                     b_end->window_id,
-                                     b_end->context.handle);
-        if (!b_end->context.glx_window)
+        b_end->context.handle = glx_context_create(
+            b_end->x11_display,
+            &b_end->context,
+            window_options.graphics_requirements.major_version,
+            window_options.graphics_requirements.minor_version);
+
+        if (b_end->context.handle)
         {
-            xcb_destroy_window(b_end->xcb_display, b_end->window_id);
-            xcb_free_colormap(b_end->xcb_display, b_end->colormap_id);
-            xcb_flush(b_end->xcb_display);
-            b_end->window_id = 0;
-            return;
+            b_end->context.glx_window =
+                glx_context_make_current(b_end->x11_display,
+                                         b_end->window_id,
+                                         &b_end->context);
+        }
+
+        if (!b_end->context.handle || !b_end->context.glx_window)
+        {
+            ANVIL_CORE_WARN("Failed to create Window in OpenGL graphics mode.");
+            ANVIL_CORE_WARN("-> Falling back to default Window.");
         }
     }
 
