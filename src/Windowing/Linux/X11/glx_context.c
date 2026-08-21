@@ -159,10 +159,8 @@ static void _glx_context_rollback(Display*                display,
 {
     if (context->handle) { glXMakeContextCurrent(display, None, None, NULL); }
 
-    if (glx_window || context->glx_window)
-    {
-        glXDestroyWindow(display, context->glx_window);
-    }
+    GLXWindow context_window = glx_window ? glx_window : context->glx_window;
+    if (context_window) { glXDestroyWindow(display, context_window); }
 
     if (context->handle) { glXDestroyContext(display, context->handle); }
 
