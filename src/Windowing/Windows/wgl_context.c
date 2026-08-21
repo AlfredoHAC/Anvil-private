@@ -264,7 +264,7 @@ bool wgl_context_load_extensions()
     int32 version = gladLoaderLoadWGL(dummy_device_context);
     if (version < GLAD_MAKE_VERSION(1, 0))
     {
-        ANVIL_CORE_ERROR("WGL Extensions not loaded:")
+        ANVIL_CORE_ERROR("WGL Extensions not loaded:");
         ANVIL_CORE_ERROR("-> Failed to load GLAD.");
 
         _dummy_cleanup(dummy_window,
@@ -283,6 +283,8 @@ bool wgl_context_load_extensions()
                    dummy_context,
                    class_name,
                    instance);
+
+    return true;
 }
 
 static void _dummy_cleanup(HWND        dummy_window,
