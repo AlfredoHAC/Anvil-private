@@ -8,6 +8,8 @@
 
 #define EMPTY_EGL_CONTEXT (AnvlEGLGraphicsContext){0}
 
+static void _egl_context_rollback(AnvlEGLGraphicsContext* context);
+
 AnvlEGLGraphicsContext egl_context_create(
     struct wl_display*      display,
     struct wl_surface*      surface,
@@ -21,8 +23,10 @@ AnvlEGLGraphicsContext egl_context_create(
         eglGetPlatformDisplay(EGL_PLATFORM_WAYLAND_EXT, display, NULL);
     if (context_data.display == EGL_NO_DISPLAY)
     {
-        ANVIL_CORE_ERROR("Failed to obtain EGL display (0x%04X).",
+        ANVIL_CORE_ERROR("EGL context not created:");
+        ANVIL_CORE_ERROR("-> Failed to obtain EGL display (0x%04X).",
                          eglGetError());
+
         return EMPTY_EGL_CONTEXT;
     }
 
@@ -31,15 +35,24 @@ AnvlEGLGraphicsContext egl_context_create(
         eglInitialize(context_data.display, &major_version, &minor_version);
     if (!result)
     {
-        ANVIL_CORE_ERROR("Failed to initialize EGL (0x%04X).", eglGetError());
+        ANVIL_CORE_ERROR("EGL context not created:");
+        ANVIL_CORE_ERROR("-> Failed to initialize EGL (0x%04X).",
+                         eglGetError());
+
+        _egl_context_rollback(&context_data);
+
         return EMPTY_EGL_CONTEXT;
     }
 
     result = eglBindAPI(EGL_OPENGL_API);
     if (!result)
     {
-        ANVIL_CORE_ERROR("Failed to bind OpenGL API (0x%04X).", eglGetError());
-        eglTerminate(context_data.display);
+        ANVIL_CORE_ERROR("EGL context not created:");
+        ANVIL_CORE_ERROR("-> Failed to bind OpenGL API (0x%04X).",
+                         eglGetError());
+
+        _egl_context_rollback(&context_data);
+
         return EMPTY_EGL_CONTEXT;
     }
 
@@ -68,15 +81,29 @@ AnvlEGLGraphicsContext egl_context_create(
                                              &config_count);
     if (!result || config_count == 0)
     {
-        ANVIL_CORE_ERROR("Could not retrieve a valid EGL config (0x%04X).",
+        ANVIL_CORE_ERROR("EGL context not created:");
+        ANVIL_CORE_ERROR("-> Could not retrieve a valid EGL config (0x%04X).",
                          eglGetError());
-        eglTerminate(context_data.display);
+
+        _egl_context_rollback(&context_data);
+
         return EMPTY_EGL_CONTEXT;
     }
 
     context_data.egl_window = wl_egl_window_create(surface,
                                                    window_options.width,
                                                    window_options.height);
+    if (!context_data.egl_window)
+    {
+        ANVIL_CORE_ERROR("EGL context not created:");
+        ANVIL_CORE_ERROR("-> Failed to create EGL window (0x%04X).",
+                         eglGetError());
+
+        _egl_context_rollback(&context_data);
+
+        return EMPTY_EGL_CONTEXT;
+    }
+
     context_data.surface =
         eglCreateWindowSurface(context_data.display,
                                egl_config,
@@ -84,10 +111,12 @@ AnvlEGLGraphicsContext egl_context_create(
                                NULL);
     if (context_data.surface == EGL_NO_SURFACE)
     {
-        ANVIL_CORE_ERROR("Failed to create EGL surface (0x%04X).",
+        ANVIL_CORE_ERROR("EGL context not created:");
+        ANVIL_CORE_ERROR("-> Failed to create EGL surface (0x%04X).",
                          eglGetError());
-        wl_egl_window_destroy(context_data.egl_window);
-        eglTerminate(context_data.display);
+
+        _egl_context_rollback(&context_data);
+
         return EMPTY_EGL_CONTEXT;
     }
 
@@ -109,11 +138,12 @@ AnvlEGLGraphicsContext egl_context_create(
                                            context_attributes);
     if (context_data.handle == EGL_NO_CONTEXT)
     {
-        ANVIL_CORE_ERROR("Failed to create EGL context (0x%04X).",
+        ANVIL_CORE_ERROR("EGL context not created:");
+        ANVIL_CORE_ERROR("-> Failed to create EGL context (0x%04X).",
                          eglGetError());
-        eglDestroySurface(context_data.display, context_data.surface);
-        wl_egl_window_destroy(context_data.egl_window);
-        eglTerminate(context_data.display);
+
+        _egl_context_rollback(&context_data);
+
         return EMPTY_EGL_CONTEXT;
     }
 
@@ -123,30 +153,43 @@ AnvlEGLGraphicsContext egl_context_create(
                             context_data.handle);
     if (!result)
     {
-        ANVIL_CORE_ERROR("Failed to create make EGL context current (0x%04X).",
-                         eglGetError());
-        eglDestroyContext(context_data.display, context_data.handle);
-        eglDestroySurface(context_data.display, context_data.surface);
-        wl_egl_window_destroy(context_data.egl_window);
-        eglTerminate(context_data.display);
+        ANVIL_CORE_ERROR("EGL context not created:");
+        ANVIL_CORE_ERROR(
+            "-> Failed to create make EGL context current (0x%04X).",
+            eglGetError());
+
+        _egl_context_rollback(&context_data);
+
         return EMPTY_EGL_CONTEXT;
     }
 
     return context_data;
 }
 
-void egl_context_destroy(AnvlEGLGraphicsContext context)
+void egl_context_destroy(AnvlEGLGraphicsContext* context)
 {
-    ANVIL_ASSERT(memcmp(&context,
-                        &(AnvlEGLGraphicsContext){0},
-                        sizeof(AnvlEGLGraphicsContext)) != 0);
+    _egl_context_rollback(context);
 
-    eglMakeCurrent(context.display,
-                   EGL_NO_SURFACE,
-                   EGL_NO_SURFACE,
-                   EGL_NO_CONTEXT);
-    eglDestroyContext(context.display, context.handle);
-    eglDestroySurface(context.display, context.surface);
-    wl_egl_window_destroy(context.egl_window);
-    eglTerminate(context.display);
+    memset(context, 0, sizeof(AnvlEGLGraphicsContext));
+}
+
+static void _egl_context_rollback(AnvlEGLGraphicsContext* context)
+{
+    if (context->handle != EGL_NO_CONTEXT)
+    {
+        eglMakeCurrent(context->display,
+                       EGL_NO_SURFACE,
+                       EGL_NO_SURFACE,
+                       EGL_NO_CONTEXT);
+        eglDestroyContext(context->display, context->handle);
+    }
+
+    if (context->surface != EGL_NO_SURFACE)
+    {
+        eglDestroySurface(context->display, context->surface);
+    }
+
+    if (context->egl_window) { wl_egl_window_destroy(context->egl_window); }
+
+    if (context->display != EGL_NO_DISPLAY) { eglTerminate(context->display); }
 }

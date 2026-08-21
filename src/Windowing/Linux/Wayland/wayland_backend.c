@@ -357,6 +357,11 @@ static void wayland_window_create(void*                   backend,
     {
         b_end->context =
             egl_context_create(b_end->display, b_end->surface, window_options);
+        if (!b_end->context.handle)
+        {
+            ANVIL_CORE_WARN("Failed to create Window in OpenGL graphics mode.");
+            ANVIL_CORE_WARN("-> Falling back to default Window.");
+        }
     }
 }
 
@@ -379,11 +384,9 @@ void wayland_window_destroy(void* backend)
 {
     AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
 
-    if (memcmp(&b_end->context,
-               &(AnvlEGLGraphicsContext){0},
-               sizeof(AnvlEGLGraphicsContext)) != 0)
+    if (b_end->context.handle)
     {
-        egl_context_destroy(b_end->context);
+        egl_context_destroy(&b_end->context);
     }
 
     if (b_end->dc_object)
