@@ -2,15 +2,18 @@
 
 #include "Core/layer.h"
 #include "Window/window.h"
+#include "Windowing/Windows/wgl_context.h"
 
+#include <glad/wgl.h>
 #include <windows.h>
 #include <windowsx.h>
-#include <winuser.h>
 
 struct AnvlWindow
 {
     HWND      handle;
     HINSTANCE instance;
+
+    AnvlWGLGraphicsContext context;
 
     EventCallbackFn event_callback;
 };
@@ -28,11 +31,15 @@ static LRESULT CALLBACK _native_window_proc(HWND   hwnd,
                                             LPARAM lparam);
 static void             _peek_and_dispatch_win32_messages(AnvlWindow* window);
 
+static const char* window_class_name = "anvl_main_window_class";
+
 AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options)
 {
     AnvlWindow* window = malloc(sizeof(AnvlWindow));
-    memset(window, 0, sizeof(AnvlWindow));
     ANVIL_ASSERT(window != NULL);
+    memset(window, 0, sizeof(AnvlWindow));
+
+    window->instance = GetModuleHandle(NULL);
 
     WNDCLASSEXA window_class   = {0};
     window_class.style         = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
@@ -40,11 +47,13 @@ AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options)
     window_class.cbSize        = sizeof(WNDCLASSEXA);
     window_class.lpfnWndProc   = _native_window_proc;
     window_class.hInstance     = window->instance;
-    window_class.lpszClassName = "ANVL Main Window";
+    window_class.lpszClassName = window_class_name;
     window_class.hIcon         = NULL;
 
     if (!RegisterClassExA(&window_class))
     {
+        ANVIL_CORE_ERROR("Failed to register window class (0x%x).",
+                         GetLastError());
         free(window);
         return NULL;
     }
@@ -64,12 +73,36 @@ AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options)
 
     if (!window->handle)
     {
+        ANVIL_CORE_ERROR("Failed to create window (0x%x).", GetLastError());
         free(window);
         return NULL;
     }
 
     SetWindowLongPtrA(window->handle, GWLP_USERDATA, (LONG_PTR)window);
     _set_event_callback(window, anvl_layer_stack_dispatch_event);
+
+    if (window_options.graphics_mode == ANVL_WINDOW_GRAPHICS_MODE_OPENGL)
+    {
+        bool wgl_extensions_loaded = wgl_context_load_extensions();
+        if (!wgl_extensions_loaded)
+        {
+            ANVIL_CORE_WARN(
+                "Failed to create Window in OpenGL graphics mode.");
+            ANVIL_CORE_WARN("-> Falling back to default Window.");
+
+            return window;
+        }
+
+        window->context =
+            wgl_context_create(window->handle,
+                                window_options.graphics_requirements);
+        if (!window->context.handle)
+        {
+            ANVIL_CORE_WARN(
+                "Failed to create Window in OpenGL graphics mode.");
+            ANVIL_CORE_WARN("-> Falling back to default Window.");
+        }
+    }
 
     return window;
 }
@@ -88,30 +121,24 @@ void anvl_window_update(AnvlWindow* window)
 
 void anvl_window_destroy(AnvlWindow* window)
 {
-    if (window)
-    {
-        _unset_event_callback(window);
+    ANVIL_ASSERT(window != NULL);
 
-        if (window->instance)
-        {
-            UnregisterClassA("ANVL Main Window", window->instance);
-            window->instance = NULL;
-        }
+    _unset_event_callback(window);
 
-        if (window->handle)
-        {
-            DestroyWindow(window->handle);
-            window->handle = NULL;
-        }
+    wgl_context_destroy(window->handle, &window->context);
 
-        free(window);
-    }
+    DestroyWindow(window->handle);
+    UnregisterClassA(window_class_name, window->instance);
+
+    free(window);
 }
 
+// clang-format off
 void* anvl_window_get_handle(const AnvlWindow* window)
 {
     return (void*)window->handle;
 }
+// clang-format on
 
 void _set_event_callback(AnvlWindow* window, EventCallbackFn event_callback)
 {

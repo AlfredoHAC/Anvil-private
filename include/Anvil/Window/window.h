@@ -10,11 +10,32 @@ typedef struct AnvlWindow AnvlWindow;
 // AnvlEvent callback function pointer type
 typedef void (*EventCallbackFn)(AnvlEvent* event);
 
+typedef enum AnvlWindowGraphicsMode
+{
+    ANVL_WINDOW_GRAPHICS_MODE_NONE = 0,
+    ANVL_WINDOW_GRAPHICS_MODE_OPENGL
+} AnvlWindowGraphicsMode;
+
 typedef struct AnvlWindowOptions
 {
     const char* title;
     uint16      width;
     uint16      height;
+
+    AnvlWindowGraphicsMode graphics_mode;
+    struct AnvlGraphicRequirements
+    {
+        int32 red_bits;
+        int32 green_bits;
+        int32 blue_bits;
+        int32 alpha_bits;
+        int32 depth_bits;
+        int32 stencil_bits;
+        int32 sample_count;
+
+        int32 major_version;
+        int32 minor_version;
+    } graphics_requirements;
 } AnvlWindowOptions;
 
 AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options);

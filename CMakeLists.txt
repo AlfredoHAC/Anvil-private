@@ -4,6 +4,11 @@ project(Anvil LANGUAGES C)
 # Export compile_commands.json for linters
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Include ThirdParty (glad, glm, stb_image, WGLExt)
+if(NOT TARGET glad)
+    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty" ThirdParty)
+endif()
+
 add_library(Anvil STATIC
     src/anvlpch.c
     src/Core/application.c
@@ -18,18 +23,22 @@ if(WIN32)
     target_sources(Anvil PRIVATE
         src/FileIO/Windows/win32_file.c
         src/Windowing/Windows/win32_window.c
+        src/Windowing/Windows/wgl_context.c
     )
 elseif(UNIX AND NOT APPLE)
     target_sources(Anvil PRIVATE
         src/FileIO/Linux/posix_file.c
         src/Windowing/Linux/linux_window.c
         src/Windowing/Linux/X11/x11_backend.c
+        src/Windowing/Linux/X11/glx_context.c
         src/Windowing/Linux/Wayland/wayland_backend.c
         src/Windowing/Linux/Wayland/xdg_shell_client_protocol.c
         src/Windowing/Linux/Wayland/xdg_shell_decoration_protocol.c
+        src/Windowing/Linux/Wayland/egl_context.c
     )
 endif()
 
+target_link_libraries(Anvil PUBLIC glad)
 target_include_directories(Anvil PUBLIC include)
 target_include_directories(Anvil PRIVATE
     src
@@ -60,7 +69,7 @@ if(UNIX AND NOT APPLE)
     target_compile_definitions(Anvil PRIVATE _GNU_SOURCE)
     find_package(X11)
     if(X11_FOUND)
-        target_link_libraries(Anvil PRIVATE X11 xcb)
+      target_link_libraries(Anvil PRIVATE X11 X11-xcb xcb)
     endif()
 
     # Wayland client library
@@ -69,6 +78,13 @@ if(UNIX AND NOT APPLE)
     if(WAYLAND_CLIENT_LIBRARY AND WAYLAND_CLIENT_INCLUDE_DIR)
         target_link_libraries(Anvil PRIVATE ${WAYLAND_CLIENT_LIBRARY})
         target_include_directories(Anvil PRIVATE ${WAYLAND_CLIENT_INCLUDE_DIR})
+    endif()
+
+    #EGL / Wayland-EGL
+    find_library(WAYLAND_EGL_LIBRARY wayland-egl)
+    find_library(EGL_LIBRARY EGL)
+    if (WAYLAND_EGL_LIBRARY AND EGL_LIBRARY)
+      target_link_libraries(Anvil PRIVATE EGL wayland-egl)
     endif()
 endif()
 

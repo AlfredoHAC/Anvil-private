@@ -1,23 +1,30 @@
-#include "Tools/assert.h"
 #include "anvlpch.h"
 
 #include "Tools/logger.h"
 #include "Window/event.h"
+#include "Windowing/Linux/X11/glx_context.h"
 #include "Windowing/Linux/X11/x11_backend.h"
 
-#include <xcb/xcb.h>
-#include <xcb/xproto.h>
+#include <X11/Xlib-xcb.h>
 
 typedef struct X11Backend
 {
+    // Xlib display
+    Display* x11_display;
+
     // XCB Connection
-    struct xcb_connection_t* display;
+    struct xcb_connection_t* xcb_display;
 
     // XCB Screen
     xcb_screen_t* screen;
 
+    // XCB Colormap
+    xcb_colormap_t colormap_id;
+
     // XCB Window
     xcb_window_t window_id;
+
+    AnvlGLXGraphicsContext context;
 
     // AnvlEvent callback
     EventCallbackFn event_callback;
@@ -26,18 +33,18 @@ typedef struct X11Backend
     xcb_atom_t wm_delete_window_atom;
 } X11Backend;
 
-// clang-format off
 static void* x11_backend_init();
 static void  x11_backend_shutdown(void* backend);
-static void  x11_window_create(void* backend, const char* window_title, uint16 width, uint16 height);
+static void  x11_window_create(void*                   backend,
+                               const AnvlWindowOptions window_options);
 static void  x11_window_show(void* backend);
 static void  x11_window_destroy(void* backend);
-static void  x11_window_set_event_callback(void* backend, EventCallbackFn event_callback);
+static void  x11_window_set_event_callback(void*           backend,
+                                           EventCallbackFn event_callback);
 static void  x11_events_poll_and_dispatch(void* backend);
 static void* x11_window_get_handle(void* backend);
-// clang-format on
 
-static const WindowBackend X11_BACKEND = {
+static const AnvlWindowBackend X11_BACKEND = {
     .backend_init                    = x11_backend_init,
     .backend_shutdown                = x11_backend_shutdown,
     .window_create                   = x11_window_create,
@@ -48,30 +55,41 @@ static const WindowBackend X11_BACKEND = {
     .window_get_handle               = x11_window_get_handle,
 };
 
-const WindowBackend* x11_backend()
+// clang-format off
+const AnvlWindowBackend* x11_backend()
 {
-    //
     return &X11_BACKEND;
 }
+// clang-format on
 
 void* x11_backend_init()
 {
     X11Backend* backend_data = malloc(sizeof(X11Backend));
+    memset(backend_data, 0, sizeof(X11Backend));
 
-    // XCB Connection start
-    backend_data->display = xcb_connect(NULL, NULL);
-    if (xcb_connection_has_error(backend_data->display))
+    backend_data->x11_display = XOpenDisplay(NULL);
+    if (!backend_data->x11_display)
     {
+        ANVIL_CORE_ERROR("Failed to open Xlib display.");
         free(backend_data);
         return NULL;
     }
 
-    const xcb_setup_t*    setup = xcb_get_setup(backend_data->display);
+    backend_data->xcb_display = XGetXCBConnection(backend_data->x11_display);
+    if (!backend_data->xcb_display)
+    {
+        ANVIL_CORE_ERROR("Failed to get XCB connection from Xlib display.");
+        XCloseDisplay(backend_data->x11_display);
+        free(backend_data);
+        return NULL;
+    }
+
+    const xcb_setup_t*    setup = xcb_get_setup(backend_data->xcb_display);
     xcb_screen_iterator_t screen_iterator = xcb_setup_roots_iterator(setup);
     backend_data->screen                  = screen_iterator.data;
     if (!backend_data->screen)
     {
-        xcb_disconnect(backend_data->display);
+        xcb_disconnect(backend_data->xcb_display);
         free(backend_data);
 
         return NULL;
@@ -87,20 +105,22 @@ void x11_backend_shutdown(void* backend)
     ANVIL_ASSERT(backend != NULL);
 
     X11Backend* b_end = (X11Backend*)backend;
-    xcb_disconnect(b_end->display);
 
+    XCloseDisplay(b_end->x11_display);
+
+    memset(b_end, 0, sizeof(X11Backend));
     free(b_end);
 }
 
 static void _register_wm_delete_window_message(X11Backend* b_end)
 {
     xcb_intern_atom_cookie_t protocols_cookie =
-        xcb_intern_atom(b_end->display,
+        xcb_intern_atom(b_end->xcb_display,
                         0,
                         strlen("WM_PROTOCOLS"),
                         "WM_PROTOCOLS");
     xcb_intern_atom_reply_t* protocols_reply =
-        xcb_intern_atom_reply(b_end->display, protocols_cookie, NULL);
+        xcb_intern_atom_reply(b_end->xcb_display, protocols_cookie, NULL);
 
     if (!protocols_reply)
     {
@@ -109,12 +129,12 @@ static void _register_wm_delete_window_message(X11Backend* b_end)
     }
 
     xcb_intern_atom_cookie_t wm_del_cookie =
-        xcb_intern_atom(b_end->display,
+        xcb_intern_atom(b_end->xcb_display,
                         0,
                         strlen("WM_DELETE_WINDOW"),
                         "WM_DELETE_WINDOW");
     xcb_intern_atom_reply_t* wm_del_reply =
-        xcb_intern_atom_reply(b_end->display, wm_del_cookie, NULL);
+        xcb_intern_atom_reply(b_end->xcb_display, wm_del_cookie, NULL);
 
     if (!wm_del_reply)
     {
@@ -125,7 +145,7 @@ static void _register_wm_delete_window_message(X11Backend* b_end)
 
     b_end->wm_delete_window_atom = wm_del_reply->atom;
 
-    xcb_change_property(b_end->display,
+    xcb_change_property(b_end->xcb_display,
                         XCB_PROP_MODE_REPLACE,
                         b_end->window_id,
                         protocols_reply->atom,
@@ -138,16 +158,56 @@ static void _register_wm_delete_window_message(X11Backend* b_end)
     free(protocols_reply);
 }
 
-void x11_window_create(void*       backend,
-                       const char* window_title,
-                       uint16      width,
-                       uint16      height)
+static void x11_window_create(void*                   backend,
+                              const AnvlWindowOptions window_options)
 {
     X11Backend* b_end = (X11Backend*)backend;
 
-    b_end->window_id = xcb_generate_id(b_end->display);
+    b_end->window_id = xcb_generate_id(b_end->xcb_display);
 
-    uint32 mask = XCB_CW_BACK_PIXEL | XCB_CW_BORDER_PIXEL | XCB_CW_EVENT_MASK;
+    if (window_options.graphics_mode == ANVL_WINDOW_GRAPHICS_MODE_OPENGL)
+    {
+        bool glx_extensions_loaded =
+            glx_context_load_extensions(b_end->x11_display);
+
+        b_end->context.fbconfig =
+            glx_context_choose_fbconfig(b_end->x11_display,
+                                        window_options.graphics_requirements);
+
+        if (b_end->context.fbconfig)
+        {
+            b_end->context.visual =
+                glx_context_get_visual_info(b_end->x11_display,
+                                            b_end->context.fbconfig);
+        }
+
+        if (!glx_extensions_loaded || !b_end->context.fbconfig ||
+            !b_end->context.visual)
+        {
+            ANVIL_CORE_WARN("Failed to create Window in OpenGL graphics mode.");
+            ANVIL_CORE_WARN("-> Falling back to default Window.");
+
+            b_end->context.fbconfig = NULL;
+            b_end->context.visual   = NULL;
+        }
+    }
+
+    xcb_visualid_t window_visual = b_end->context.visual
+                                       ? b_end->context.visual->visualid
+                                       : b_end->screen->root_visual;
+    uint8 window_depth = b_end->context.visual ? b_end->context.visual->depth
+                                               : b_end->screen->root_depth;
+
+    b_end->colormap_id = xcb_generate_id(b_end->xcb_display);
+    xcb_create_colormap(b_end->xcb_display,
+                        XCB_COLORMAP_ALLOC_NONE,
+                        b_end->colormap_id,
+                        b_end->screen->root,
+                        window_visual);
+    xcb_flush(b_end->xcb_display);
+
+    uint32 mask = XCB_CW_BACK_PIXEL | XCB_CW_BORDER_PIXEL | XCB_CW_EVENT_MASK |
+                  XCB_CW_COLORMAP;
     uint32 mask_values[] = {
         b_end->screen->black_pixel,
         b_end->screen->white_pixel,
@@ -155,43 +215,70 @@ void x11_window_create(void*       backend,
             XCB_EVENT_MASK_KEY_RELEASE | XCB_EVENT_MASK_POINTER_MOTION |
             XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
             XCB_EVENT_MASK_BUTTON_MOTION,
+        b_end->colormap_id,
     };
 
-    xcb_create_window(b_end->display,                // XCB connection
-                      XCB_COPY_FROM_PARENT,          // Window depth
+    xcb_create_window(b_end->xcb_display,            // XCB connection
+                      window_depth,                  // Window depth
                       b_end->window_id,              // Window id
                       b_end->screen->root,           // Window parent
                       0,                             // X
                       0,                             // Y
-                      width,                         // Width
-                      height,                        // Height
+                      window_options.width,          // Width
+                      window_options.height,         // Height
                       1,                             // Border width
                       XCB_WINDOW_CLASS_INPUT_OUTPUT, // Window class
-                      b_end->screen->root_visual,    // Window Visual
+                      window_visual,                 // Window Visual
                       mask,                          // Bitmask list
                       mask_values);                  // Mask values (array)
 
+    if (b_end->context.fbconfig && b_end->context.visual &&
+        window_options.graphics_mode == ANVL_WINDOW_GRAPHICS_MODE_OPENGL)
+    {
+        b_end->context.handle = glx_context_create(
+            b_end->x11_display,
+            &b_end->context,
+            window_options.graphics_requirements.major_version,
+            window_options.graphics_requirements.minor_version);
+
+        if (b_end->context.handle)
+        {
+            b_end->context.glx_window =
+                glx_context_make_current(b_end->x11_display,
+                                         b_end->window_id,
+                                         &b_end->context);
+        }
+
+        if (!b_end->context.handle || !b_end->context.glx_window)
+        {
+            ANVIL_CORE_WARN("Failed to create Window in OpenGL graphics mode.");
+            ANVIL_CORE_WARN("-> Falling back to default Window.");
+        }
+    }
+
     // Changes window title
-    xcb_change_property(b_end->display,
+    xcb_change_property(b_end->xcb_display,
                         XCB_PROP_MODE_REPLACE,
                         b_end->window_id,
                         XCB_ATOM_WM_NAME,
                         XCB_ATOM_STRING,
                         8,
-                        strlen(window_title),
-                        window_title);
+                        strlen(window_options.title),
+                        window_options.title);
 
     // Register WM_DELETE (Window Close) event message
     _register_wm_delete_window_message(b_end);
+
+    xcb_flush(b_end->xcb_display);
 }
 
 void x11_window_show(void* backend)
 {
     X11Backend* b_end = (X11Backend*)backend;
 
-    xcb_map_window(b_end->display, b_end->window_id);
+    xcb_map_window(b_end->xcb_display, b_end->window_id);
 
-    xcb_flush(b_end->display);
+    xcb_flush(b_end->xcb_display);
 }
 
 void x11_window_destroy(void* backend)
@@ -200,9 +287,21 @@ void x11_window_destroy(void* backend)
 
     if (b_end->window_id == 0) { return; }
 
-    xcb_destroy_window(b_end->display, b_end->window_id);
-    xcb_flush(b_end->display);
+    if (b_end->context.handle)
+    {
+        glx_context_destroy(b_end->x11_display, &b_end->context);
+    }
+
+    xcb_destroy_window(b_end->xcb_display, b_end->window_id);
     b_end->window_id = 0;
+
+    if (b_end->colormap_id)
+    {
+        xcb_free_colormap(b_end->xcb_display, b_end->colormap_id);
+        b_end->colormap_id = 0;
+    }
+
+    xcb_flush(b_end->xcb_display);
 }
 
 void* x11_window_get_handle(void* backend)
@@ -240,11 +339,7 @@ static void _dispatch_x11_messages(X11Backend*          b_end,
                 };
                 b_end->event_callback(&event);
 
-                if (!event.handled)
-                {
-                    xcb_destroy_window(b_end->display, b_end->window_id);
-                    b_end->window_id = 0;
-                }
+                if (!event.handled) { x11_window_destroy(b_end); }
             }
             break;
         }
@@ -396,7 +491,7 @@ void x11_events_poll_and_dispatch(void* backend)
 
     xcb_generic_event_t* xcb_event;
 
-    while ((xcb_event = xcb_poll_for_event(b_end->display)))
+    while ((xcb_event = xcb_poll_for_event(b_end->xcb_display)))
     {
         _dispatch_x11_messages(b_end, xcb_event);
     }
