@@ -78,22 +78,31 @@ AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options)
         return NULL;
     }
 
+    SetWindowLongPtrA(window->handle, GWLP_USERDATA, (LONG_PTR)window);
+    _set_event_callback(window, anvl_layer_stack_dispatch_event);
+
     if (window_options.graphics_mode == ANVL_WINDOW_GRAPHICS_MODE_OPENGL)
     {
-        wgl_context_load_extensions();
+        bool wgl_extensions_loaded = wgl_context_load_extensions();
+        if (!wgl_extensions_loaded)
+        {
+            ANVIL_CORE_WARN(
+                "Failed to create Window in OpenGL graphics mode.");
+            ANVIL_CORE_WARN("-> Falling back to default Window.");
+
+            return window;
+        }
 
         window->context =
             wgl_context_create(window->handle,
-                               window_options.graphics_requirements);
+                                window_options.graphics_requirements);
         if (!window->context.handle)
         {
-            ANVIL_CORE_WARN("Failed to create Window in OpenGL graphics mode.");
+            ANVIL_CORE_WARN(
+                "Failed to create Window in OpenGL graphics mode.");
             ANVIL_CORE_WARN("-> Falling back to default Window.");
         }
     }
-
-    SetWindowLongPtrA(window->handle, GWLP_USERDATA, (LONG_PTR)window);
-    _set_event_callback(window, anvl_layer_stack_dispatch_event);
 
     return window;
 }
