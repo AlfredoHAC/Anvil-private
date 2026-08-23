@@ -1,8 +1,8 @@
 # P10 — Anvil Platform Graphics Integration
 
-> **Status:** WGL (Windows) ✅ concluído · GLX (X11) ⏳ pendente · Wayland/EGL 🟢 futuro
+> **Status:** WGL (Windows) ✅ concluído · GLX (X11) ✅ concluído · Wayland/EGL ✅ concluído
 >
-> **Última atualização:** 2026-08-16
+> **Última atualização:** 2026-08-22
 
 ## 1. Contexto e Motivação
 
@@ -133,94 +133,101 @@ A criação do contexto gráfico **depende da plataforma** e é feita **dentro d
 Janela (HWND) → HDC → SetPixelFormat → HGLRC
 ```
 
-Fluxo em `win32_window.c` (linhas 85-159):
+Fluxo em `win32_window.c`:
 
 1. `anvl_window_create()` verifica `graphics_mode == ANVL_WINDOW_GRAPHICS_MODE_OPENGL`
 2. Chama `wgl_context_load_extensions()` — dummy window pattern para carregar `wglGetProcAddress`
-3. Obtém HDC via `GetDC(window->handle)`
-4. Constrói atributos de pixel format via `wglChoosePixelFormatARB`
-5. Aplica pixel format via `SetPixelFormat(hdc, pf, NULL)`
-6. Chama `wgl_context_create(hdc, major_version, minor_version)`:
+3. Chama `wgl_context_create(window->handle, requirements)`:
+   - Internamente obtém HDC via `GetDC()`
+   - Escolhe pixel format via `wglChoosePixelFormatARB`
+   - Aplica pixel format via `SetPixelFormat(hdc, pf, NULL)`
    - Cria contexto via `wglCreateContextAttribsARB` com versão configurável
    - Torna contexto atual via `wglMakeCurrent(hdc, hglrc)`
 
 **Arquivos:**
-- `src/Windowing/Windows/win32_window.c` — coordenação (GetDC, pixel format, chamada ao contexto)
+- `src/Windowing/Windows/win32_window.c` — coordenação (criação/destruição da janela)
 - `src/Windowing/Windows/wgl_context.c` — backend WGL (`wgl_context_create/destroy/load_extensions`)
 - `src/Windowing/Windows/wgl_context.h` — interface interna
 
-#### GLX (X11/Linux) — ⏳ Pendente
+#### GLX (X11/Linux) — ✅ Implementado
 
 ```
-FBConfig → XVisualInfo → Janela (com Visual correto) → GLXContext
+Display → FBConfig → XVisualInfo → Colormap → XCB Window → GLXWindow → GLXContext
 ```
 
-1. Consumer cria janela via `anvl_window_create()` → obtém `XID`
-2. Anvil internamente:
+Fluxo em `x11_backend.c`:
+
+1. `x11_backend_init()` — `XOpenDisplay(NULL)` → `XGetXCBConnection()` → obtém screen
+2. `x11_window_create()`:
    - Escolhe GLXFBConfig baseado em `AnvlGraphicRequirements`
    - Obtém XVisualInfo via `glXGetVisualFromFBConfig(display, fb_config)`
-   - **Recria a janela** com o XVisualInfo correto (se necessário)
-   - Cria GLXContext via `glXCreateNewContext(display, fb_config, GLX_RGBA_TYPE, NULL, True)`
-   - Torna contexto atual via `glXMakeCurrent(display, window, glx_context)`
+   - Cria colormap via `xcb_create_colormap()` (root como parent)
+   - Cria XCB window com o visual correto
+   - Cria GLXWindow via `glXCreateWindow(display, fb_config, x11_window, NULL)`
+   - Cria GLXContext via `glXCreateContextAttribsARB(display, fb_config, NULL, True, attrs)`
+   - Torna contexto atual via `glXMakeContextCurrent(display, glx_window, glx_window, glx_context)`
 
-**Nota:** Em GLX, o FBConfig/Visual deve ser conhecido ANTES de criar a janela. Se a janela foi criada sem o Visual correto, Anvil a recria internamente.
+**Arquivos:**
+- `src/Windowing/Linux/X11/x11_backend.c` — backend XCB + coordenação GLX
+- `src/Windowing/Linux/X11/x11_backend.h` — structs (`X11Backend`, `AnvlGLXGraphicsContext`)
+- `src/Windowing/Linux/X11/glx_context.c` — funções auxiliares GLX (FBConfig, VisualInfo, load)
+- `src/Windowing/Linux/X11/glx_context.h` — interface interna
 
-#### Wayland/EGL — 🟢 Futuro
+**Nota:** Display é compartilhado entre Xlib e XCB via `XGetXCBConnection()`. Colormap é criada antes da window e destruída no `x11_window_destroy`.
+
+#### Wayland/EGL — ✅ Implementado
 
 ```
-wl_surface → EGLDisplay → EGLConfig → EGLContext → EGLSurface
+wl_display → wl_compositor → wl_shell → wl_surface → EGLDisplay → EGLConfig → EGLContext → EGLSurface
 ```
 
-EGL é mais simples que GLX:
-- Não precisa de dummy window
-- `eglGetProcAddress` carrega extensões diretamente
-- `gladLoaderLoadGL()` com `eglGetProcAddress` funciona sem contexto válido
+Fluxo em `wayland_backend.c`:
 
-**Arquivos planejados:**
-- `src/Windowing/Wayland/wayland_window.c` — coordenação (semelhante a win32)
-- `src/Windowing/Wayland/egl_context.c` — backend EGL
-- `src/Windowing/Wayland/egl_context.h` — interface interna
+1. `wayland_backend_init()` — `wl_display_connect(NULL)` → `wl_compositor_create()`
+2. `wayland_window_create()`:
+   - Cria `wl_surface` e `wl_egl_window`
+   - `eglGetPlatformDisplay(EGL_PLATFORM_WAYLAND, wl_display, NULL)`
+   - `eglInitialize(display, ...)`
+   - `eglChooseConfig(display, attribs, &config, ...)`
+   - `eglCreateWindowSurface(display, config, wl_egl_window, NULL)`
+   - `eglCreateContext(display, config, EGL_NO_CONTEXT, ctx_attribs)`
+   - `eglMakeCurrent(display, surface, surface, context)`
+
+**Arquivos:**
+- `src/Windowing/Linux/Wayland/wayland_backend.c` — backend Wayland + coordenação EGL
+- `src/Windowing/Linux/Wayland/egl_context.c` — backend EGL (`egl_context_create/destroy`)
+- `src/Windowing/Linux/Wayland/egl_context.h` — interface interna
+
+**Nota:** EGL não precisa de dummy window. `gladLoaderLoadGL()` com `eglGetProcAddress` funciona sem contexto válido.
 
 #### Resumo
 
 | Plataforma | Status | Ordem de Criação | Surface Requirements |
 |------------|--------|------------------|----------------------|
 | WGL        | ✅ Concluído | Janela → Contexto | Internos (PFD)       |
-| GLX        | ⏳ Pendente | FBConfig → Janela → Contexto | Internos (GLXFBConfig) |
-| Wayland/EGL | 🟢 Futuro | EGLDisplay → Config → Contexto → Surface | Internos (EGLConfig) |
+| GLX        | ✅ Concluído | FBConfig → XCB Window → GLXWindow → Contexto | Internos (GLXFBConfig) |
+| Wayland/EGL | ✅ Concluído | EGLDisplay → Config → Contexto → Surface | Internos (EGLConfig) |
 
 **Surface requirements são internos a Anvil** — o Furnace não os conhece, apenas consome os native handles resultantes.
 
-### 2.5 Wayland/EGL (Futuro)
+### 2.5 Comparação entre Backends
 
-Wayland **não suporta** WGL/GLX diretamente. Para OpenGL sobre Wayland, é necessário usar EGL.
+| Aspecto | WGL | GLX | EGL |
+|---------|-----|-----|-----|
+| Dummy window | Sim (carregar extensões) | Não (Xlib display) | Não (EGL display) |
+| Colormap | Não | Sim (`xcb_create_colormap`) | Não |
+| Native window wrapper | Não (HDC direto) | Sim (`glXCreateWindow`) | Sim (`wl_egl_window`) |
+| Display management | `GetDC`/`ReleaseDC` | `XOpenDisplay`/`XCloseDisplay` | `eglGetDisplay`/`eglTerminate` |
+| Extension loading | `wglGetProcAddress` | `glXGetProcAddress` | `eglGetProcAddress` |
+| glad integration | `gladLoaderLoadWGL(hdc)` | `gladLoaderLoadGL()` | `gladLoaderLoadGL((GLADloadfunc)eglGetProcAddress)` |
 
-**Decisão:** Wayland/EGL será implementado após GLX, como próximo backend.
-
-Diferente do WGL, o EGL **não precisa de dummy window** para carregar extensões:
-
-```c
-// Fluxo EGL (planejado)
-EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-eglInitialize(display, NULL, NULL);
-
-eglChooseConfig(display, attribs, &config, 1, &num_configs);
-EGLContext context = eglCreateContext(display, config, EGL_NO_CONTEXT, ctx_attribs);
-EGLSurface surface = eglCreateWindowSurface(display, config, wl_surface, NULL);
-
-eglMakeCurrent(display, surface, surface, context);
-
-// Carregar extensões OpenGL
-int version = gladLoadGL((GLADloadfunc)eglGetProcAddress);
-```
-
-O `gladLoaderLoadGL()` com `eglGetProcAddress` funciona sem contexto válido, simplificando a inicialização.
+**Diferença fundamental:** WGL e EGL adquirem o native handle (HDC/EGLDisplay) dentro do contexto gráfico. GLX segue o padrão "envolve" — o FBConfig é escolhido independentemente, a XCB window é criada com o visual correto, e depois o GLX "envelopa" a XCB window com `glXCreateWindow`.
 
 ---
 
 ## 3. Estrutura de Arquivos
 
-### 3.1 WGL (Windows) — ✅ Implementado
+### 3.1 Estrutura Atual
 
 ```
 Anvil/
@@ -228,11 +235,19 @@ Anvil/
 │   └── window.h                                # AnvlGraphicRequirements integrado
 ├── src/Windowing/
 │   ├── Windows/
-│   │   ├── win32_window.c                      # WGL setup integrado (GetDC, pixel format, context)
+│   │   ├── win32_window.c                      # Win32 window + WGL coordenação
 │   │   ├── wgl_context.h                       # WGL internal header
 │   │   └── wgl_context.c                       # WGL implementation
-│   ├── Linux/                                  # GLX pendente
-│   └── Wayland/                                # EGL futuro
+│   ├── Linux/
+│   │   ├── X11/
+│   │   │   ├── x11_backend.c                   # XCB backend + GLX coordenação
+│   │   │   ├── x11_backend.h                   # X11Backend + AnvlGLXGraphicsContext
+│   │   │   ├── glx_context.c                   # GLX auxiliares (FBConfig, VisualInfo, load)
+│   │   │   └── glx_context.h                   # GLX interface interna
+│   │   └── Wayland/
+│   │       ├── wayland_backend.c               # Wayland backend + EGL coordenação
+│   │       ├── egl_context.c                   # EGL implementation
+│   │       └── egl_context.h                   # EGL interface interna
 ```
 
 ---
@@ -263,18 +278,32 @@ endif()
 
 ### 4.2 PCH
 
-`src/anvlpch.h` inclui os headers do WGL:
+`src/anvlpch.h` inclui os headers condicionais por plataforma:
 ```c
+#ifdef ANVL_PLATFORM_WINDOWS
 #include <glad/wgl.h>
 #include <windows.h>
 #include <wingdi.h>
+#include <winuser.h>
+#elif defined(ANVL_PLATFORM_LINUX)
+#include <glad/glx.h>
+#include <GL/glx.h>
+#include <xcb/xcb.h>
+#include <xcb/xproto.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <wayland-client.h>
+#include <wayland-egl.h>
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#endif
 ```
 
 ### 4.3 Ordem de Build
 
 A Platform Graphics Integration é implementada **antes** do Furnace P1, pois o Furnace depende dela.
 
-### 4.4 Fluxo de Integração (WGL)
+### 4.4 Fluxo de Integração
 
 ```
 1. Consumer cria janela com modo gráfico:
@@ -293,12 +322,15 @@ A Platform Graphics Integration é implementada **antes** do Furnace P1, pois o 
    };
    AnvlWindow* window = anvl_window_create(opts);
 
-2. Anvil cria HDC + WGL 3.3 Core internamente.
+2. Anvil cria o contexto gráfico nativo da plataforma:
+   - Windows: HDC + WGL 3.3 Core
+   - Linux/X11: GLXContext 3.3 Core + GLXWindow
+   - Linux/Wayland: EGLContext + EGLSurface
 
-3. Furnace obtém o HWND via anvl_window_get_handle() e inicializa:
+3. Furnace obtém o handle nativo via anvl_window_get_handle() e inicializa:
    - gladLoaderLoadGL() + wglGetProcAddress (WGL)
+   - gladLoaderLoadGL() + glXGetProcAddress (GLX)
    - gladLoaderLoadGL() + eglGetProcAddress (EGL)
-   - XGetFunctionAddress (GLX, se necessário)
 ```
 
 ---
@@ -306,10 +338,11 @@ A Platform Graphics Integration é implementada **antes** do Furnace P1, pois o 
 ## 5. O que a Platform Graphics Integration faz (e não faz)
 
 ### Faz:
-- Gerenciar surface requirements internamente (PFD para WGL, GLXFBConfig para GLX)
-- Criar contexto gráfico da plataforma (WGL/GLX)
+- Gerenciar surface requirements internamente (PFD para WGL, GLXFBConfig para GLX, EGLConfig para EGL)
+- Criar contexto gráfico da plataforma (WGL/GLX/EGL)
 - Expor handles nativos para o Furnace
 - Coordenar window + context internamente
+- Padronizar failure paths com padrão create/rollback/destroy
 
 ### Não faz:
 - Expor surface requirements ao Furnace (são internos)
@@ -327,8 +360,8 @@ A Platform Graphics Integration é implementada **antes** do Furnace P1, pois o 
 
 ### ✅ Etapa 2: Criar WGL backend (`src/Windowing/Windows/wgl_context.h` + `wgl_context.c`)
 - `wgl_context_load_extensions()` — dummy window pattern para carregar `wglGetProcAddress`
-- `wgl_context_create(HDC, major_version, minor_version)` — cria contexto via `wglCreateContextAttribsARB`
-- `wgl_context_destroy(HGLRC)` — unbind + delete context
+- `wgl_context_create(HWND, HDC, major_version, minor_version)` — cria contexto via `wglCreateContextAttribsARB`
+- `wgl_context_destroy(HWND, HGLRC)` — unbind + delete context
 
 ### ✅ Etapa 3: Integrar WGL ao `win32_window.c`
 - Setup de pixel format via `wglChoosePixelFormatARB`
@@ -340,30 +373,34 @@ A Platform Graphics Integration é implementada **antes** do Furnace P1, pois o 
 Adicionar glad (PUBLIC), sources Windows condicionalizados, `opengl32` linkado.
 
 ### ✅ Etapa 5: Atualizar PCH (`src/anvlpch.h`)
-Incluir `<glad/wgl.h>`, `<windows.h>`, `<wingdi.h>`, `<winuser.h>`.
+Incluir headers condicionais por plataforma.
 
 ### ✅ Etapa 6: Validação Windows
 Build passa, contexto WGL 3.3 Core criado com sucesso, extensões carregadas.
 
-### ⏳ Etapa 7: Criar GLX backend (`src/Windowing/Linux/glx_context.h` + `glx_context.c`)
-- `XOpenDisplay` (se não existente)
+### ✅ Etapa 7: Criar GLX backend (`src/Windowing/Linux/X11/glx_context.h` + `glx_context.c`)
+- `XOpenDisplay` + `XGetXCBConnection` (display compartilhado)
 - Escolher GLXFBConfig a partir de `AnvlGraphicRequirements`
 - `glXGetVisualFromFBConfig`
-- Recriar janela com XVisualInfo correto (se necessário)
-- `glXCreateNewContext` + `glXMakeCurrent`
-- `glXGetProcAddress` para extensões
+- Criação de colormap via `xcb_create_colormap`
+- `glXCreateWindow` + `glXCreateContextAttribsARB` + `glXMakeContextCurrent`
 
-### ⏳ Etapa 8: Integrar GLX ao `x11_window.c`
-Similar ao WGL: setup de FBConfig + criação de contexto dentro do fluxo de criação da janela.
+### ✅ Etapa 8: Integrar GLX ao `x11_backend.c`
+- Backend XCB com eventos (keyboard, mouse, resize, close)
+- Setup de FBConfig + criação de contexto dentro do fluxo de criação da janela
+- Cleanup integrado no `x11_window_destroy`
 
-### 🟢 Etapa 9: Criar EGL backend (`src/Windowing/Wayland/egl_context.h` + `egl_context.c`)
-- `eglGetDisplay` + `eglInitialize`
+### ✅ Etapa 9: Criar EGL backend (`src/Windowing/Linux/Wayland/egl_context.h` + `egl_context.c`)
+- `eglGetPlatformDisplay` + `eglInitialize`
 - `eglChooseConfig` a partir de `AnvlGraphicRequirements`
 - `eglCreateContext` + `eglCreateWindowSurface` + `eglMakeCurrent`
 - `eglGetProcAddress` para extensões
 - `gladLoaderLoadGL()` funciona sem contexto válido
 
-### 🟢 Etapa 10: Integrar EGL ao `wayland_window.c`
+### ✅ Etapa 10: Integrar EGL ao `wayland_backend.c`
+- Backend Wayland com wl_shell + wl_egl_window
+- Setup de EGLConfig + criação de contexto dentro do fluxo de criação da janela
+- Cleanup integrado no `wayland_window_destroy`
 
 ---
 
@@ -373,6 +410,7 @@ Similar ao WGL: setup de FBConfig + criação de contexto dentro do fluxo de cri
 - **Vulkan/DirectX:** Não implementados no P10
 - **Renderer:** Shaders, buffers, pipelines, draw calls (Furnace P2+)
 - **Módulo `Graphics/` separado:** A integração é feita diretamente no windowing, não há dispatch genérico
+- **Failure path padrão:** create/rollback/destroy — implementado em todas as três plataformas
 
 ---
 
@@ -406,6 +444,7 @@ O Anvil P10 implementa WGL/GLX/EGL e coordena a criação de janela + contexto. 
 | **Interface Pública** | `AnvlGraphicRequirements` integrado ao `AnvlWindowOptions` |
 | **Surface Requirements** | Internos (PFD para WGL, GLXFBConfig para GLX, EGLConfig para EGL) |
 | **Handles Expostos** | `HWND`/`XID`/`wl_surface` via `anvl_window_get_handle()` |
-| **Plataformas** | Win32 (WGL ✅), X11 (GLX ⏳), Wayland (EGL 🟢) |
-| **Dependências** | `glad` (PUBLIC), `opengl32` (Win), `X11` (Linux) |
+| **Plataformas** | Win32 (WGL ✅), X11 (GLX ✅), Wayland (EGL ✅) |
+| **Dependências** | `glad` (PUBLIC), `opengl32` (Win), `X11`/`xcb`/`wayland`/`EGL` (Linux) |
+| **Failure Path** | create → rollback (em falha) → destroy (tolerante a estado parcial) |
 | **Pré-requisito para** | Furnace P1, P2, P3 |
