@@ -19,9 +19,9 @@ typedef enum WindowBackendType
     ANVL_WINDOW_BACKEND_WAYLAND,
 } WindowBackendType;
 
-static void                     _set_event_callback(AnvlWindow*     window,
-                                                    EventCallbackFn event_callback);
-static void                     _unset_event_callback(AnvlWindow* window);
+static void _set_event_callback(AnvlWindow*     window,
+                                EventCallbackFn event_callback);
+static void _unset_event_callback(AnvlWindow* window);
 static const AnvlWindowBackend* _window_backend_create(AnvlWindow* window);
 static uint32                   _window_backend_detect();
 
@@ -67,10 +67,17 @@ void anvl_window_destroy(AnvlWindow* window)
     free(window);
 }
 
+// clang-format off
 void* anvl_window_get_handle(const AnvlWindow* window)
 {
     return window->backend->window_get_handle(window->backend_data);
 }
+
+void  anvl_window_context_present(const AnvlWindow* window)
+{
+    window->backend->window_context_present(window->backend_data);
+}
+// clang-format on
 
 void _set_event_callback(AnvlWindow* window, EventCallbackFn event_callback)
 {
@@ -98,7 +105,10 @@ static const AnvlWindowBackend* _window_backend_create(AnvlWindow* window)
     {
         return x11_backend();
     }
-    else { return NULL; }
+    else
+    {
+        return NULL;
+    }
 }
 
 static uint32 _window_backend_detect()

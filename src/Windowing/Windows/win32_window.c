@@ -86,8 +86,7 @@ AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options)
         bool wgl_extensions_loaded = wgl_context_load_extensions();
         if (!wgl_extensions_loaded)
         {
-            ANVIL_CORE_WARN(
-                "Failed to create Window in OpenGL graphics mode.");
+            ANVIL_CORE_WARN("Failed to create Window in OpenGL graphics mode.");
             ANVIL_CORE_WARN("-> Falling back to default Window.");
 
             return window;
@@ -95,11 +94,10 @@ AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options)
 
         window->context =
             wgl_context_create(window->handle,
-                                window_options.graphics_requirements);
+                               window_options.graphics_requirements);
         if (!window->context.handle)
         {
-            ANVIL_CORE_WARN(
-                "Failed to create Window in OpenGL graphics mode.");
+            ANVIL_CORE_WARN("Failed to create Window in OpenGL graphics mode.");
             ANVIL_CORE_WARN("-> Falling back to default Window.");
         }
     }
@@ -137,6 +135,15 @@ void anvl_window_destroy(AnvlWindow* window)
 void* anvl_window_get_handle(const AnvlWindow* window)
 {
     return (void*)window->handle;
+}
+
+void anvl_window_context_present(const AnvlWindow* window)
+{
+    ANVIL_ASSERT(window != NULL);
+
+    if (!window->context.handle) { return; }
+
+    wgl_context_swap_buffers(window->context.device_context);
 }
 // clang-format on
 

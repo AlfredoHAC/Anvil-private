@@ -17,11 +17,12 @@ GLXWindow  glx_context_make_current(Display*                display,
                                     xcb_window_t            window,
                                     AnvlGLXGraphicsContext* context);
 void glx_context_destroy(Display* display, AnvlGLXGraphicsContext* context);
+void glx_context_swap_buffers(Display* display, GLXWindow window);
 GLXFBConfig glx_context_choose_fbconfig(
     Display*                             display,
     const struct AnvlGraphicRequirements requirements);
 XVisualInfo* glx_context_get_visual_info(Display*    display,
                                          GLXFBConfig fbconfig);
-bool glx_context_load_extensions(Display* display);
+bool         glx_context_load_extensions(Display* display);
 
 #endif // !ANVIL_GLX_CONTEXT_HEADER

@@ -15,6 +15,7 @@ AnvlWGLGraphicsContext wgl_context_create(
     HWND                                 window,
     const struct AnvlGraphicRequirements graphics_requirements);
 void wgl_context_destroy(HWND window, AnvlWGLGraphicsContext* context);
+void wgl_context_swap_buffers(HDC device_context);
 bool wgl_context_load_extensions();
 
 #endif // !ANVIL_WGL_CONTEXT_HEADER

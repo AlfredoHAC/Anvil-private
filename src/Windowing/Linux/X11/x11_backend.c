@@ -43,6 +43,7 @@ static void  x11_window_set_event_callback(void*           backend,
                                            EventCallbackFn event_callback);
 static void  x11_events_poll_and_dispatch(void* backend);
 static void* x11_window_get_handle(void* backend);
+static void  x11_window_present(void* backend);
 
 static const AnvlWindowBackend X11_BACKEND = {
     .backend_init                    = x11_backend_init,
@@ -53,6 +54,7 @@ static const AnvlWindowBackend X11_BACKEND = {
     .window_set_event_callback       = x11_window_set_event_callback,
     .window_events_poll_and_dispatch = x11_events_poll_and_dispatch,
     .window_get_handle               = x11_window_get_handle,
+    .window_context_present          = x11_window_present,
 };
 
 // clang-format off
@@ -495,4 +497,13 @@ void x11_events_poll_and_dispatch(void* backend)
     {
         _dispatch_x11_messages(b_end, xcb_event);
     }
+}
+
+static void x11_window_present(void* backend)
+{
+    X11Backend* b_end = (X11Backend*)backend;
+
+    if (!b_end->context.handle) { return; }
+
+    glx_context_swap_buffers(b_end->x11_display, b_end->context.glx_window);
 }
