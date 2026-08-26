@@ -8,6 +8,9 @@
 typedef struct AnvlApplication
 {
     AnvlWindow* window;
+
+    RenderHookFn render_func;
+    void*        render_func_data;
 } AnvlApplication;
 
 static void _on_application_event(AnvlLayer* layer, AnvlEvent* event);
@@ -15,9 +18,9 @@ static void _on_application_window_close();
 
 static bool      app_running = false;
 static AnvlLayer app_layer   = {
-      .name      = "Application_Layer",
-      .on_update = NULL,
-      .on_event  = _on_application_event,
+    .name      = "Application_Layer",
+    .on_update = NULL,
+    .on_event  = _on_application_event,
 };
 
 AnvlApplication* anvl_application_init(AnvlWindow* window)
@@ -50,8 +53,12 @@ void anvl_application_run(AnvlApplication* app)
 
     while (app_running)
     {
-        anvl_layer_stack_call_update();
         anvl_window_update(app->window);
+        anvl_layer_stack_call_update();
+        if (app->render_func && app->render_func_data)
+        {
+            app->render_func(app->render_func_data);
+        }
     }
 }
 
@@ -69,6 +76,16 @@ void anvl_application_window_set(AnvlApplication* app, AnvlWindow* window)
     ANVIL_ASSERT(app != NULL && window != NULL);
 
     app->window = window;
+}
+
+void anvl_application_render_hook_set(AnvlApplication* app,
+                                      RenderHookFn     render_func,
+                                      void*            user_data)
+{
+    ANVIL_ASSERT(app != NULL && render_func != NULL);
+
+    app->render_func      = render_func;
+    app->render_func_data = user_data;
 }
 
 static void _on_application_event(AnvlLayer* layer, AnvlEvent* event)
