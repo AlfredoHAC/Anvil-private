@@ -137,7 +137,7 @@ void* anvl_window_get_handle(const AnvlWindow* window)
     return (void*)window->handle;
 }
 
-void anvl_window_context_present(const AnvlWindow* window)
+void anvl_window_present(const AnvlWindow* window)
 {
     ANVIL_ASSERT(window != NULL);
 

@@ -44,6 +44,6 @@ void        anvl_window_update(AnvlWindow* window);
 void        anvl_window_destroy(AnvlWindow* window);
 
 void* anvl_window_get_handle(const AnvlWindow* window);
-void  anvl_window_context_present(const AnvlWindow* window);
+void  anvl_window_present(const AnvlWindow* window);
 
 #endif // !ANVIL_WINDOW_HEADER

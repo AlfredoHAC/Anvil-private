@@ -174,7 +174,7 @@ void egl_context_destroy(AnvlEGLGraphicsContext* context)
 }
 
 // clang-format off
-void egl_context_swap_buffers(struct wl_display* display, struct wl_surface* surface)
+void egl_context_swap_buffers(EGLDisplay display, EGLSurface surface)
 {
     eglSwapBuffers(display, surface);
 }

@@ -200,7 +200,7 @@ static const AnvlWindowBackend WAYLAND_BACKEND = {
     .window_set_event_callback       = wayland_window_set_event_callback,
     .window_events_poll_and_dispatch = wayland_events_poll_and_dispatch,
     .window_get_handle               = wayland_window_get_handle,
-    .window_context_present          = wayland_window_present,
+    .window_present          = wayland_window_present,
 };
 
 static const struct wl_registry_listener REGISTRY_LISTENER = {
@@ -454,7 +454,7 @@ static void wayland_window_present(void* backend)
 
     if (!b_end->context.handle) { return; }
 
-    egl_context_swap_buffers(b_end->display, b_end->surface);
+    egl_context_swap_buffers(b_end->context.display, b_end->context.surface);
 }
 
 static void _shm_buffer_create(AnvlWaylandBackend* b_end,

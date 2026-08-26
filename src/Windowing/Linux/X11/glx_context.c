@@ -1,4 +1,3 @@
-#include "Windowing/Linux/X11/x11_backend.h"
 #include "anvlpch.h"
 
 #include "Windowing/Linux/X11/glx_context.h"

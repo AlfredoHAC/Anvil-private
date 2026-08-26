@@ -54,7 +54,7 @@ static const AnvlWindowBackend X11_BACKEND = {
     .window_set_event_callback       = x11_window_set_event_callback,
     .window_events_poll_and_dispatch = x11_events_poll_and_dispatch,
     .window_get_handle               = x11_window_get_handle,
-    .window_context_present          = x11_window_present,
+    .window_present          = x11_window_present,
 };
 
 // clang-format off
