@@ -78,6 +78,7 @@ static void  wayland_window_set_event_callback(void*           backend,
                                                EventCallbackFn event_callback);
 static void  wayland_events_poll_and_dispatch(void* backend);
 static void* wayland_window_get_handle(void* backend);
+static void  wayland_window_present(void* backend);
 
 static void _shm_buffer_create(AnvlWaylandBackend* b_end,
                                int32               width,
@@ -199,6 +200,7 @@ static const AnvlWindowBackend WAYLAND_BACKEND = {
     .window_set_event_callback       = wayland_window_set_event_callback,
     .window_events_poll_and_dispatch = wayland_events_poll_and_dispatch,
     .window_get_handle               = wayland_window_get_handle,
+    .window_context_present          = wayland_window_present,
 };
 
 static const struct wl_registry_listener REGISTRY_LISTENER = {
@@ -384,10 +386,7 @@ void wayland_window_destroy(void* backend)
 {
     AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
 
-    if (b_end->context.handle)
-    {
-        egl_context_destroy(&b_end->context);
-    }
+    if (b_end->context.handle) { egl_context_destroy(&b_end->context); }
 
     if (b_end->dc_object)
     {
@@ -447,6 +446,15 @@ static void* wayland_window_get_handle(void* backend)
     AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
 
     return (void*)b_end->surface;
+}
+
+static void wayland_window_present(void* backend)
+{
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
+
+    if (!b_end->context.handle) { return; }
+
+    egl_context_swap_buffers(b_end->display, b_end->surface);
 }
 
 static void _shm_buffer_create(AnvlWaylandBackend* b_end,

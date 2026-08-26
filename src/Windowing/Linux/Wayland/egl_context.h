@@ -9,5 +9,7 @@ AnvlEGLGraphicsContext egl_context_create(
     struct wl_surface*      surface,
     const AnvlWindowOptions window_options);
 void egl_context_destroy(AnvlEGLGraphicsContext* context);
+void egl_context_swap_buffers(struct wl_display* display,
+                              struct wl_surface* surface);
 
 #endif // !ANVIL_EGL_CONTEXT_HEADER

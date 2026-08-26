@@ -173,6 +173,13 @@ void egl_context_destroy(AnvlEGLGraphicsContext* context)
     memset(context, 0, sizeof(AnvlEGLGraphicsContext));
 }
 
+// clang-format off
+void egl_context_swap_buffers(struct wl_display* display, struct wl_surface* surface)
+{
+    eglSwapBuffers(display, surface);
+}
+// clang-format on
+
 static void _egl_context_rollback(AnvlEGLGraphicsContext* context)
 {
     if (context->handle != EGL_NO_CONTEXT)

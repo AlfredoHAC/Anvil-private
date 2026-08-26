@@ -1,3 +1,4 @@
+#include "Windowing/Linux/X11/x11_backend.h"
 #include "anvlpch.h"
 
 #include "Windowing/Linux/X11/glx_context.h"
@@ -82,6 +83,13 @@ void glx_context_destroy(Display* display, AnvlGLXGraphicsContext* context)
 
     memset(context, 0, sizeof(AnvlGLXGraphicsContext));
 }
+
+// clang-format off
+void glx_context_swap_buffers(Display* display, GLXWindow window)
+{
+    glXSwapBuffers(display, window);
+}
+// clang-format on
 
 GLXFBConfig glx_context_choose_fbconfig(
     Display*                             display,

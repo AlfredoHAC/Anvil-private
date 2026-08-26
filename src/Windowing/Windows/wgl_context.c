@@ -138,6 +138,13 @@ void wgl_context_destroy(HWND window, AnvlWGLGraphicsContext* context)
     memset(context, 0, sizeof(AnvlWGLGraphicsContext));
 }
 
+// clang-format off
+void wgl_context_swap_buffers(HDC device_context)
+{
+    wglSwapBuffers(device_context);
+}
+// clang-format on
+
 bool wgl_context_load_extensions()
 {
     if (wgl_extensions_loaded) { return true; }

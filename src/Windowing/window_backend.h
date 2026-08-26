@@ -13,6 +13,7 @@ typedef struct AnvlWindowBackend
     void  (*window_set_event_callback)(void*, EventCallbackFn);
     void  (*window_events_poll_and_dispatch)(void*);
     void* (*window_get_handle)(void*);
+    void  (*window_context_present)(void*);
 } AnvlWindowBackend;
 
 #endif // !ANVL_WINDOW_BACKEND_HEADER
