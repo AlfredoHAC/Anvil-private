@@ -55,7 +55,7 @@ void anvl_application_run(AnvlApplication* app)
     {
         anvl_window_update(app->window);
         anvl_layer_stack_call_update();
-        if (app->render_func && app->render_func_data)
+        if (app->render_func)
         {
             app->render_func(app->render_func_data);
         }
