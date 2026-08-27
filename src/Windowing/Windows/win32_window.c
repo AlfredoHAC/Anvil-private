@@ -15,6 +15,9 @@ struct AnvlWindow
 
     AnvlWGLGraphicsContext context;
 
+    uint16 width;
+    uint16 height;
+
     EventCallbackFn event_callback;
 };
 
@@ -78,6 +81,9 @@ AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options)
         return NULL;
     }
 
+    window->width  = window_options.width;
+    window->height = window_options.height;
+
     SetWindowLongPtrA(window->handle, GWLP_USERDATA, (LONG_PTR)window);
     _set_event_callback(window, anvl_layer_stack_dispatch_event);
 
@@ -137,6 +143,16 @@ void* anvl_window_get_handle(const AnvlWindow* window)
     return (void*)window->handle;
 }
 
+uint16 anvl_window_width_get(const AnvlWindow* window)
+{
+    return window->width;
+}
+
+uint16 anvl_window_height_get(const AnvlWindow* window)
+{
+    return window->height;
+}
+
 void anvl_window_present(const AnvlWindow* window)
 {
     ANVIL_ASSERT(window != NULL);
@@ -186,17 +202,22 @@ static LRESULT _dispatch_win32_event(AnvlWindow* window,
         {
             if (wparam != SIZE_MINIMIZED)
             {
+                uint16 width  = (uint16)LOWORD(lparam);
+                uint16 height = (uint16)HIWORD(lparam);
 
                 AnvlEvent event = {
                     .type    = ANVL_EVENT_TYPE_WINDOW_RESIZE,
                     .handled = false,
                     .window_resize =
                         {
-                            .width  = (uint16)LOWORD(lparam),
-                            .height = (uint16)HIWORD(lparam),
+                            .width  = width,
+                            .height = height,
                         },
                 };
                 window->event_callback(&event);
+
+                window->width  = width;
+                window->height = height;
             }
 
             break;

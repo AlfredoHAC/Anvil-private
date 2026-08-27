@@ -73,6 +73,17 @@ void* anvl_window_get_handle(const AnvlWindow* window)
     return window->backend->window_get_handle(window->backend_data);
 }
 
+uint16 anvl_window_width_get(const AnvlWindow* window)
+{
+    return window->backend->window_get_width(window->backend_data);
+}
+
+uint16 anvl_window_height_get(const AnvlWindow* window)
+{
+    return window->backend->window_get_height(window->backend_data);
+}
+
+
 void  anvl_window_present(const AnvlWindow* window)
 {
     window->backend->window_present(window->backend_data);

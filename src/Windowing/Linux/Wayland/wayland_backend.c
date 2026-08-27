@@ -14,6 +14,7 @@
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
 #include <wayland-client.h>
+#include <wayland-egl-core.h>
 #include <wayland-util.h>
 
 typedef struct AnvlWaylandBackend
@@ -36,8 +37,8 @@ typedef struct AnvlWaylandBackend
 
     // Configure data
     const char* title;
-    uint32      width;
-    uint32      height;
+    uint16      width;
+    uint16      height;
 
     // Shared Memory (Pixel Buffer) data
     int32             shm_fd;
@@ -68,17 +69,19 @@ typedef struct AnvlWaylandBackend
     EventCallbackFn event_callback;
 } AnvlWaylandBackend;
 
-static void* wayland_backend_init();
-static void  wayland_backend_shutdown(void* backend);
-static void  wayland_window_create(void*                   backend,
-                                   const AnvlWindowOptions window_options);
-static void  wayland_window_show(void* backend);
-static void  wayland_window_destroy(void* backend);
-static void  wayland_window_set_event_callback(void*           backend,
-                                               EventCallbackFn event_callback);
-static void  wayland_events_poll_and_dispatch(void* backend);
-static void* wayland_window_get_handle(void* backend);
-static void  wayland_window_present(void* backend);
+static void*  wayland_backend_init();
+static void   wayland_backend_shutdown(void* backend);
+static void   wayland_window_create(void*                   backend,
+                                    const AnvlWindowOptions window_options);
+static void   wayland_window_show(void* backend);
+static void   wayland_window_destroy(void* backend);
+static void   wayland_window_set_event_callback(void*           backend,
+                                                EventCallbackFn event_callback);
+static void   wayland_events_poll_and_dispatch(void* backend);
+static void*  wayland_window_get_handle(void* backend);
+static uint16 wayland_window_get_width(void* backend);
+static uint16 wayland_window_get_height(void* backend);
+static void   wayland_window_present(void* backend);
 
 static void _shm_buffer_create(AnvlWaylandBackend* b_end,
                                int32               width,
@@ -200,7 +203,9 @@ static const AnvlWindowBackend WAYLAND_BACKEND = {
     .window_set_event_callback       = wayland_window_set_event_callback,
     .window_events_poll_and_dispatch = wayland_events_poll_and_dispatch,
     .window_get_handle               = wayland_window_get_handle,
-    .window_present          = wayland_window_present,
+    .window_get_width                = wayland_window_get_width,
+    .window_get_height               = wayland_window_get_height,
+    .window_present                  = wayland_window_present,
 };
 
 static const struct wl_registry_listener REGISTRY_LISTENER = {
@@ -426,17 +431,14 @@ static void wayland_events_poll_and_dispatch(void* backend)
 
     int32         wl_display_fd = wl_display_get_fd(b_end->display);
     struct pollfd poll_fd       = {
-        .fd     = wl_display_fd,
-        .events = POLLIN,
+              .fd     = wl_display_fd,
+              .events = POLLIN,
     };
 
     poll(&poll_fd, 1, 0);
 
     if (poll_fd.revents & POLLIN) { wl_display_read_events(b_end->display); }
-    else
-    {
-        wl_display_cancel_read(b_end->display);
-    }
+    else { wl_display_cancel_read(b_end->display); }
 
     wl_display_dispatch_pending(b_end->display);
 }
@@ -446,6 +448,20 @@ static void* wayland_window_get_handle(void* backend)
     AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
 
     return (void*)b_end->surface;
+}
+
+static uint16 wayland_window_get_width(void* backend)
+{
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
+
+    return b_end->width;
+}
+
+static uint16 wayland_window_get_height(void* backend)
+{
+    AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
+
+    return b_end->height;
 }
 
 static void wayland_window_present(void* backend)
@@ -593,6 +609,15 @@ static void _on_xdg_surface_configure(void*               data,
                                     0,
                                     b_end->width,
                                     b_end->height);
+
+    if (b_end->context.handle && b_end->context.egl_window)
+    {
+        wl_egl_window_resize(b_end->context.egl_window,
+                             b_end->width,
+                             b_end->height,
+                             0,
+                             0);
+    }
 
     xdg_surface_ack_configure(xdg_surface, serial);
 

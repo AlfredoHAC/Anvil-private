@@ -12,38 +12,39 @@ typedef struct X11Backend
     // Xlib display
     Display* x11_display;
 
-    // XCB Connection
+    // XCB display/connection
     struct xcb_connection_t* xcb_display;
-
-    // XCB Screen
-    xcb_screen_t* screen;
-
-    // XCB Colormap
-    xcb_colormap_t colormap_id;
-
-    // XCB Window
-    xcb_window_t window_id;
+    xcb_screen_t*            screen;
+    xcb_colormap_t           colormap_id;
+    xcb_window_t             window_id;
 
     AnvlGLXGraphicsContext context;
 
-    // AnvlEvent callback
+    uint16 width;
+    uint16 height;
+
     EventCallbackFn event_callback;
 
     // XCB Window Close event
     xcb_atom_t wm_delete_window_atom;
 } X11Backend;
 
-static void* x11_backend_init();
-static void  x11_backend_shutdown(void* backend);
-static void  x11_window_create(void*                   backend,
-                               const AnvlWindowOptions window_options);
-static void  x11_window_show(void* backend);
-static void  x11_window_destroy(void* backend);
-static void  x11_window_set_event_callback(void*           backend,
-                                           EventCallbackFn event_callback);
-static void  x11_events_poll_and_dispatch(void* backend);
-static void* x11_window_get_handle(void* backend);
-static void  x11_window_present(void* backend);
+static void*  x11_backend_init();
+static void   x11_backend_shutdown(void* backend);
+static void   x11_window_create(void*                   backend,
+                                const AnvlWindowOptions window_options);
+static void   x11_window_show(void* backend);
+static void   x11_window_destroy(void* backend);
+static void   x11_window_set_event_callback(void*           backend,
+                                            EventCallbackFn event_callback);
+static void   x11_events_poll_and_dispatch(void* backend);
+static void*  x11_window_get_handle(void* backend);
+static uint16 x11_window_get_width(void* backend);
+static uint16 x11_window_get_height(void* backend);
+static void   x11_window_present(void* backend);
+
+static void _dispatch_x11_messages(X11Backend*          b_end,
+                                   xcb_generic_event_t* xcb_event);
 
 static const AnvlWindowBackend X11_BACKEND = {
     .backend_init                    = x11_backend_init,
@@ -54,7 +55,9 @@ static const AnvlWindowBackend X11_BACKEND = {
     .window_set_event_callback       = x11_window_set_event_callback,
     .window_events_poll_and_dispatch = x11_events_poll_and_dispatch,
     .window_get_handle               = x11_window_get_handle,
-    .window_present          = x11_window_present,
+    .window_present                  = x11_window_present,
+    .window_get_width                = x11_window_get_width,
+    .window_get_height               = x11_window_get_height,
 };
 
 // clang-format off
@@ -234,6 +237,9 @@ static void x11_window_create(void*                   backend,
                       mask,                          // Bitmask list
                       mask_values);                  // Mask values (array)
 
+    b_end->width  = window_options.width;
+    b_end->height = window_options.height;
+
     if (b_end->context.fbconfig && b_end->context.visual &&
         window_options.graphics_mode == ANVL_WINDOW_GRAPHICS_MODE_OPENGL)
     {
@@ -306,6 +312,26 @@ void x11_window_destroy(void* backend)
     xcb_flush(b_end->xcb_display);
 }
 
+void x11_window_set_event_callback(void*           backend,
+                                   EventCallbackFn event_callback)
+{
+    X11Backend* b_end = (X11Backend*)backend;
+
+    b_end->event_callback = event_callback;
+}
+
+void x11_events_poll_and_dispatch(void* backend)
+{
+    X11Backend* b_end = (X11Backend*)backend;
+
+    xcb_generic_event_t* xcb_event;
+
+    while ((xcb_event = xcb_poll_for_event(b_end->xcb_display)))
+    {
+        _dispatch_x11_messages(b_end, xcb_event);
+    }
+}
+
 void* x11_window_get_handle(void* backend)
 {
     X11Backend* b_end = (X11Backend*)backend;
@@ -313,12 +339,27 @@ void* x11_window_get_handle(void* backend)
     return (void*)&(b_end->window_id);
 }
 
-void x11_window_set_event_callback(void*           backend,
-                                   EventCallbackFn event_callback)
+static uint16 x11_window_get_width(void* backend)
 {
     X11Backend* b_end = (X11Backend*)backend;
 
-    b_end->event_callback = event_callback;
+    return b_end->width;
+}
+
+static uint16 x11_window_get_height(void* backend)
+{
+    X11Backend* b_end = (X11Backend*)backend;
+
+    return b_end->height;
+}
+
+static void x11_window_present(void* backend)
+{
+    X11Backend* b_end = (X11Backend*)backend;
+
+    if (!b_end->context.handle) { return; }
+
+    glx_context_swap_buffers(b_end->x11_display, b_end->context.glx_window);
 }
 
 static void _dispatch_x11_messages(X11Backend*          b_end,
@@ -350,15 +391,20 @@ static void _dispatch_x11_messages(X11Backend*          b_end,
             xcb_configure_notify_event_t* cfg_notify =
                 (xcb_configure_notify_event_t*)xcb_event;
 
-            if (!(cfg_notify->width == 0) || !(cfg_notify->height == 0))
+            uint16 width  = cfg_notify->width;
+            uint16 height = cfg_notify->height;
+
+            if (!(width == 0) || !(height == 0))
             {
                 AnvlEvent event = {
                     .type          = ANVL_EVENT_TYPE_WINDOW_RESIZE,
                     .handled       = false,
-                    .window_resize = {.width  = cfg_notify->width,
-                                      .height = cfg_notify->height},
+                    .window_resize = {.width = width, .height = height},
                 };
                 b_end->event_callback(&event);
+
+                b_end->width  = width;
+                b_end->height = height;
             }
 
             break;
@@ -485,25 +531,4 @@ static void _dispatch_x11_messages(X11Backend*          b_end,
     }
 
     free(xcb_event);
-}
-
-void x11_events_poll_and_dispatch(void* backend)
-{
-    X11Backend* b_end = (X11Backend*)backend;
-
-    xcb_generic_event_t* xcb_event;
-
-    while ((xcb_event = xcb_poll_for_event(b_end->xcb_display)))
-    {
-        _dispatch_x11_messages(b_end, xcb_event);
-    }
-}
-
-static void x11_window_present(void* backend)
-{
-    X11Backend* b_end = (X11Backend*)backend;
-
-    if (!b_end->context.handle) { return; }
-
-    glx_context_swap_buffers(b_end->x11_display, b_end->context.glx_window);
 }
