@@ -66,17 +66,18 @@ typedef struct AnvlWaylandBackend
     AnvlEGLGraphicsContext context;
 
     // AnvlEvent callback
-    EventCallbackFn event_callback;
+    AnvlEventCallbackFn event_callback;
 } AnvlWaylandBackend;
 
-static void*  wayland_backend_init();
-static void   wayland_backend_shutdown(void* backend);
-static void   wayland_window_create(void*                   backend,
-                                    const AnvlWindowOptions window_options);
-static void   wayland_window_show(void* backend);
-static void   wayland_window_destroy(void* backend);
-static void   wayland_window_set_event_callback(void*           backend,
-                                                EventCallbackFn event_callback);
+static void* wayland_backend_init();
+static void  wayland_backend_shutdown(void* backend);
+static void  wayland_window_create(void*                   backend,
+                                   const AnvlWindowOptions window_options);
+static void  wayland_window_show(void* backend);
+static void  wayland_window_destroy(void* backend);
+static void  wayland_window_set_event_callback(
+    void*               backend,
+    AnvlEventCallbackFn event_callback);
 static void   wayland_events_poll_and_dispatch(void* backend);
 static void*  wayland_window_get_handle(void* backend);
 static uint16 wayland_window_get_width(void* backend);
@@ -410,8 +411,8 @@ void wayland_window_destroy(void* backend)
     }
 }
 
-void wayland_window_set_event_callback(void*           backend,
-                                       EventCallbackFn event_callback)
+void wayland_window_set_event_callback(void*               backend,
+                                       AnvlEventCallbackFn event_callback)
 {
     AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
 
@@ -431,14 +432,17 @@ static void wayland_events_poll_and_dispatch(void* backend)
 
     int32         wl_display_fd = wl_display_get_fd(b_end->display);
     struct pollfd poll_fd       = {
-              .fd     = wl_display_fd,
-              .events = POLLIN,
+        .fd     = wl_display_fd,
+        .events = POLLIN,
     };
 
     poll(&poll_fd, 1, 0);
 
     if (poll_fd.revents & POLLIN) { wl_display_read_events(b_end->display); }
-    else { wl_display_cancel_read(b_end->display); }
+    else
+    {
+        wl_display_cancel_read(b_end->display);
+    }
 
     wl_display_dispatch_pending(b_end->display);
 }

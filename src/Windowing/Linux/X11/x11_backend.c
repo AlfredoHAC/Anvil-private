@@ -23,7 +23,7 @@ typedef struct X11Backend
     uint16 width;
     uint16 height;
 
-    EventCallbackFn event_callback;
+    AnvlEventCallbackFn event_callback;
 
     // XCB Window Close event
     xcb_atom_t wm_delete_window_atom;
@@ -35,8 +35,8 @@ static void   x11_window_create(void*                   backend,
                                 const AnvlWindowOptions window_options);
 static void   x11_window_show(void* backend);
 static void   x11_window_destroy(void* backend);
-static void   x11_window_set_event_callback(void*           backend,
-                                            EventCallbackFn event_callback);
+static void   x11_window_set_event_callback(void*               backend,
+                                            AnvlEventCallbackFn event_callback);
 static void   x11_events_poll_and_dispatch(void* backend);
 static void*  x11_window_get_handle(void* backend);
 static uint16 x11_window_get_width(void* backend);
@@ -314,8 +314,8 @@ void x11_window_destroy(void* backend)
     xcb_flush(b_end->xcb_display);
 }
 
-void x11_window_set_event_callback(void*           backend,
-                                   EventCallbackFn event_callback)
+void x11_window_set_event_callback(void*               backend,
+                                   AnvlEventCallbackFn event_callback)
 {
     X11Backend* b_end = (X11Backend*)backend;
 

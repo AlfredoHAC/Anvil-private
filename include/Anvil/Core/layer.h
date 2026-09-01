@@ -5,16 +5,16 @@
 
 typedef struct AnvlLayer AnvlLayer;
 
-typedef void (*LayerOnUpdateFn)(AnvlLayer* layer);
-typedef void (*LayerOnRenderFn)(AnvlLayer* layer, void* user_data);
-typedef void (*LayerOnEventFn)(AnvlLayer* layer, AnvlEvent* event);
+typedef void (*AnvlLayerOnUpdateFn)(AnvlLayer* layer);
+typedef void (*AnvlLayerOnRenderFn)(AnvlLayer* layer, void* user_data);
+typedef void (*AnvlLayerOnEventFn)(AnvlLayer* layer, AnvlEvent* event);
 
 struct AnvlLayer
 {
     const char*     name;
-    LayerOnUpdateFn on_update;
-    LayerOnRenderFn on_render;
-    LayerOnEventFn  on_event;
+    AnvlLayerOnUpdateFn on_update;
+    AnvlLayerOnRenderFn on_render;
+    AnvlLayerOnEventFn  on_event;
 };
 
 void   anvl_layer_stack_push(AnvlLayer* layer);

@@ -18,11 +18,11 @@ struct AnvlWindow
     uint16 width;
     uint16 height;
 
-    EventCallbackFn event_callback;
+    AnvlEventCallbackFn event_callback;
 };
 
-static void             _set_event_callback(AnvlWindow*     window,
-                                            EventCallbackFn event_callback);
+static void             _set_event_callback(AnvlWindow*         window,
+                                            AnvlEventCallbackFn event_callback);
 static void             _unset_event_callback(AnvlWindow* window);
 static LRESULT          _dispatch_win32_event(AnvlWindow* window,
                                               UINT        umsg,
@@ -143,12 +143,12 @@ void* anvl_window_get_handle(const AnvlWindow* window)
     return (void*)window->handle;
 }
 
-uint16 anvl_window_width_get(const AnvlWindow* window)
+uint16 anvl_window_get_width(const AnvlWindow* window)
 {
     return window->width;
 }
 
-uint16 anvl_window_height_get(const AnvlWindow* window)
+uint16 anvl_window_get_height(const AnvlWindow* window)
 {
     return window->height;
 }
@@ -163,7 +163,7 @@ void anvl_window_present(const AnvlWindow* window)
 }
 // clang-format on
 
-void _set_event_callback(AnvlWindow* window, EventCallbackFn event_callback)
+void _set_event_callback(AnvlWindow* window, AnvlEventCallbackFn event_callback)
 {
     ANVIL_ASSERT(event_callback != NULL);
 

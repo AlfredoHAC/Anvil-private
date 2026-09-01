@@ -113,7 +113,7 @@ The following rules should be treated as mandatory.
 Anvil supports the following platforms:
 
 | Platform | Windowing Backend |
-|----------|-------------------|
+| -------- | ----------------- |
 | Windows  | Win32             |
 | Linux    | X11, Wayland      |
 | macOS    | (detection only)  |
@@ -192,7 +192,13 @@ Avoid:
 - Prefix every public symbol with its owning module (`anvl_`, `frnc_`, etc.).
 - Public names should clearly reflect their module responsibility.
 - Avoid generic public names such as `create()`, `init()` or `run()` without a module prefix.
-- Try to use the pattern: Module prefix + Action Verb + Resource (`anvl_create_window`, `frnc_init_backend`, etc.)
+- Follow the pattern: `<module_prefix>_<ComponentPrincipal>_<Verb>[_<Subcomponent>]`, **strictly verb-first**
+  (the verb precedes any subcomponent). Examples that already follow this in the codebase:
+  `anvl_window_get_handle` (`anvl_ + window + get + handle`), `frnc_mesh_add_attribute`
+  (`frnc_ + mesh + add + attribute`). Do NOT use the old verb-first phrasing
+  (`anvl_create_window`, `frnc_init_backend`) — those contradict the actual API.
+- Property getters/setters are verb-first: `get_width` (never `width_get`). Existing setters keep the
+  `*_set` suffix as a documented exception; new APIs follow verb-first.
 
 ## Logging
 
@@ -232,13 +238,13 @@ Each module's build script handles only its own compilation. The ForgeCore scrip
 
 ### Scripts de Build
 
-| Script | Descrição |
-|--------|-----------|
-| `scripts/build.bat debug` | Build completo (Windows) |
-| `scripts/build.bat clean` | Limpa todos os builds |
-| `Anvil/scripts/build.bat debug` | Build apenas do Anvil |
-| `Furnace/scripts/build.bat debug` | Build apenas do Furnace |
-| `example/Sandbox/scripts/build.bat debug` | Build apenas do Sandbox |
+| Script                                    | Descrição                |
+| ----------------------------------------- | ------------------------ |
+| `scripts/build.bat debug`                 | Build completo (Windows) |
+| `scripts/build.bat clean`                 | Limpa todos os builds    |
+| `Anvil/scripts/build.bat debug`           | Build apenas do Anvil    |
+| `Furnace/scripts/build.bat debug`         | Build apenas do Furnace  |
+| `example/Sandbox/scripts/build.bat debug` | Build apenas do Sandbox  |
 
 Os scripts configuram o ambiente corretamente (MSVC, CMake, Ninja) e usam Ninja como generator. Build direto com MSBuild ou sem a configuração adequada pode causar erros de include e linkagem.
 

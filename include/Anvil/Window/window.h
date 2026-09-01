@@ -8,7 +8,7 @@
 typedef struct AnvlWindow AnvlWindow;
 
 // AnvlEvent callback function pointer type
-typedef void (*EventCallbackFn)(AnvlEvent* event);
+typedef void (*AnvlEventCallbackFn)(AnvlEvent* event);
 
 typedef enum AnvlWindowGraphicsMode
 {
@@ -44,8 +44,8 @@ void        anvl_window_update(AnvlWindow* window);
 void        anvl_window_destroy(AnvlWindow* window);
 
 void*  anvl_window_get_handle(const AnvlWindow* window);
-uint16 anvl_window_width_get(const AnvlWindow* window);
-uint16 anvl_window_height_get(const AnvlWindow* window);
+uint16 anvl_window_get_width(const AnvlWindow* window);
+uint16 anvl_window_get_height(const AnvlWindow* window);
 void   anvl_window_present(const AnvlWindow* window);
 
 #endif // !ANVIL_WINDOW_HEADER

@@ -9,10 +9,10 @@ typedef struct AnvlApplication
 {
     AnvlWindow* window;
 
-    RenderFrameFn frame_begin_func;
-    RenderFrameFn frame_end_func;
-    void*         frame_begin_func_renderer;
-    void*         frame_end_func_renderer;
+    AnvlRenderFrameFn frame_begin_func;
+    AnvlRenderFrameFn frame_end_func;
+    void*             frame_begin_func_renderer;
+    void*             frame_end_func_renderer;
 } AnvlApplication;
 
 static void _on_application_event(AnvlLayer* layer, AnvlEvent* event);
@@ -78,30 +78,30 @@ void anvl_application_shutdown(AnvlApplication* app)
     free(app);
 }
 
-void anvl_application_window_set(AnvlApplication* app, AnvlWindow* window)
+void anvl_application_set_window(AnvlApplication* app, AnvlWindow* window)
 {
     ANVIL_ASSERT(app != NULL && window != NULL);
 
     app->window = window;
 }
 
-void anvl_application_render_frame_begin_set(AnvlApplication* app,
-                                             RenderFrameFn    frame_begin_func,
-                                             void*            renderer)
+void anvl_application_set_render_frame_begin(AnvlApplication*  app,
+                                             AnvlRenderFrameFn frame_begin_func,
+                                             void*             renderer)
 {
     ANVIL_ASSERT(app != NULL && frame_begin_func != NULL);
 
-    app->frame_begin_func    = frame_begin_func;
+    app->frame_begin_func          = frame_begin_func;
     app->frame_begin_func_renderer = renderer;
 }
 
-void anvl_application_render_frame_end_set(AnvlApplication* app,
-                                           RenderFrameFn    frame_end_func,
-                                           void*            renderer)
+void anvl_application_set_render_frame_end(AnvlApplication*  app,
+                                           AnvlRenderFrameFn frame_end_func,
+                                           void*             renderer)
 {
     ANVIL_ASSERT(app != NULL && frame_end_func != NULL);
 
-    app->frame_end_func = frame_end_func;
+    app->frame_end_func          = frame_end_func;
     app->frame_end_func_renderer = renderer;
 }
 
