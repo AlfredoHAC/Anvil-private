@@ -9,8 +9,10 @@ typedef struct AnvlApplication
 {
     AnvlWindow* window;
 
-    RenderHookFn render_func;
-    void*        render_func_data;
+    RenderFrameFn frame_begin_func;
+    RenderFrameFn frame_end_func;
+    void*         frame_begin_func_renderer;
+    void*         frame_end_func_renderer;
 } AnvlApplication;
 
 static void _on_application_event(AnvlLayer* layer, AnvlEvent* event);
@@ -20,6 +22,7 @@ static bool      app_running = false;
 static AnvlLayer app_layer   = {
     .name      = "Application_Layer",
     .on_update = NULL,
+    .on_render = NULL,
     .on_event  = _on_application_event,
 };
 
@@ -55,9 +58,13 @@ void anvl_application_run(AnvlApplication* app)
     {
         anvl_window_update(app->window);
         anvl_layer_stack_call_update();
-        if (app->render_func)
+        if (app->frame_begin_func && app->frame_end_func)
         {
-            app->render_func(app->render_func_data);
+            app->frame_begin_func(app->frame_begin_func_renderer);
+
+            anvl_layer_stack_call_render(app->frame_begin_func_renderer);
+
+            app->frame_end_func(app->frame_end_func_renderer);
         }
     }
 }
@@ -78,14 +85,24 @@ void anvl_application_window_set(AnvlApplication* app, AnvlWindow* window)
     app->window = window;
 }
 
-void anvl_application_render_hook_set(AnvlApplication* app,
-                                      RenderHookFn     render_func,
-                                      void*            user_data)
+void anvl_application_render_frame_begin_set(AnvlApplication* app,
+                                             RenderFrameFn    frame_begin_func,
+                                             void*            renderer)
 {
-    ANVIL_ASSERT(app != NULL && render_func != NULL);
+    ANVIL_ASSERT(app != NULL && frame_begin_func != NULL);
 
-    app->render_func      = render_func;
-    app->render_func_data = user_data;
+    app->frame_begin_func    = frame_begin_func;
+    app->frame_begin_func_renderer = renderer;
+}
+
+void anvl_application_render_frame_end_set(AnvlApplication* app,
+                                           RenderFrameFn    frame_end_func,
+                                           void*            renderer)
+{
+    ANVIL_ASSERT(app != NULL && frame_end_func != NULL);
+
+    app->frame_end_func = frame_end_func;
+    app->frame_end_func_renderer = renderer;
 }
 
 static void _on_application_event(AnvlLayer* layer, AnvlEvent* event)

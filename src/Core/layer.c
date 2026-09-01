@@ -86,3 +86,16 @@ void anvl_layer_stack_call_update()
         layer_stack[i]->on_update(layer_stack[i]);
     }
 }
+
+void anvl_layer_stack_call_render(void* user_data)
+{
+    for (int8 i = layer_stack_length - 1; i >= 0; --i)
+    {
+        if (layer_stack[i] == NULL || layer_stack[i]->on_render == NULL)
+        {
+            continue;
+        }
+
+        layer_stack[i]->on_render(layer_stack[i], user_data);
+    }
+}
