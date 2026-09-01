@@ -89,6 +89,8 @@ void* x11_backend_init()
         return NULL;
     }
 
+    XSetEventQueueOwner(backend_data->x11_display, XCBOwnsEventQueue);
+
     const xcb_setup_t*    setup = xcb_get_setup(backend_data->xcb_display);
     xcb_screen_iterator_t screen_iterator = xcb_setup_roots_iterator(setup);
     backend_data->screen                  = screen_iterator.data;
@@ -393,8 +395,9 @@ static void _dispatch_x11_messages(X11Backend*          b_end,
 
             uint16 width  = cfg_notify->width;
             uint16 height = cfg_notify->height;
+            if (width == b_end->width && height == b_end->height) { break; }
 
-            if (!(width == 0) || !(height == 0))
+            if (width != 0 && height != 0)
             {
                 AnvlEvent event = {
                     .type          = ANVL_EVENT_TYPE_WINDOW_RESIZE,
