@@ -1,5 +1,7 @@
 # AGENTS.md
 
+> 🏠 **General engine overview** (architecture, module map, conventions): see the `forge-engine` skill at `.agents/skills/forge-engine/SKILL.md`. This file holds the engine-wide philosophy and architecture.
+
 # Forge Engine
 
 This document defines how AI agents should contribute to the Forge Engine repository.
