@@ -33,10 +33,10 @@ AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options)
     window->backend = _window_backend_create(window);
     ANVIL_ASSERT(window->backend != NULL);
 
-    window->backend_data = window->backend->backend_init();
+    window->backend_data = window->backend->init();
     ANVIL_ASSERT(window->backend_data != NULL);
 
-    window->backend->window_create(window->backend_data, window_options);
+    window->backend->create_window(window->backend_data, window_options);
 
     _set_event_callback(window, anvl_layer_stack_dispatch_event);
 
@@ -46,12 +46,12 @@ AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options)
 // clang-format off
 void anvl_window_show(AnvlWindow* window)
 {
-    window->backend->window_show(window->backend_data);
+    window->backend->show_window(window->backend_data);
 }
 
 void anvl_window_update(AnvlWindow* window)
 {
-    window->backend->window_events_poll_and_dispatch(window->backend_data);
+    window->backend->poll_and_dispatch_events(window->backend_data);
 }
 // clang-format on
 
@@ -61,8 +61,8 @@ void anvl_window_destroy(AnvlWindow* window)
 
     _unset_event_callback(window);
 
-    window->backend->window_destroy(window->backend_data);
-    window->backend->backend_shutdown(window->backend_data);
+    window->backend->destroy_window(window->backend_data);
+    window->backend->shutdown(window->backend_data);
 
     free(window);
 }
@@ -70,23 +70,23 @@ void anvl_window_destroy(AnvlWindow* window)
 // clang-format off
 AnvlWindowNativeHandle anvl_window_get_native_handle(const AnvlWindow* window)
 {
-    return window->backend->window_get_native_handle(window->backend_data);
+    return window->backend->get_window_native_handle(window->backend_data);
 }
 
 uint16 anvl_window_get_width(const AnvlWindow* window)
 {
-    return window->backend->window_get_width(window->backend_data);
+    return window->backend->get_window_width(window->backend_data);
 }
 
 uint16 anvl_window_get_height(const AnvlWindow* window)
 {
-    return window->backend->window_get_height(window->backend_data);
+    return window->backend->get_window_height(window->backend_data);
 }
 
 
 void  anvl_window_present(const AnvlWindow* window)
 {
-    window->backend->window_present(window->backend_data);
+    window->backend->present(window->backend_data);
 }
 // clang-format on
 
@@ -94,14 +94,13 @@ void _set_event_callback(AnvlWindow* window, AnvlEventCallbackFn event_callback)
 {
     ANVIL_ASSERT(event_callback != NULL);
 
-    window->backend->window_set_event_callback(window->backend_data,
-                                               event_callback);
+    window->backend->set_event_callback(window->backend_data, event_callback);
 }
 
 // clang-format off
 void _unset_event_callback(AnvlWindow* window)
 {
-    window->backend->window_set_event_callback(window->backend_data, NULL);
+    window->backend->set_event_callback(window->backend_data, NULL);
 }
 // clang-format on
 

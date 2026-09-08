@@ -47,17 +47,17 @@ static void _dispatch_x11_messages(X11Backend*          b_end,
                                    xcb_generic_event_t* xcb_event);
 
 static const AnvlWindowBackend X11_BACKEND = {
-    .backend_init                    = x11_backend_init,
-    .backend_shutdown                = x11_backend_shutdown,
-    .window_create                   = x11_window_create,
-    .window_show                     = x11_window_show,
-    .window_destroy                  = x11_window_destroy,
-    .window_set_event_callback       = x11_window_set_event_callback,
-    .window_events_poll_and_dispatch = x11_events_poll_and_dispatch,
-    .window_get_native_handle        = x11_window_get_native_handle,
-    .window_present                  = x11_window_present,
-    .window_get_width                = x11_window_get_width,
-    .window_get_height               = x11_window_get_height,
+    .init                     = x11_backend_init,
+    .shutdown                 = x11_backend_shutdown,
+    .create_window            = x11_window_create,
+    .show_window              = x11_window_show,
+    .destroy_window           = x11_window_destroy,
+    .set_event_callback       = x11_window_set_event_callback,
+    .poll_and_dispatch_events = x11_events_poll_and_dispatch,
+    .get_window_native_handle = x11_window_get_native_handle,
+    .get_window_width         = x11_window_get_width,
+    .get_window_height        = x11_window_get_height,
+    .present                  = x11_window_present,
 };
 
 // clang-format off

@@ -196,17 +196,17 @@ static void _on_wl_pointer_axis_relative_direction_noop(
     uint32             direction);
 
 static const AnvlWindowBackend WAYLAND_BACKEND = {
-    .backend_init                    = wayland_backend_init,
-    .backend_shutdown                = wayland_backend_shutdown,
-    .window_create                   = wayland_window_create,
-    .window_show                     = wayland_window_show,
-    .window_destroy                  = wayland_window_destroy,
-    .window_set_event_callback       = wayland_window_set_event_callback,
-    .window_events_poll_and_dispatch = wayland_events_poll_and_dispatch,
-    .window_get_native_handle        = wayland_window_get_native_handle,
-    .window_get_width                = wayland_window_get_width,
-    .window_get_height               = wayland_window_get_height,
-    .window_present                  = wayland_window_present,
+    .init                     = wayland_backend_init,
+    .shutdown                 = wayland_backend_shutdown,
+    .create_window            = wayland_window_create,
+    .show_window              = wayland_window_show,
+    .destroy_window           = wayland_window_destroy,
+    .set_event_callback       = wayland_window_set_event_callback,
+    .poll_and_dispatch_events = wayland_events_poll_and_dispatch,
+    .get_window_native_handle = wayland_window_get_native_handle,
+    .get_window_width         = wayland_window_get_width,
+    .get_window_height        = wayland_window_get_height,
+    .present                  = wayland_window_present,
 };
 
 static const struct wl_registry_listener REGISTRY_LISTENER = {
