@@ -38,14 +38,20 @@ typedef struct AnvlWindowOptions
     } graphics_requirements;
 } AnvlWindowOptions;
 
+typedef struct AnvlWindowNativeHandle
+{
+    uintptr primary;
+    uintptr secondary;
+} AnvlWindowNativeHandle;
+
 AnvlWindow* anvl_window_create(const AnvlWindowOptions window_options);
 void        anvl_window_show(AnvlWindow* window);
 void        anvl_window_update(AnvlWindow* window);
 void        anvl_window_destroy(AnvlWindow* window);
 
-void*  anvl_window_get_handle(const AnvlWindow* window);
-uint16 anvl_window_get_width(const AnvlWindow* window);
-uint16 anvl_window_get_height(const AnvlWindow* window);
-void   anvl_window_present(const AnvlWindow* window);
+AnvlWindowNativeHandle anvl_window_get_native_handle(const AnvlWindow* window);
+uint16                 anvl_window_get_width(const AnvlWindow* window);
+uint16                 anvl_window_get_height(const AnvlWindow* window);
+void                   anvl_window_present(const AnvlWindow* window);
 
 #endif // !ANVIL_WINDOW_HEADER

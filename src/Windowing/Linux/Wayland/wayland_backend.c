@@ -78,11 +78,11 @@ static void  wayland_window_destroy(void* backend);
 static void  wayland_window_set_event_callback(
     void*               backend,
     AnvlEventCallbackFn event_callback);
-static void   wayland_events_poll_and_dispatch(void* backend);
-static void*  wayland_window_get_handle(void* backend);
-static uint16 wayland_window_get_width(void* backend);
-static uint16 wayland_window_get_height(void* backend);
-static void   wayland_window_present(void* backend);
+static void                   wayland_events_poll_and_dispatch(void* backend);
+static AnvlWindowNativeHandle wayland_window_get_native_handle(void* backend);
+static uint16                 wayland_window_get_width(void* backend);
+static uint16                 wayland_window_get_height(void* backend);
+static void                   wayland_window_present(void* backend);
 
 static void _shm_buffer_create(AnvlWaylandBackend* b_end,
                                int32               width,
@@ -203,7 +203,7 @@ static const AnvlWindowBackend WAYLAND_BACKEND = {
     .window_destroy                  = wayland_window_destroy,
     .window_set_event_callback       = wayland_window_set_event_callback,
     .window_events_poll_and_dispatch = wayland_events_poll_and_dispatch,
-    .window_get_handle               = wayland_window_get_handle,
+    .window_get_native_handle        = wayland_window_get_native_handle,
     .window_get_width                = wayland_window_get_width,
     .window_get_height               = wayland_window_get_height,
     .window_present                  = wayland_window_present,
@@ -447,11 +447,16 @@ static void wayland_events_poll_and_dispatch(void* backend)
     wl_display_dispatch_pending(b_end->display);
 }
 
-static void* wayland_window_get_handle(void* backend)
+static AnvlWindowNativeHandle wayland_window_get_native_handle(void* backend)
 {
     AnvlWaylandBackend* b_end = (AnvlWaylandBackend*)backend;
 
-    return (void*)b_end->surface;
+    AnvlWindowNativeHandle handle = {
+        .primary   = (uintptr)b_end->surface,
+        .secondary = (uintptr)b_end->display,
+    };
+
+    return handle;
 }
 
 static uint16 wayland_window_get_width(void* backend)

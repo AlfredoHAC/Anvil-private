@@ -29,19 +29,19 @@ typedef struct X11Backend
     xcb_atom_t wm_delete_window_atom;
 } X11Backend;
 
-static void*  x11_backend_init();
-static void   x11_backend_shutdown(void* backend);
-static void   x11_window_create(void*                   backend,
-                                const AnvlWindowOptions window_options);
-static void   x11_window_show(void* backend);
-static void   x11_window_destroy(void* backend);
-static void   x11_window_set_event_callback(void*               backend,
-                                            AnvlEventCallbackFn event_callback);
-static void   x11_events_poll_and_dispatch(void* backend);
-static void*  x11_window_get_handle(void* backend);
-static uint16 x11_window_get_width(void* backend);
-static uint16 x11_window_get_height(void* backend);
-static void   x11_window_present(void* backend);
+static void* x11_backend_init();
+static void  x11_backend_shutdown(void* backend);
+static void  x11_window_create(void*                   backend,
+                               const AnvlWindowOptions window_options);
+static void  x11_window_show(void* backend);
+static void  x11_window_destroy(void* backend);
+static void  x11_window_set_event_callback(void*               backend,
+                                           AnvlEventCallbackFn event_callback);
+static void  x11_events_poll_and_dispatch(void* backend);
+static AnvlWindowNativeHandle x11_window_get_native_handle(void* backend);
+static uint16                 x11_window_get_width(void* backend);
+static uint16                 x11_window_get_height(void* backend);
+static void                   x11_window_present(void* backend);
 
 static void _dispatch_x11_messages(X11Backend*          b_end,
                                    xcb_generic_event_t* xcb_event);
@@ -54,7 +54,7 @@ static const AnvlWindowBackend X11_BACKEND = {
     .window_destroy                  = x11_window_destroy,
     .window_set_event_callback       = x11_window_set_event_callback,
     .window_events_poll_and_dispatch = x11_events_poll_and_dispatch,
-    .window_get_handle               = x11_window_get_handle,
+    .window_get_native_handle        = x11_window_get_native_handle,
     .window_present                  = x11_window_present,
     .window_get_width                = x11_window_get_width,
     .window_get_height               = x11_window_get_height,
@@ -334,11 +334,16 @@ void x11_events_poll_and_dispatch(void* backend)
     }
 }
 
-void* x11_window_get_handle(void* backend)
+AnvlWindowNativeHandle x11_window_get_native_handle(void* backend)
 {
     X11Backend* b_end = (X11Backend*)backend;
 
-    return (void*)&(b_end->window_id);
+    AnvlWindowNativeHandle handle = {
+        .primary   = (uintptr)b_end->window_id,
+        .secondary = (uintptr)b_end->x11_display,
+    };
+
+    return handle;
 }
 
 static uint16 x11_window_get_width(void* backend)

@@ -3,6 +3,7 @@
 
 #include <inttypes.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 // Integer typedefs
 typedef uint8_t  uint8;
@@ -18,5 +19,9 @@ typedef int64_t int64;
 // Float typedefs
 typedef float  float32;
 typedef double float64;
+
+// Integer pointer typedefs
+typedef uintptr_t uintptr;
+typedef intptr_t  intptr;
 
 #endif // !ANVIL_TYPES_HEADER

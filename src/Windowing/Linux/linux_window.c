@@ -68,9 +68,9 @@ void anvl_window_destroy(AnvlWindow* window)
 }
 
 // clang-format off
-void* anvl_window_get_handle(const AnvlWindow* window)
+AnvlWindowNativeHandle anvl_window_get_native_handle(const AnvlWindow* window)
 {
-    return window->backend->window_get_handle(window->backend_data);
+    return window->backend->window_get_native_handle(window->backend_data);
 }
 
 uint16 anvl_window_get_width(const AnvlWindow* window)
