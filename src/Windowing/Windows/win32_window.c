@@ -138,6 +138,12 @@ void anvl_window_destroy(AnvlWindow* window)
 }
 
 // clang-format off
+AnvlWindowPlatform anvl_window_get_platform(const AnvlWindow* window)
+{
+    return ANVL_WINDOW_NATIVE_PLATFORM_WIN32;
+}
+// clang-format on
+
 AnvlWindowNativeHandle anvl_window_get_native_handle(const AnvlWindow* window)
 {
     AnvlWindowNativeHandle handle = {
@@ -148,6 +154,7 @@ AnvlWindowNativeHandle anvl_window_get_native_handle(const AnvlWindow* window)
     return handle;
 }
 
+// clang-format off
 uint16 anvl_window_get_width(const AnvlWindow* window)
 {
     return window->width;

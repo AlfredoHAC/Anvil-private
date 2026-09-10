@@ -68,6 +68,11 @@ void anvl_window_destroy(AnvlWindow* window)
 }
 
 // clang-format off
+AnvlWindowPlatform anvl_window_get_platform(const AnvlWindow* window)
+{
+    return window->backend->get_window_native_platform();
+}
+
 AnvlWindowNativeHandle anvl_window_get_native_handle(const AnvlWindow* window)
 {
     return window->backend->get_window_native_handle(window->backend_data);

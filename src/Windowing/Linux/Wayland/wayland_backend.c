@@ -78,11 +78,12 @@ static void  wayland_window_destroy(void* backend);
 static void  wayland_window_set_event_callback(
     void*               backend,
     AnvlEventCallbackFn event_callback);
-static void                   wayland_events_poll_and_dispatch(void* backend);
-static AnvlWindowNativeHandle wayland_window_get_native_handle(void* backend);
-static uint16                 wayland_window_get_width(void* backend);
-static uint16                 wayland_window_get_height(void* backend);
-static void                   wayland_window_present(void* backend);
+static void                     wayland_events_poll_and_dispatch(void* backend);
+static AnvlWindowPlatform wayland_window_get_native_platform();
+static AnvlWindowNativeHandle   wayland_window_get_native_handle(void* backend);
+static uint16                   wayland_window_get_width(void* backend);
+static uint16                   wayland_window_get_height(void* backend);
+static void                     wayland_window_present(void* backend);
 
 static void _shm_buffer_create(AnvlWaylandBackend* b_end,
                                int32               width,
@@ -196,17 +197,18 @@ static void _on_wl_pointer_axis_relative_direction_noop(
     uint32             direction);
 
 static const AnvlWindowBackend WAYLAND_BACKEND = {
-    .init                     = wayland_backend_init,
-    .shutdown                 = wayland_backend_shutdown,
-    .create_window            = wayland_window_create,
-    .show_window              = wayland_window_show,
-    .destroy_window           = wayland_window_destroy,
-    .set_event_callback       = wayland_window_set_event_callback,
-    .poll_and_dispatch_events = wayland_events_poll_and_dispatch,
-    .get_window_native_handle = wayland_window_get_native_handle,
-    .get_window_width         = wayland_window_get_width,
-    .get_window_height        = wayland_window_get_height,
-    .present                  = wayland_window_present,
+    .init                       = wayland_backend_init,
+    .shutdown                   = wayland_backend_shutdown,
+    .create_window              = wayland_window_create,
+    .show_window                = wayland_window_show,
+    .destroy_window             = wayland_window_destroy,
+    .set_event_callback         = wayland_window_set_event_callback,
+    .poll_and_dispatch_events   = wayland_events_poll_and_dispatch,
+    .get_window_native_platform = wayland_window_get_native_platform,
+    .get_window_native_handle   = wayland_window_get_native_handle,
+    .get_window_width           = wayland_window_get_width,
+    .get_window_height          = wayland_window_get_height,
+    .present                    = wayland_window_present,
 };
 
 static const struct wl_registry_listener REGISTRY_LISTENER = {
@@ -446,6 +448,13 @@ static void wayland_events_poll_and_dispatch(void* backend)
 
     wl_display_dispatch_pending(b_end->display);
 }
+
+// clang-format off
+static AnvlWindowPlatform wayland_window_get_native_platform()
+{
+    return ANVL_WINDOW_NATIVE_PLATFORM_WAYLAND;
+}
+// clang-format on
 
 static AnvlWindowNativeHandle wayland_window_get_native_handle(void* backend)
 {

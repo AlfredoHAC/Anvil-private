@@ -38,26 +38,28 @@ static void  x11_window_destroy(void* backend);
 static void  x11_window_set_event_callback(void*               backend,
                                            AnvlEventCallbackFn event_callback);
 static void  x11_events_poll_and_dispatch(void* backend);
-static AnvlWindowNativeHandle x11_window_get_native_handle(void* backend);
-static uint16                 x11_window_get_width(void* backend);
-static uint16                 x11_window_get_height(void* backend);
-static void                   x11_window_present(void* backend);
+static AnvlWindowPlatform x11_window_get_native_platform();
+static AnvlWindowNativeHandle   x11_window_get_native_handle(void* backend);
+static uint16                   x11_window_get_width(void* backend);
+static uint16                   x11_window_get_height(void* backend);
+static void                     x11_window_present(void* backend);
 
 static void _dispatch_x11_messages(X11Backend*          b_end,
                                    xcb_generic_event_t* xcb_event);
 
 static const AnvlWindowBackend X11_BACKEND = {
-    .init                     = x11_backend_init,
-    .shutdown                 = x11_backend_shutdown,
-    .create_window            = x11_window_create,
-    .show_window              = x11_window_show,
-    .destroy_window           = x11_window_destroy,
-    .set_event_callback       = x11_window_set_event_callback,
-    .poll_and_dispatch_events = x11_events_poll_and_dispatch,
-    .get_window_native_handle = x11_window_get_native_handle,
-    .get_window_width         = x11_window_get_width,
-    .get_window_height        = x11_window_get_height,
-    .present                  = x11_window_present,
+    .init                       = x11_backend_init,
+    .shutdown                   = x11_backend_shutdown,
+    .create_window              = x11_window_create,
+    .show_window                = x11_window_show,
+    .destroy_window             = x11_window_destroy,
+    .set_event_callback         = x11_window_set_event_callback,
+    .poll_and_dispatch_events   = x11_events_poll_and_dispatch,
+    .get_window_native_platform = x11_window_get_native_platform,
+    .get_window_native_handle   = x11_window_get_native_handle,
+    .get_window_width           = x11_window_get_width,
+    .get_window_height          = x11_window_get_height,
+    .present                    = x11_window_present,
 };
 
 // clang-format off
@@ -333,6 +335,13 @@ void x11_events_poll_and_dispatch(void* backend)
         _dispatch_x11_messages(b_end, xcb_event);
     }
 }
+
+// clang-format off
+static AnvlWindowPlatform x11_window_get_native_platform()
+{
+    return ANVL_WINDOW_NATIVE_PLATFORM_X11;
+}
+// clang-format on
 
 AnvlWindowNativeHandle x11_window_get_native_handle(void* backend)
 {
