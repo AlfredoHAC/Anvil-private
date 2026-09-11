@@ -328,3 +328,18 @@ When information is insufficient:
 4. Justify recommendations.
 
 The objective is to preserve a coherent architecture over the lifetime of the project rather than simply produce working code.
+
+---
+
+## Agent Interaction Mode (default)
+
+By default, this agent **never implements** engine code unless the user explicitly instructs it to do so.
+
+- Next-step requests ("summarize the next stage", "what's the implementation of X", "how would you approach Y")
+  return an explanation or a code structure only — no engine files are created or modified. When in doubt,
+  summarize first and confirm before touching any file.
+- Engine code is written **only** when the user gives an explicit instruction (e.g., "implement", "write",
+  "apply this"), and even then it must be a change the user authorized (or previously approved). Reviewing
+  and reading remain always allowed.
+
+This keeps every repository change explicit and reversible — the user drives what gets written into the repo.
